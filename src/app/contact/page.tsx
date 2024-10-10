@@ -12,11 +12,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Mail, Phone, MapPin } from "lucide-react";
-import dynamic from "next/dynamic";
-
-import { SiteHeader2 } from "@/components/SiteHeader2";
- 
+import { Mail, Phone, MapPin } from "lucide-react"; 
 import GeneralizedInput from "@/components/GeneralizedInput";
 import GeneralizedTextArea from "@/components/GeneralizedTextArea";
 
@@ -99,7 +95,6 @@ export default function ContactUs() {
 
   return (
     <div>
-      <SiteHeader2 />
       <Toaster />
       <div className="min-h-screen bg-muted/40">
         <div className="container mx-auto px-4 py-16">

@@ -4,10 +4,11 @@ import { Inter as FontSans, Manrope } from "next/font/google";
 import { Providers } from "./provider";
 import { cn } from "@/lib/utils";
 import FooterSection from "@/components/FooterSection";
+import SiteHeader from "@/components/SiteHeader";
 
 export const metadata: Metadata = {
-  title: "MediNexus",
-  description: "Streamline Your Hospital Supply Chain",
+  title: "DelTech MUN and Debsoc",
+  description: "Where Diplomacy meets ...",
 };
 
 const fontHeading = Manrope({
@@ -21,7 +22,6 @@ const fontBody = Manrope({
   display: "swap",
   variable: "--font-body",
 });
-
 
 export default function RootLayout({
   children,
@@ -38,7 +38,12 @@ export default function RootLayout({
         )}
       >
         <div className="flex-grow">
-          <Providers>{children}</Providers>
+          <Providers>
+            <header>
+              <SiteHeader />
+            </header>
+            {children}
+          </Providers>
         </div>
         <footer>
           <FooterSection />
@@ -47,4 +52,3 @@ export default function RootLayout({
     </html>
   );
 }
-

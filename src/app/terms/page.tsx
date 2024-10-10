@@ -1,10 +1,8 @@
 import RevealAnimation from "@/components/framer-motion/revealAnimation"
-import { SiteHeader2 } from "@/components/SiteHeader2"
 
 export default function Terms() {
   return (
     <div>
-      <SiteHeader2 />
       <RevealAnimation>
         <div className="bg-background text-foreground">
           <div className="container mx-auto max-w-4xl px-4 py-12 sm:px-6 lg:px-8">
