@@ -17,7 +17,7 @@ const MotionLink = motion(Link);
 import { HeroHighlight, Highlight } from "@/components/ui/hero-highlight";
 import SiteHeader from "@/components/SiteHeader";
 
-export function HeroHighlightDemo() {
+function HeroHighlightDemo() {
   return (
     <HeroHighlight>
       <motion.h1
