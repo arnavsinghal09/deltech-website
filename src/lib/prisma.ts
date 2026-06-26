@@ -1,14 +1,13 @@
-// TODO: configure PrismaClient with Prisma v7 adapter pattern (see prisma.config.ts)
-// Run `npx prisma generate` after configuring the adapter to make types available.
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type PrismaClient = any
+import "dotenv/config";
+import { PrismaClient } from "@/generated/prisma/client";
+import { PrismaPg } from "@prisma/adapter-pg";
+import { Pool } from "pg";
 
-declare global {
-  // eslint-disable-next-line no-var
-  var prisma: PrismaClient | undefined
-}
+const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient };
 
-// Stub — replace with real client once prisma generate has run
-export const prisma: PrismaClient = globalThis.prisma ?? null
+const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+const adapter = new PrismaPg(pool);
 
-if (process.env.NODE_ENV !== "production") globalThis.prisma = prisma
+export const prisma = globalForPrisma.prisma ?? new PrismaClient({ adapter });
+
+if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;

@@ -31,11 +31,14 @@ yarn-error.log*
 .pnpm-debug.log*
 
 # env files — commit .env.example, never commit secrets
+.env
 .env*.local
-.env.local
 
 # vercel
 .vercel
+
+# generated
+src/generated/
 
 # typescript
 *.tsbuildinfo

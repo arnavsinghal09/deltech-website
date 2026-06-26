@@ -23,16 +23,19 @@ Conference management platform for Model United Nations events — registrations
 npm install
 
 # 2. Set environment variables
-cp .env.example .env.local
-# Fill in all values in .env.local
+cp .env.example .env
+# Fill in all values in .env
 
-# 3. Run database migrations
-npx prisma migrate dev --name init
+# 3. Generate the Prisma client
+npm run db:generate
 
-# 4. Seed the database
-npx prisma db seed
+# 4. Run database migrations
+npm run db:migrate
 
-# 5. Start the dev server
+# 5. Seed the database
+npm run db:seed
+
+# 6. Start the dev server
 npm run dev
 ```
 
@@ -45,6 +48,19 @@ All user-visible strings live in `src/content/strings.ts`. Never hardcode text l
 ## Design tokens
 
 All design values live in `src/styles/tokens.ts` and are consumed by `tailwind.config.ts`. See `docs/DESIGN_TOKENS.md`.
+
+## Supabase environment variables
+
+Find these values in your Supabase project dashboard:
+
+| Env var | Where to find it | Purpose |
+|---|---|---|
+| `DATABASE_URL` | Settings → Database → Connection string → **Transaction** (Session mode) — append `?pgbouncer=true` | App runtime (pooled via pgBouncer) |
+| `DIRECT_URL` | Settings → Database → Connection string → **Direct** | Prisma migrations (bypasses pgBouncer) |
+| `NEXT_PUBLIC_SUPABASE_URL` | Settings → API → Project URL | Realtime client |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Settings → API → Project API keys → **Publishable** | Realtime client |
+
+> `DATABASE_URL` must include `?pgbouncer=true` (and optionally `&connection_limit=1` in edge environments).
 
 ## Docs
 
