@@ -1,0 +1,71 @@
+import { type UseFormReturn } from "react-hook-form"
+import type { RegisterFormValues } from "@/lib/schemas/register"
+import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form"
+import { Input } from "@/components/ui/input"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { t } from "@/content/strings"
+
+interface Committee {
+  id: string
+  name: string
+  doubleDelegation: boolean
+}
+
+interface Props {
+  form: UseFormReturn<RegisterFormValues>
+  committees: Committee[]
+}
+
+export function StepPref1({ form, committees }: Props) {
+  return (
+    <div className="space-y-5">
+      <FormField
+        control={form.control}
+        name="pref1CommitteeId"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>{t("register.preferences.pref1CommitteeLabel")}</FormLabel>
+            <Select value={field.value} onValueChange={(v) => field.onChange(v)}>
+              <FormControl>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select a committee" />
+                </SelectTrigger>
+              </FormControl>
+              <SelectContent>
+                {committees.map((c) => (
+                  <SelectItem key={c.id} value={c.id}>
+                    {c.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+
+      <FormField
+        control={form.control}
+        name="pref1Portfolio"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>{t("register.preferences.pref1PortfolioLabel")}</FormLabel>
+            <FormControl>
+              <Input
+                placeholder={t("register.preferences.pref1PortfolioPlaceholder")}
+                {...field}
+              />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+    </div>
+  )
+}

@@ -1,0 +1,147 @@
+import { type UseFormReturn } from "react-hook-form"
+import type { RegisterFormValues } from "@/lib/schemas/register"
+import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form"
+import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Label } from "@/components/ui/label"
+import { t } from "@/content/strings"
+
+interface Props {
+  form: UseFormReturn<RegisterFormValues>
+}
+
+export function StepPersonal({ form }: Props) {
+  return (
+    <div className="space-y-5">
+      <FormField
+        control={form.control}
+        name="fullName"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>{t("register.personal.fullNameLabel")}</FormLabel>
+            <FormControl>
+              <Input placeholder={t("register.personal.fullNamePlaceholder")} {...field} />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+
+      <FormField
+        control={form.control}
+        name="email"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>{t("register.personal.emailLabel")}</FormLabel>
+            <FormControl>
+              <Input
+                type="email"
+                placeholder={t("register.personal.emailPlaceholder")}
+                {...field}
+              />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+
+      <div className="grid grid-cols-2 gap-4">
+        <FormField
+          control={form.control}
+          name="whatsapp"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>{t("register.personal.whatsappLabel")}</FormLabel>
+              <FormControl>
+                <Input placeholder={t("register.personal.whatsappPlaceholder")} {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="altPhone"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>
+                {t("register.personal.altPhoneLabel")}
+                <span className="ml-1 text-xs text-muted-foreground">
+                  ({t("common.optional")})
+                </span>
+              </FormLabel>
+              <FormControl>
+                <Input
+                  placeholder={t("register.personal.altPhonePlaceholder")}
+                  {...field}
+                  value={field.value ?? ""}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      </div>
+
+      <FormField
+        control={form.control}
+        name="institution"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>{t("register.personal.institutionLabel")}</FormLabel>
+            <FormControl>
+              <Input placeholder={t("register.personal.institutionPlaceholder")} {...field} />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+
+      <FormField
+        control={form.control}
+        name="isDtu"
+        render={({ field }) => (
+          <FormItem>
+            <div className="flex items-center gap-2">
+              <FormControl>
+                <Checkbox
+                  checked={field.value}
+                  onCheckedChange={(checked) => field.onChange(checked)}
+                />
+              </FormControl>
+              <Label className="cursor-pointer text-sm font-medium leading-none">
+                {t("register.personal.isDtuLabel")}
+              </Label>
+            </div>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+
+      <FormField
+        control={form.control}
+        name="munExperience"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>
+              {t("register.personal.munExperienceLabel")}
+              <span className="ml-1 text-xs text-muted-foreground">({t("common.optional")})</span>
+            </FormLabel>
+            <FormControl>
+              <Textarea
+                placeholder={t("register.personal.munExperiencePlaceholder")}
+                className="resize-none"
+                rows={3}
+                {...field}
+                value={field.value ?? ""}
+              />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+    </div>
+  )
+}

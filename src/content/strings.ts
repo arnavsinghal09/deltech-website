@@ -51,6 +51,7 @@ export const STRINGS = {
 
   nav: {
     home: "Home",
+    availability: "Committees",
     blog: "Blog",
     register: "Register",
     quizJoin: "Join Quiz",

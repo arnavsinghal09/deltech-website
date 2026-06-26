@@ -1,0 +1,38 @@
+import { z } from "zod"
+
+export const coDelegateSchema = z.object({
+  fullName: z.string().min(2, "Name must be at least 2 characters"),
+  email: z.string().email("Enter a valid email address"),
+  phone: z.string().min(7, "Enter a valid phone number"),
+  institution: z.string().optional(),
+  munExperience: z.string().optional(),
+})
+
+export const registerSchema = z.object({
+  // Step 1 – personal
+  fullName: z.string().min(2, "Name must be at least 2 characters"),
+  email: z.string().email("Enter a valid email address"),
+  whatsapp: z.string().min(7, "Enter a valid WhatsApp number"),
+  altPhone: z.string().optional(),
+  institution: z.string().min(2, "Institution is required"),
+  isDtu: z.boolean(),
+  munExperience: z.string().optional(),
+  // Step 2 – first preference
+  pref1CommitteeId: z.string().min(1, "Select a committee"),
+  pref1Portfolio: z.string().min(1, "Enter a portfolio preference"),
+  // Step 3 – second preference or co-delegate (conditional; server action enforces business rules)
+  pref2CommitteeId: z.string().optional(),
+  pref2Portfolio: z.string().optional(),
+  coDelegate: coDelegateSchema.optional(),
+  // Step 4 – accommodation
+  needsAccommodation: z.boolean(),
+  outsideNcr: z.boolean(),
+  // Step 5 – undertaking
+  undertaking: z
+    .boolean()
+    .refine((v) => v === true, { message: "You must accept the undertaking to proceed." }),
+  reference: z.string().optional(),
+})
+
+export type RegisterFormValues = z.infer<typeof registerSchema>
+export type CoDelegateFormValues = z.infer<typeof coDelegateSchema>

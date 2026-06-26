@@ -1,0 +1,195 @@
+import { type UseFormReturn } from "react-hook-form"
+import type { RegisterFormValues } from "@/lib/schemas/register"
+import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form"
+import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { t } from "@/content/strings"
+
+interface Committee {
+  id: string
+  name: string
+  doubleDelegation: boolean
+}
+
+interface Props {
+  form: UseFormReturn<RegisterFormValues>
+  committees: Committee[]
+  isDoubleDelegation: boolean
+}
+
+export function StepPref2OrCoDelegate({ form, committees, isDoubleDelegation }: Props) {
+  const pref1CommitteeId = form.watch("pref1CommitteeId")
+
+  if (isDoubleDelegation) {
+    return (
+      <div className="space-y-5">
+        <div className="rounded-lg border border-primary/20 bg-primary/5 p-4 text-sm text-muted-foreground">
+          {t("register.preferences.unhrcOnlyNote")}
+        </div>
+
+        <p className="text-base font-semibold">{t("register.coDelegate.sectionTitle")}</p>
+        <p className="text-sm text-muted-foreground">{t("register.coDelegate.sectionNote")}</p>
+
+        <FormField
+          control={form.control}
+          name="coDelegate.fullName"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>{t("register.coDelegate.fullNameLabel")}</FormLabel>
+              <FormControl>
+                <Input placeholder="Co-delegate's full name" {...field} value={field.value ?? ""} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="coDelegate.email"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>{t("register.coDelegate.emailLabel")}</FormLabel>
+              <FormControl>
+                <Input
+                  type="email"
+                  placeholder="co@example.com"
+                  {...field}
+                  value={field.value ?? ""}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="coDelegate.phone"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>{t("register.coDelegate.phoneLabel")}</FormLabel>
+              <FormControl>
+                <Input placeholder="+91 9876543210" {...field} value={field.value ?? ""} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="coDelegate.institution"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>
+                {t("register.coDelegate.institutionLabel")}
+                <span className="ml-1 text-xs text-muted-foreground">({t("common.optional")})</span>
+              </FormLabel>
+              <FormControl>
+                <Input
+                  placeholder="Co-delegate's institution"
+                  {...field}
+                  value={field.value ?? ""}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="coDelegate.munExperience"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>
+                {t("register.coDelegate.munExperienceLabel")}
+                <span className="ml-1 text-xs text-muted-foreground">({t("common.optional")})</span>
+              </FormLabel>
+              <FormControl>
+                <Textarea
+                  placeholder="List committees attended (if any)"
+                  className="resize-none"
+                  rows={3}
+                  {...field}
+                  value={field.value ?? ""}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-5">
+      <p className="text-sm text-muted-foreground">
+        Both fields are optional. You can skip this step or leave it blank.
+      </p>
+
+      <FormField
+        control={form.control}
+        name="pref2CommitteeId"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>
+              {t("register.preferences.pref2CommitteeLabel")}
+              <span className="ml-1 text-xs text-muted-foreground">({t("common.optional")})</span>
+            </FormLabel>
+            <Select
+              value={field.value ?? ""}
+              onValueChange={(v) => field.onChange(v || undefined)}
+            >
+              <FormControl>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select a committee (optional)" />
+                </SelectTrigger>
+              </FormControl>
+              <SelectContent>
+                {committees
+                  .filter((c) => c.id !== pref1CommitteeId)
+                  .map((c) => (
+                    <SelectItem key={c.id} value={c.id}>
+                      {c.name}
+                    </SelectItem>
+                  ))}
+              </SelectContent>
+            </Select>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+
+      <FormField
+        control={form.control}
+        name="pref2Portfolio"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>
+              {t("register.preferences.pref2PortfolioLabel")}
+              <span className="ml-1 text-xs text-muted-foreground">({t("common.optional")})</span>
+            </FormLabel>
+            <FormControl>
+              <Input
+                placeholder={t("register.preferences.pref2PortfolioPlaceholder")}
+                {...field}
+                value={field.value ?? ""}
+              />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+    </div>
+  )
+}
