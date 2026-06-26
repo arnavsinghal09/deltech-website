@@ -1,0 +1,10 @@
+// TODO: define User, Session, Committee, Registration, Payment, Article models
+// NOTE: Prisma v7 — connection URLs live in prisma.config.ts, not here
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}

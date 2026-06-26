@@ -1,0 +1,3 @@
+# Design Tokens
+
+All design tokens — colors, spacing, typography scale, border radii, box shadows, font families, and motion values — are defined in a single file: `src/styles/tokens.ts`. This file is the only place where design values are written as literals. `tailwind.config.ts` imports from `tokens.ts` and maps each token group to the corresponding Tailwind theme key (e.g., `colors.primary` → Tailwind `colors.primary`, `typography` → Tailwind `fontSize` with paired `lineHeight`/`fontWeight`). Every other file in the codebase — components, pages, email templates — must reference values only through Tailwind utility classes or the exported `designTokens` object; hardcoding hex values, pixel sizes, or font stacks outside `tokens.ts` is a violation of this contract.
