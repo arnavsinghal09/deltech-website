@@ -85,9 +85,8 @@ export async function registerDelegate(data: RegisterFormValues): Promise<Action
     },
   })
 
-  // Fire stub email — real template Day 15; failure must not block registration
   try {
-    await sendRegistrationReceived(delegate.email, delegate.fullName)
+    await sendRegistrationReceived(delegate.id)
   } catch {
     // intentionally silent
   }

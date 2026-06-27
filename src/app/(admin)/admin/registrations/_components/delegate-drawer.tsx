@@ -1,7 +1,7 @@
 "use client"
 
-import { useState } from "react"
-import { X, Edit2 } from "lucide-react"
+import { useState, useTransition } from "react"
+import { X, Edit2, CheckCircle, RefreshCw } from "lucide-react"
 import {
   Drawer,
   DrawerContent,
@@ -12,8 +12,10 @@ import {
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
+import { toast } from "sonner"
 import type { SerializedDelegate } from "../_lib/types"
 import { DelegateEditForm } from "./delegate-edit-form"
+import { markPaidOffline, resendEmail } from "../actions"
 
 interface Props {
   delegate: SerializedDelegate | null
@@ -47,6 +49,21 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 
 export function DelegateDrawer({ delegate, committees, onClose, onUpdated }: Props) {
   const [editing, setEditing] = useState(false)
+  const [isPending, startTransition] = useTransition()
+  const [resendingLogId, setResendingLogId] = useState<string | null>(null)
+
+  const handleMarkPaid = () => {
+    if (!delegate) return
+    startTransition(async () => {
+      const result = await markPaidOffline(delegate.id)
+      if (result.success && result.delegate) {
+        toast.success("Marked as paid — delegate confirmed.")
+        onUpdated(result.delegate)
+      } else {
+        toast.error(result.error ?? "Failed to mark as paid.")
+      }
+    })
+  }
 
   const committeeMap = new Map(committees.map(c => [c.id, c.name]))
 
@@ -211,17 +228,37 @@ export function DelegateDrawer({ delegate, committees, onClose, onUpdated }: Pro
                 {/* Payment */}
                 <Section title="Payment">
                   {delegate.payment ? (
-                    <div className="grid grid-cols-2 gap-3">
-                      <Field label="Provider" value={delegate.payment.provider} />
-                      <Field label="Amount" value={`₹${delegate.payment.amountInr.toLocaleString("en-IN")}`} />
-                      <Field label="Status" value={delegate.payment.status} />
+                    <div className="space-y-3">
+                      <div className="grid grid-cols-2 gap-3">
+                        <Field label="Provider" value={delegate.payment.provider.toUpperCase()} />
+                        <Field label="Amount" value={`₹${delegate.payment.amountInr.toLocaleString("en-IN")}`} />
+                        <Field label="Status" value={delegate.payment.status} />
+                        {delegate.payment.confirmedAt && (
+                          <Field
+                            label="Confirmed"
+                            value={new Date(delegate.payment.confirmedAt).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
+                          />
+                        )}
+                      </div>
                       {delegate.payment.paymentLink && (
                         <div>
-                          <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Link</p>
+                          <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Pay link</p>
                           <a href={delegate.payment.paymentLink} target="_blank" rel="noopener noreferrer" className="mt-0.5 block truncate text-xs text-primary hover:underline">
                             {delegate.payment.paymentLink}
                           </a>
                         </div>
+                      )}
+                      {delegate.payment.provider === "upi_qr" &&
+                        (delegate.payment.status === "PENDING" || delegate.payment.status === "SENT") && (
+                        <Button
+                          size="sm"
+                          className="w-full gap-1.5"
+                          onClick={handleMarkPaid}
+                          disabled={isPending}
+                        >
+                          <CheckCircle className="size-3.5" />
+                          {isPending ? "Confirming…" : "Mark as Paid (UPI)"}
+                        </Button>
                       )}
                     </div>
                   ) : (
@@ -233,7 +270,43 @@ export function DelegateDrawer({ delegate, committees, onClose, onUpdated }: Pro
 
                 {/* Email history */}
                 <Section title="Email history">
-                  <p className="text-sm text-muted-foreground">Email history available after Phase 6.</p>
+                  {delegate.emailLogs.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">No emails sent yet.</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {delegate.emailLogs.map((log) => (
+                        <div key={log.id} className="flex items-center justify-between gap-2 rounded-md border border-border/60 bg-muted/30 px-3 py-2">
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate text-xs font-medium">{log.template}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {new Date(log.sentAt).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
+                              {" · "}
+                              <span className={log.status === "FAILED" ? "text-destructive" : "text-green-600"}>
+                                {log.status}
+                              </span>
+                            </p>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="size-7 shrink-0"
+                            title="Resend"
+                            disabled={resendingLogId === log.id}
+                            onClick={() => {
+                              setResendingLogId(log.id)
+                              resendEmail(log.id).then((res) => {
+                                setResendingLogId(null)
+                                if (res.success) toast.success("Email resent.")
+                                else toast.error(res.error ?? "Resend failed.")
+                              })
+                            }}
+                          >
+                            <RefreshCw className={`size-3.5 ${resendingLogId === log.id ? "animate-spin" : ""}`} />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </Section>
               </div>
             )

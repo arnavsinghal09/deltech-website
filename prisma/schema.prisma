@@ -145,6 +145,7 @@ model Delegate {
   coDelegate         CoDelegate?
   allotment          Allotment?
   payment            Payment?
+  emailLogs          EmailLog[]
   createdAt          DateTime   @default(now())
 }
 
@@ -204,6 +205,26 @@ model Payment {
   method            String?
   confirmedAt       DateTime?
   createdAt         DateTime  @default(now())
+}
+
+model ImportPreset {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  partner   String?
+  mapping   Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model EmailLog {
+  id         String    @id @default(cuid())
+  delegateId String?
+  template   String
+  toEmail    String
+  status     String    @default("SENT")
+  error      String?
+  sentAt     DateTime  @default(now())
+  delegate   Delegate? @relation(fields: [delegateId], references: [id])
 }
 
 enum PayStatus {

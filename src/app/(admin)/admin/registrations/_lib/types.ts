@@ -4,6 +4,7 @@ export const delegateInclude = {
   coDelegate: true,
   allotment: { include: { portfolio: { select: { name: true } } } },
   payment: true,
+  emailLogs: { orderBy: { sentAt: "desc" as const } },
 } as const
 
 export type DelegateRaw = Prisma.DelegateGetPayload<{ include: typeof delegateInclude }>
@@ -61,6 +62,14 @@ export interface SerializedDelegate {
     confirmedAt: string | null
     createdAt: string
   } | null
+  emailLogs: {
+    id: string
+    template: string
+    toEmail: string
+    status: string
+    error: string | null
+    sentAt: string
+  }[]
 }
 
 export function serializeDelegate(d: DelegateRaw): SerializedDelegate {
@@ -81,5 +90,9 @@ export function serializeDelegate(d: DelegateRaw): SerializedDelegate {
           confirmedAt: d.payment.confirmedAt?.toISOString() ?? null,
         }
       : null,
+    emailLogs: d.emailLogs.map((l) => ({
+      ...l,
+      sentAt: l.sentAt.toISOString(),
+    })),
   }
 }

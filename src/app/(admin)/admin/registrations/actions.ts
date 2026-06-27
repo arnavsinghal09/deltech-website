@@ -3,6 +3,8 @@
 import { redirect } from "next/navigation"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+import { delegateInclude, serializeDelegate, type SerializedDelegate } from "./_lib/types"
+import { sendPaymentConfirmed, resendByLogId } from "@/lib/resend"
 
 async function requireAdmin() {
   const session = await auth()
@@ -51,5 +53,47 @@ export async function updateDelegate(
     return { success: true }
   } catch {
     return { success: false, error: "Update failed. Please try again." }
+  }
+}
+
+export async function markPaidOffline(
+  delegateId: string,
+): Promise<{ success: boolean; error?: string; delegate?: SerializedDelegate }> {
+  await requireAdmin()
+  try {
+    await prisma.$transaction(async (tx) => {
+      await tx.payment.update({
+        where: { delegateId },
+        data: { status: "OFFLINE", confirmedAt: new Date(), method: "upi_manual" },
+      })
+      await tx.delegate.update({
+        where: { id: delegateId },
+        data: { status: "CONFIRMED" },
+      })
+    })
+    const updated = await prisma.delegate.findUniqueOrThrow({
+      where: { id: delegateId },
+      include: delegateInclude,
+    })
+    try {
+      await sendPaymentConfirmed(delegateId)
+    } catch {
+      // email failure must not surface to the admin
+    }
+    return { success: true, delegate: serializeDelegate(updated) }
+  } catch {
+    return { success: false, error: "Failed to mark as paid. Please try again." }
+  }
+}
+
+export async function resendEmail(
+  logId: string,
+): Promise<{ success: boolean; error?: string }> {
+  await requireAdmin()
+  try {
+    await resendByLogId(logId)
+    return { success: true }
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : "Resend failed." }
   }
 }

@@ -62,6 +62,20 @@ Find these values in your Supabase project dashboard:
 
 > `DATABASE_URL` must include `?pgbouncer=true` (and optionally `&connection_limit=1` in edge environments).
 
+## Resend domain verification (deltechmun.in)
+
+Add these DNS records to verify the sending domain in the [Resend dashboard](https://resend.com/domains):
+
+| Type | Name | Value |
+|------|------|-------|
+| TXT | `resend._domainkey.deltechmun.in` | Provided in the Resend dashboard after adding the domain |
+| TXT | `deltechmun.in` | `v=spf1 include:amazonses.com ~all` (or as provided by Resend) |
+| CNAME | `em.<unique>.deltechmun.in` | Provided in the Resend dashboard |
+
+> After adding the records, click **Verify** in the Resend dashboard. Propagation typically takes up to 72 h but is usually instant via Cloudflare.
+
+Set `EMAIL_FROM=noreply@deltechmun.in` in your environment once verification completes.
+
 ## Docs
 
 Read `docs/README.md` at the start of every session.

@@ -3,6 +3,8 @@
 import { redirect } from "next/navigation"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+import { getActiveProvider } from "@/lib/payments"
+import { sendAllotmentEmail, sendCoDelegateNotice } from "@/lib/resend"
 
 async function requireAdmin() {
   const session = await auth()
@@ -59,7 +61,7 @@ export async function allotPortfolio(input: {
   const adminEmail = session.user.email ?? "admin"
 
   try {
-    await prisma.$transaction(async (tx) => {
+    const txResult = await prisma.$transaction(async (tx) => {
       // 1. Re-check portfolio has not already been allotted inside the transaction
       const portfolio = await tx.portfolio.findUnique({
         where: { id: input.portfolioId },
@@ -74,7 +76,7 @@ export async function allotPortfolio(input: {
       // 2. Confirm delegate is still REGISTERED
       const delegate = await tx.delegate.findUnique({
         where: { id: input.delegateId },
-        select: { isDtu: true, status: true },
+        select: { isDtu: true, status: true, email: true },
       })
       if (!delegate || delegate.status !== "REGISTERED") {
         const e = new Error("Delegate unavailable") as Error & { code: string }
@@ -123,7 +125,7 @@ export async function allotPortfolio(input: {
         data: { status: "ALLOTTED" },
       })
 
-      // 9. Payment row — provider + amount both from DB
+      // 9. Payment row — provider + amount both from DB, link set after transaction
       if (fee) {
         await tx.payment.create({
           data: {
@@ -135,8 +137,45 @@ export async function allotPortfolio(input: {
         })
       }
 
-      // TODO (Phase 6): sendAllotmentEmail(input.delegateId)
+      return {
+        fee: fee ? { amountInr: fee.amountInr } : null,
+        delegateEmail: delegate.email,
+      }
     })
+
+    // Generate payment link outside the transaction (Razorpay would make external calls here)
+    if (txResult.fee) {
+      const provider = await getActiveProvider()
+      const { link, orderId } = await provider.createPaymentLink({
+        delegateId: input.delegateId,
+        amountInr: txResult.fee.amountInr,
+        email: txResult.delegateEmail,
+      })
+      await prisma.payment.update({
+        where: { delegateId: input.delegateId },
+        data: {
+          paymentLink: link,
+          status: "SENT",
+          ...(orderId ? { razorpayOrderId: orderId } : {}),
+        },
+      })
+      await prisma.delegate.update({
+        where: { id: input.delegateId },
+        data: { status: "PAYMENT_SENT" },
+      })
+    }
+
+    // Fire allotment email; co-delegate notice only if UNHRC (doubleDelegation)
+    try {
+      await sendAllotmentEmail(input.delegateId)
+    } catch {
+      // email failure must not roll back the allotment
+    }
+    try {
+      await sendCoDelegateNotice(input.delegateId)
+    } catch {
+      // intentionally silent
+    }
 
     return { success: true }
   } catch (err: unknown) {

@@ -1,0 +1,562 @@
+{
+  "/Users/arnavsinghal/Documents/Project/mun-platform/.claude/settings.local.json": {
+    "mtime": 1782541026.0069127,
+    "ast_hash": "e5e4390dd5d799fc7bf1fd40b1f9f241",
+    "semantic_hash": "e5e4390dd5d799fc7bf1fd40b1f9f241"
+  },
+  "/Users/arnavsinghal/Documents/Project/mun-platform/components.json": {
+    "mtime": 1782460871.4469626,
+    "ast_hash": "fc5c9e9a7b93eeb2f7b4e1ce0959e4a6",
+    "semantic_hash": "fc5c9e9a7b93eeb2f7b4e1ce0959e4a6"
+  },
+  "/Users/arnavsinghal/Documents/Project/mun-platform/eslint.config.mjs": {
+    "mtime": 1782460769.2118309,
+    "ast_hash": "dfa1f5f6a7037bf39dc510f30b180002",
+    "semantic_hash": "dfa1f5f6a7037bf39dc510f30b180002"
+  },
+  "/Users/arnavsinghal/Documents/Project/mun-platform/next.config.ts": {
+    "mtime": 1782470502.5139227,
+    "ast_hash": "4146e744a0315699feeaebfd2c926725",
+    "semantic_hash": "4146e744a0315699feeaebfd2c926725"
+  },
+  "/Users/arnavsinghal/Documents/Project/mun-platform/package.json": {
+    "mtime": 1782486771.5675359,
+    "ast_hash": "e0b887e03f30ffbcf51cc80a6d36288a",
+    "semantic_hash": "e0b887e03f30ffbcf51cc80a6d36288a"
+  },
+  "/Users/arnavsinghal/Documents/Project/mun-platform/postcss.config.mjs": {
+    "mtime": 1782460769.212399,
+    "ast_hash": "239f3ebf717465dc636818a1a619398d",
+    "semantic_hash": "239f3ebf717465dc636818a1a619398d"
+  },
+  "/Users/arnavsinghal/Documents/Project/mun-platform/prisma.config.ts": {
+    "mtime": 1782470494.655118,
+    "ast_hash": "1a081e4edda6059ef70a9230edea3ea9",
+    "semantic_hash": "1a081e4edda6059ef70a9230edea3ea9"
+  },
+  "/Users/arnavsinghal/Documents/Project/mun-platform/prisma/migrations/20260626104746_init/migration.sql": {
+    "mtime": 1782470866.3981218,
+    "ast_hash": "da1ed5680cf925e6bbab100904afbfc5",
+    "semantic_hash": "da1ed5680cf925e6bbab100904afbfc5"
+  },
+  "/Users/arnavsinghal/Documents/Project/mun-platform/prisma/migrations/20260626105443_add_string_override/migration.sql": {
+    "mtime": 1782471283.192713,
+    "ast_hash": "15c2f15fa756c7897b7ed4be007a800a",
+    "semantic_hash": "15c2f15fa756c7897b7ed4be007a800a"
+  },
+  "/Users/arnavsinghal/Documents/Project/mun-platform/prisma/seed.ts": {
+    "mtime": 1782485210.2563975,
+    "ast_hash": "fa5d5725b473c6ebaadfe227818e520e",
+    "semantic_hash": "fa5d5725b473c6ebaadfe227818e520e"
+  },
+  "/Users/arnavsinghal/Documents/Project/mun-platform/scripts/check-strings.mjs": {
+    "mtime": 1782471476.3184106,
+    "ast_hash": "346192586ed6ac26978e7b63a9af012c",
+    "semantic_hash": "346192586ed6ac26978e7b63a9af012c"
+  },
+  "/Users/arnavsinghal/Documents/Project/mun-platform/src/app/(admin)/_components/admin-sidebar.tsx": {
+    "mtime": 1782486887.6039543,
+    "ast_hash": "6f830600e9aeee995d6b6546ff11f60a",
+    "semantic_hash": "6f830600e9aeee995d6b6546ff11f60a"
+  },
+  "/Users/arnavsinghal/Documents/Project/mun-platform/src/app/(admin)/_components/sign-out-button.tsx": {
+    "mtime": 1782486880.0502822,
+    "ast_hash": "5fa7c7c321b910c093e849004ec57891",
+    "semantic_hash": "5fa7c7c321b910c093e849004ec57891"
+  },
+  "/Users/arnavsinghal/Documents/Project/mun-platform/src/app/(admin)/admin/_components/committee-fill-table.tsx": {
+    "mtime": 1782486924.1532881,
+    "ast_hash": "30daf85880111bd2527ab0970edf5a47",
+    "semantic_hash": "30daf85880111bd2527ab0970edf5a47"
+  },
+  "/Users/arnavsinghal/Documents/Project/mun-platform/src/app/(admin)/admin/_components/source-pie-chart.tsx": {
+    "mtime": 1782486917.4177623,
+    "ast_hash": "ec691c575941037be7c019c10f6b2d44",
+    "semantic_hash": "ec691c575941037be7c019c10f6b2d44"
+  },
+  "/Users/arnavsinghal/Documents/Project/mun-platform/src/app/(admin)/admin/_components/stat-card.tsx": {
+    "mtime": 1782486905.1490545,
+    "ast_hash": "8e46a16c933c5d22e15be21fa107ec90",
+    "semantic_hash": "8e46a16c933c5d22e15be21fa107ec90"
+  },
+  "/Users/arnavsinghal/Documents/Project/mun-platform/src/app/(admin)/admin/_components/status-bar-chart.tsx": {
+    "mtime": 1782486911.5198193,
+    "ast_hash": "b6017ca41a9347b5b74d1afec9cac511",
+    "semantic_hash": "b6017ca41a9347b5b74d1afec9cac511"
+  },
+  "/Users/arnavsinghal/Documents/Project/mun-platform/src/app/(admin)/admin/allotment/_components/allot-dialog.tsx": {
+    "mtime": 1782494374.347696,
+    "ast_hash": "c94e003e8e518c2f5ab0b3bc20b59048",
+    "semantic_hash": "c94e003e8e518c2f5ab0b3bc20b59048"
+  },
+  "/Users/arnavsinghal/Documents/Project/mun-platform/src/app/(admin)/admin/allotment/_components/allotment-board.tsx": {
+    "mtime": 1782494327.3714008,
+    "ast_hash": "56021d418cf2a2cd4d338e5a50c1a0ba",
+    "semantic_hash": "56021d418cf2a2cd4d338e5a50c1a0ba"
+  },
+  "/Users/arnavsinghal/Documents/Project/mun-platform/src/app/(admin)/admin/allotment/_components/portfolio-card.tsx": {
+    "mtime": 1782494342.049278,
+    "ast_hash": "34b966371d21538457c6700d8237f8b6",
+    "semantic_hash": "34b966371d21538457c6700d8237f8b6"
+  },
+  "/Users/arnavsinghal/Documents/Project/mun-platform/src/app/(admin)/admin/allotment/actions.ts": {
+    "mtime": 1782494302.9959145,
+    "ast_hash": "3a38d54a4d09e436022ebd8e37d851c0",
+    "semantic_hash": "3a38d54a4d09e436022ebd8e37d851c0"
+  },
+  "/Users/arnavsinghal/Documents/Project/mun-platform/src/app/(admin)/admin/allotment/page.tsx": {
+    "mtime": 1782494277.3349183,
+    "ast_hash": "cc15ff609c931d5e586f7bf0bb43eb90",
+    "semantic_hash": "cc15ff609c931d5e586f7bf0bb43eb90"
+  },
+  "/Users/arnavsinghal/Documents/Project/mun-platform/src/app/(admin)/admin/config/_components/config-tabs.tsx": {
+    "mtime": 1782496991.5577533,
+    "ast_hash": "0200538034cf9e028bd96cf8447d8cc6",
+    "semantic_hash": "0200538034cf9e028bd96cf8447d8cc6"
+  },
+  "/Users/arnavsinghal/Documents/Project/mun-platform/src/app/(admin)/admin/config/_components/tab-committees.tsx": {
+    "mtime": 1782497067.4559314,
+    "ast_hash": "446d4dd5bfc90709079fbabf62ed1e71",
+    "semantic_hash": "446d4dd5bfc90709079fbabf62ed1e71"
+  },
+  "/Users/arnavsinghal/Documents/Project/mun-platform/src/app/(admin)/admin/config/_components/tab-content.tsx": {
+    "mtime": 1782497036.68233,
+    "ast_hash": "041f2c339442550c85a1b356de97d1c8",
+    "semantic_hash": "041f2c339442550c85a1b356de97d1c8"
+  },
+  "/Users/arnavsinghal/Documents/Project/mun-platform/src/app/(admin)/admin/config/_components/tab-fees.tsx": {
+    "mtime": 1782497147.7016835,
+    "ast_hash": "a704bf1ed5192cfed5c8f527ccbdefbf",
+    "semantic_hash": "a704bf1ed5192cfed5c8f527ccbdefbf"
+  },
+  "/Users/arnavsinghal/Documents/Project/mun-platform/src/app/(admin)/admin/config/_components/tab-portfolios.tsx": {
+    "mtime": 1782497140.5460157,
+    "ast_hash": "3bc789ad6961e6520bf77be429a33446",
+    "semantic_hash": "3bc789ad6961e6520bf77be429a33446"
+  },
+  "/Users/arnavsinghal/Documents/Project/mun-platform/src/app/(admin)/admin/config/_components/tab-registration.tsx": {
+    "mtime": 1782497000.7214663,
+    "ast_hash": "7124a7695b4753ef658f4fa133dfe972",
+    "semantic_hash": "7124a7695b4753ef658f4fa133dfe972"
+  },
+  "/Users/arnavsinghal/Documents/Project/mun-platform/src/app/(admin)/admin/config/actions.ts": {
+    "mtime": 1782496974.8203912,
+    "ast_hash": "54b303bc180dd7d5f2c94d638913b00a",
+    "semantic_hash": "54b303bc180dd7d5f2c94d638913b00a"
+  },
+  "/Users/arnavsinghal/Documents/Project/mun-platform/src/app/(admin)/admin/config/page.tsx": {
+    "mtime": 1782496984.152138,
+    "ast_hash": "32c54ebf2eb7401756510df3b8209126",
+    "semantic_hash": "32c54ebf2eb7401756510df3b8209126"
+  },
+  "/Users/arnavsinghal/Documents/Project/mun-platform/src/app/(admin)/admin/page.tsx": {
+    "mtime": 1782486945.6290135,
+    "ast_hash": "f732f65d63233a92743edce12a528161",
+    "semantic_hash": "f732f65d63233a92743edce12a528161"
+  },
+  "/Users/arnavsinghal/Documents/Project/mun-platform/src/app/(admin)/admin/registrations/_components/delegate-drawer.tsx": {
+    "mtime": 1782487441.4933417,
+    "ast_hash": "bcd0717e763f5497ca2310ca4b547c7f",
+    "semantic_hash": "bcd0717e763f5497ca2310ca4b547c7f"
+  },
+  "/Users/arnavsinghal/Documents/Project/mun-platform/src/app/(admin)/admin/registrations/_components/delegate-edit-form.tsx": {
+    "mtime": 1782487462.2506058,
+    "ast_hash": "468a2832fa4e9cbc2743b8cebe5ecc8a",
+    "semantic_hash": "468a2832fa4e9cbc2743b8cebe5ecc8a"
+  },
+  "/Users/arnavsinghal/Documents/Project/mun-platform/src/app/(admin)/admin/registrations/_components/registrations-client.tsx": {
+    "mtime": 1782487394.1331084,
+    "ast_hash": "b0fc1ee74a16370fad1f87b3eae8ddd5",
+    "semantic_hash": "b0fc1ee74a16370fad1f87b3eae8ddd5"
+  },
+  "/Users/arnavsinghal/Documents/Project/mun-platform/src/app/(admin)/admin/registrations/_lib/build-where.ts": {
+    "mtime": 1782487317.0738375,
+    "ast_hash": "dd7256c39a3c537354f408a0b9519a4e",
+    "semantic_hash": "dd7256c39a3c537354f408a0b9519a4e"
+  },
+  "/Users/arnavsinghal/Documents/Project/mun-platform/src/app/(admin)/admin/registrations/_lib/types.ts": {
+    "mtime": 1782487327.0834033,
+    "ast_hash": "4294403feeca09ee4629706c1fcfd001",
+    "semantic_hash": "4294403feeca09ee4629706c1fcfd001"
+  },
+  "/Users/arnavsinghal/Documents/Project/mun-platform/src/app/(admin)/admin/registrations/actions.ts": {
+    "mtime": 1782487346.5975897,
+    "ast_hash": "2c8e34e14c4d98f78e10f3d864851501",
+    "semantic_hash": "2c8e34e14c4d98f78e10f3d864851501"
+  },
+  "/Users/arnavsinghal/Documents/Project/mun-platform/src/app/(admin)/admin/registrations/page.tsx": {
+    "mtime": 1782487339.2714422,
+    "ast_hash": "94b7ec0de9e6e75fd9e6eb2d9b3fb72f",
+    "semantic_hash": "94b7ec0de9e6e75fd9e6eb2d9b3fb72f"
+  },
+  "/Users/arnavsinghal/Documents/Project/mun-platform/src/app/(admin)/layout.tsx": {
+    "mtime": 1782486895.3759842,
+    "ast_hash": "343b4a5aaa58a90a2287069ec7bb3944",
+    "semantic_hash": "343b4a5aaa58a90a2287069ec7bb3944"
+  },
+  "/Users/arnavsinghal/Documents/Project/mun-platform/src/app/(marketing)/_components/footer.tsx": {
+    "mtime": 1782484178.292668,
+    "ast_hash": "b7f286d25473dadafb0d316081081852",
+    "semantic_hash": "b7f286d25473dadafb0d316081081852"
+  },
+  "/Users/arnavsinghal/Documents/Project/mun-platform/src/app/(marketing)/_components/header.tsx": {
+    "mtime": 1782486264.274009,
+    "ast_hash": "daa0b14af078486d11dbe596e3c14a67",
+    "semantic_hash": "daa0b14af078486d11dbe596e3c14a67"
+  },
+  "/Users/arnavsinghal/Documents/Project/mun-platform/src/app/(marketing)/_components/motion.tsx": {
+    "mtime": 1782484149.8978243,
+    "ast_hash": "abad193cc9d9ad92903e6ceaf083f357",
+    "semantic_hash": "abad193cc9d9ad92903e6ceaf083f357"
+  },
+  "/Users/arnavsinghal/Documents/Project/mun-platform/src/app/(marketing)/_components/theme-toggle.tsx": {
+    "mtime": 1782484154.823704,
+    "ast_hash": "2678aaa1ded5f3416924f7375bda8b1f",
+    "semantic_hash": "2678aaa1ded5f3416924f7375bda8b1f"
+  },
+  "/Users/arnavsinghal/Documents/Project/mun-platform/src/app/(marketing)/availability/_components/availability-board.tsx": {
+    "mtime": 1782486245.2401316,
+    "ast_hash": "e66247802ee1ebaf814f0a301e89a05e",
+    "semantic_hash": "e66247802ee1ebaf814f0a301e89a05e"
+  },
+  "/Users/arnavsinghal/Documents/Project/mun-platform/src/app/(marketing)/availability/page.tsx": {
+    "mtime": 1782486255.6995988,
+    "ast_hash": "15263e8907e9360b64fb647b5b715bb3",
+    "semantic_hash": "15263e8907e9360b64fb647b5b715bb3"
+  },
+  "/Users/arnavsinghal/Documents/Project/mun-platform/src/app/(marketing)/layout.tsx": {
+    "mtime": 1782484182.0969865,
+    "ast_hash": "6d8814c845ee9a32079aa08098e8150a",
+    "semantic_hash": "6d8814c845ee9a32079aa08098e8150a"
+  },
+  "/Users/arnavsinghal/Documents/Project/mun-platform/src/app/(marketing)/page.tsx": {
+    "mtime": 1782484282.2799914,
+    "ast_hash": "ad9a3b57f7828f51f10c5cb88f22b96f",
+    "semantic_hash": "ad9a3b57f7828f51f10c5cb88f22b96f"
+  },
+  "/Users/arnavsinghal/Documents/Project/mun-platform/src/app/(marketing)/register/_components/registration-form.tsx": {
+    "mtime": 1782485924.6729684,
+    "ast_hash": "1fb62fa584bd552820b67ab04b07bfb4",
+    "semantic_hash": "1fb62fa584bd552820b67ab04b07bfb4"
+  },
+  "/Users/arnavsinghal/Documents/Project/mun-platform/src/app/(marketing)/register/_components/step-accommodation.tsx": {
+    "mtime": 1782485870.8310485,
+    "ast_hash": "7e7fd84eb3799ce672c39ca6f611b044",
+    "semantic_hash": "7e7fd84eb3799ce672c39ca6f611b044"
+  },
+  "/Users/arnavsinghal/Documents/Project/mun-platform/src/app/(marketing)/register/_components/step-personal.tsx": {
+    "mtime": 1782485839.022397,
+    "ast_hash": "82fafe5879caac311ebd3d204904ba0c",
+    "semantic_hash": "82fafe5879caac311ebd3d204904ba0c"
+  },
+  "/Users/arnavsinghal/Documents/Project/mun-platform/src/app/(marketing)/register/_components/step-pref1.tsx": {
+    "mtime": 1782485847.1571476,
+    "ast_hash": "d448876a2f7b5e24b0d5fc2424e3f656",
+    "semantic_hash": "d448876a2f7b5e24b0d5fc2424e3f656"
+  },
+  "/Users/arnavsinghal/Documents/Project/mun-platform/src/app/(marketing)/register/_components/step-pref2-or-co-delegate.tsx": {
+    "mtime": 1782485864.4349954,
+    "ast_hash": "20c2ecb459e8a36b5dd581cc84d12b84",
+    "semantic_hash": "20c2ecb459e8a36b5dd581cc84d12b84"
+  },
+  "/Users/arnavsinghal/Documents/Project/mun-platform/src/app/(marketing)/register/_components/step-undertaking.tsx": {
+    "mtime": 1782485876.9009228,
+    "ast_hash": "23f1345d652e78486cc070b8d012eaf8",
+    "semantic_hash": "23f1345d652e78486cc070b8d012eaf8"
+  },
+  "/Users/arnavsinghal/Documents/Project/mun-platform/src/app/(marketing)/register/_components/stepper.tsx": {
+    "mtime": 1782485825.2566247,
+    "ast_hash": "eb93b333e0997a95b46d4e5f6d743d88",
+    "semantic_hash": "eb93b333e0997a95b46d4e5f6d743d88"
+  },
+  "/Users/arnavsinghal/Documents/Project/mun-platform/src/app/(marketing)/register/actions.ts": {
+    "mtime": 1782485804.4788244,
+    "ast_hash": "7d23b864c6b7726d9249f4282c1e4cc6",
+    "semantic_hash": "7d23b864c6b7726d9249f4282c1e4cc6"
+  },
+  "/Users/arnavsinghal/Documents/Project/mun-platform/src/app/(marketing)/register/closed/page.tsx": {
+    "mtime": 1782484288.1043062,
+    "ast_hash": "833df2459386cc80a03526b6db8729a6",
+    "semantic_hash": "833df2459386cc80a03526b6db8729a6"
+  },
+  "/Users/arnavsinghal/Documents/Project/mun-platform/src/app/(marketing)/register/page.tsx": {
+    "mtime": 1782485809.9387503,
+    "ast_hash": "e8eb1f74f4f71c05134d380ee5b33099",
+    "semantic_hash": "e8eb1f74f4f71c05134d380ee5b33099"
+  },
+  "/Users/arnavsinghal/Documents/Project/mun-platform/src/app/(marketing)/register/success/page.tsx": {
+    "mtime": 1782485817.2756257,
+    "ast_hash": "0a135d1f39d60fc8faea3a3315a2fd6e",
+    "semantic_hash": "0a135d1f39d60fc8faea3a3315a2fd6e"
+  },
+  "/Users/arnavsinghal/Documents/Project/mun-platform/src/app/(public)/signin/_components/sign-in-form.tsx": {
+    "mtime": 1782540829.8630757,
+    "ast_hash": "bf5c3d010aeae507c02583ed022b6971",
+    "semantic_hash": "bf5c3d010aeae507c02583ed022b6971"
+  },
+  "/Users/arnavsinghal/Documents/Project/mun-platform/src/app/(public)/signin/actions.ts": {
+    "mtime": 1782471846.535232,
+    "ast_hash": "3874abf06239959dca31decb37dc0dc1",
+    "semantic_hash": "3874abf06239959dca31decb37dc0dc1"
+  },
+  "/Users/arnavsinghal/Documents/Project/mun-platform/src/app/(public)/signin/page.tsx": {
+    "mtime": 1782484308.167161,
+    "ast_hash": "29e799cf27061b8af8a959ff5e69a0f8",
+    "semantic_hash": "29e799cf27061b8af8a959ff5e69a0f8"
+  },
+  "/Users/arnavsinghal/Documents/Project/mun-platform/src/app/(public)/signin/sent/page.tsx": {
+    "mtime": 1782484301.5158443,
+    "ast_hash": "f0a81bc6d09a3d5979af6127545c6429",
+    "semantic_hash": "f0a81bc6d09a3d5979af6127545c6429"
+  },
+  "/Users/arnavsinghal/Documents/Project/mun-platform/src/app/api/admin/export/route.ts": {
+    "mtime": 1782487502.9957442,
+    "ast_hash": "801e9138bb95b45a6b4443b7b0deeff1",
+    "semantic_hash": "801e9138bb95b45a6b4443b7b0deeff1"
+  },
+  "/Users/arnavsinghal/Documents/Project/mun-platform/src/app/api/auth/[...nextauth]/route.ts": {
+    "mtime": 1782471830.8691912,
+    "ast_hash": "9f8c0bd10a4bc6be80ab25e09f6f4bd7",
+    "semantic_hash": "9f8c0bd10a4bc6be80ab25e09f6f4bd7"
+  },
+  "/Users/arnavsinghal/Documents/Project/mun-platform/src/app/api/webhooks/razorpay/route.ts": {
+    "mtime": 1782460973.672095,
+    "ast_hash": "1e1af9a2c41147c823ce76c92fd5316a",
+    "semantic_hash": "1e1af9a2c41147c823ce76c92fd5316a"
+  },
+  "/Users/arnavsinghal/Documents/Project/mun-platform/src/app/layout.tsx": {
+    "mtime": 1782484138.2559798,
+    "ast_hash": "944210728ef3239bceb4f3e251712ab9",
+    "semantic_hash": "944210728ef3239bceb4f3e251712ab9"
+  },
+  "/Users/arnavsinghal/Documents/Project/mun-platform/src/components/providers.tsx": {
+    "mtime": 1782484130.763344,
+    "ast_hash": "f74f4b8dde818ecf0835de9c3fceb867",
+    "semantic_hash": "f74f4b8dde818ecf0835de9c3fceb867"
+  },
+  "/Users/arnavsinghal/Documents/Project/mun-platform/src/components/ui/avatar.tsx": {
+    "mtime": 1782460892.855442,
+    "ast_hash": "8b41492907a73176027427a3f0fd2302",
+    "semantic_hash": "8b41492907a73176027427a3f0fd2302"
+  },
+  "/Users/arnavsinghal/Documents/Project/mun-platform/src/components/ui/badge.tsx": {
+    "mtime": 1782460892.6746387,
+    "ast_hash": "e4ec840217040d5630ee6ed7213a1d72",
+    "semantic_hash": "e4ec840217040d5630ee6ed7213a1d72"
+  },
+  "/Users/arnavsinghal/Documents/Project/mun-platform/src/components/ui/button.tsx": {
+    "mtime": 1782460880.548317,
+    "ast_hash": "e04ce5251d6b0dd04020988126c905e9",
+    "semantic_hash": "e04ce5251d6b0dd04020988126c905e9"
+  },
+  "/Users/arnavsinghal/Documents/Project/mun-platform/src/components/ui/card.tsx": {
+    "mtime": 1782460892.7074926,
+    "ast_hash": "bd5f88ad2d983dd6c4561d63824c80ba",
+    "semantic_hash": "bd5f88ad2d983dd6c4561d63824c80ba"
+  },
+  "/Users/arnavsinghal/Documents/Project/mun-platform/src/components/ui/checkbox.tsx": {
+    "mtime": 1782485760.8066611,
+    "ast_hash": "6582d1bcd5265b7ce4710710bb4d81de",
+    "semantic_hash": "6582d1bcd5265b7ce4710710bb4d81de"
+  },
+  "/Users/arnavsinghal/Documents/Project/mun-platform/src/components/ui/dialog.tsx": {
+    "mtime": 1782460892.9570737,
+    "ast_hash": "d9618a63d34473ec512321cc12d43692",
+    "semantic_hash": "d9618a63d34473ec512321cc12d43692"
+  },
+  "/Users/arnavsinghal/Documents/Project/mun-platform/src/components/ui/drawer.tsx": {
+    "mtime": 1782460892.5287182,
+    "ast_hash": "ecce2b5100dd3d8a11f15fcc20fa33dd",
+    "semantic_hash": "ecce2b5100dd3d8a11f15fcc20fa33dd"
+  },
+  "/Users/arnavsinghal/Documents/Project/mun-platform/src/components/ui/dropdown-menu.tsx": {
+    "mtime": 1782460892.584003,
+    "ast_hash": "e6107cbb2088437e76a858f75b5a0280",
+    "semantic_hash": "e6107cbb2088437e76a858f75b5a0280"
+  },
+  "/Users/arnavsinghal/Documents/Project/mun-platform/src/components/ui/form.tsx": {
+    "mtime": 1782461355.5501227,
+    "ast_hash": "d3b049bf2c1d0f227b2fd19c62b8b90f",
+    "semantic_hash": "d3b049bf2c1d0f227b2fd19c62b8b90f"
+  },
+  "/Users/arnavsinghal/Documents/Project/mun-platform/src/components/ui/input.tsx": {
+    "mtime": 1782460892.3713315,
+    "ast_hash": "0607b02d99a2e92f9509223f36ccc6ec",
+    "semantic_hash": "0607b02d99a2e92f9509223f36ccc6ec"
+  },
+  "/Users/arnavsinghal/Documents/Project/mun-platform/src/components/ui/label.tsx": {
+    "mtime": 1782460892.7335062,
+    "ast_hash": "a70440da86bfc6a07f15197cca48cb08",
+    "semantic_hash": "a70440da86bfc6a07f15197cca48cb08"
+  },
+  "/Users/arnavsinghal/Documents/Project/mun-platform/src/components/ui/select.tsx": {
+    "mtime": 1782460892.4963093,
+    "ast_hash": "ab95f478cb74d1906b07425c15b124cc",
+    "semantic_hash": "ab95f478cb74d1906b07425c15b124cc"
+  },
+  "/Users/arnavsinghal/Documents/Project/mun-platform/src/components/ui/separator.tsx": {
+    "mtime": 1782460892.8834224,
+    "ast_hash": "3de2dca3e47ab29c4b1f632671545628",
+    "semantic_hash": "3de2dca3e47ab29c4b1f632671545628"
+  },
+  "/Users/arnavsinghal/Documents/Project/mun-platform/src/components/ui/skeleton.tsx": {
+    "mtime": 1782460892.8262804,
+    "ast_hash": "0e6e825c43d858d98c9903f4da975382",
+    "semantic_hash": "0e6e825c43d858d98c9903f4da975382"
+  },
+  "/Users/arnavsinghal/Documents/Project/mun-platform/src/components/ui/sonner.tsx": {
+    "mtime": 1782460892.7979991,
+    "ast_hash": "f46214bc2a6a5153a6e04fad523d5587",
+    "semantic_hash": "f46214bc2a6a5153a6e04fad523d5587"
+  },
+  "/Users/arnavsinghal/Documents/Project/mun-platform/src/components/ui/switch.tsx": {
+    "mtime": 1782460892.7606852,
+    "ast_hash": "049ff4b9c939a42157e99d6bbdeaaaec",
+    "semantic_hash": "049ff4b9c939a42157e99d6bbdeaaaec"
+  },
+  "/Users/arnavsinghal/Documents/Project/mun-platform/src/components/ui/table.tsx": {
+    "mtime": 1782460892.6160715,
+    "ast_hash": "44f87727e60080863edb00fdd2fcd8da",
+    "semantic_hash": "44f87727e60080863edb00fdd2fcd8da"
+  },
+  "/Users/arnavsinghal/Documents/Project/mun-platform/src/components/ui/tabs.tsx": {
+    "mtime": 1782460892.6456513,
+    "ast_hash": "429035bc858475cd3bcedbb08a5ba8da",
+    "semantic_hash": "429035bc858475cd3bcedbb08a5ba8da"
+  },
+  "/Users/arnavsinghal/Documents/Project/mun-platform/src/components/ui/textarea.tsx": {
+    "mtime": 1782460892.427535,
+    "ast_hash": "d448d2a90e48542e51b93a1189127bf2",
+    "semantic_hash": "d448d2a90e48542e51b93a1189127bf2"
+  },
+  "/Users/arnavsinghal/Documents/Project/mun-platform/src/content/contentSchema.ts": {
+    "mtime": 1782471344.2896693,
+    "ast_hash": "5901a312f325d4f22d1d8fce72a465e3",
+    "semantic_hash": "5901a312f325d4f22d1d8fce72a465e3"
+  },
+  "/Users/arnavsinghal/Documents/Project/mun-platform/src/content/strings.ts": {
+    "mtime": 1782486276.725711,
+    "ast_hash": "2b896b7f6eb46cb2febb0ddb8439919f",
+    "semantic_hash": "2b896b7f6eb46cb2febb0ddb8439919f"
+  },
+  "/Users/arnavsinghal/Documents/Project/mun-platform/src/emails/registration-received.tsx": {
+    "mtime": 1782485784.5815158,
+    "ast_hash": "afb0ae53125effe6984bef028d159555",
+    "semantic_hash": "afb0ae53125effe6984bef028d159555"
+  },
+  "/Users/arnavsinghal/Documents/Project/mun-platform/src/lib/auth.config.ts": {
+    "mtime": 1782471874.2539406,
+    "ast_hash": "a003a377ad27ad2f634b21153ffbbaee",
+    "semantic_hash": "a003a377ad27ad2f634b21153ffbbaee"
+  },
+  "/Users/arnavsinghal/Documents/Project/mun-platform/src/lib/auth.ts": {
+    "mtime": 1782471879.7169523,
+    "ast_hash": "7b9e462d8e9dca8951dda288e688a97f",
+    "semantic_hash": "7b9e462d8e9dca8951dda288e688a97f"
+  },
+  "/Users/arnavsinghal/Documents/Project/mun-platform/src/lib/payments/index.ts": {
+    "mtime": 1782460980.097079,
+    "ast_hash": "9425a4ce826ff414baba4ca3a014954e",
+    "semantic_hash": "9425a4ce826ff414baba4ca3a014954e"
+  },
+  "/Users/arnavsinghal/Documents/Project/mun-platform/src/lib/prisma.ts": {
+    "mtime": 1782470497.1510606,
+    "ast_hash": "dd2f3878adc12065182d191942d5c05e",
+    "semantic_hash": "dd2f3878adc12065182d191942d5c05e"
+  },
+  "/Users/arnavsinghal/Documents/Project/mun-platform/src/lib/resend.ts": {
+    "mtime": 1782485790.6781893,
+    "ast_hash": "c2fc853abe4a66eef2cb1faec40d0300",
+    "semantic_hash": "c2fc853abe4a66eef2cb1faec40d0300"
+  },
+  "/Users/arnavsinghal/Documents/Project/mun-platform/src/lib/schemas/register.ts": {
+    "mtime": 1782485920.501296,
+    "ast_hash": "50a063747af7046048065224625c7482",
+    "semantic_hash": "50a063747af7046048065224625c7482"
+  },
+  "/Users/arnavsinghal/Documents/Project/mun-platform/src/lib/settings.ts": {
+    "mtime": 1782485162.6077523,
+    "ast_hash": "7cd73cc9d6713562bd3f202eaabc58b9",
+    "semantic_hash": "7cd73cc9d6713562bd3f202eaabc58b9"
+  },
+  "/Users/arnavsinghal/Documents/Project/mun-platform/src/lib/supabase.ts": {
+    "mtime": 1782470499.1023035,
+    "ast_hash": "b38e09e1511fc1bc70610b3614df9a49",
+    "semantic_hash": "b38e09e1511fc1bc70610b3614df9a49"
+  },
+  "/Users/arnavsinghal/Documents/Project/mun-platform/src/lib/utils.ts": {
+    "mtime": 1782460880.5848794,
+    "ast_hash": "5a6fd53fdcf2be529e9cc0b718fde352",
+    "semantic_hash": "5a6fd53fdcf2be529e9cc0b718fde352"
+  },
+  "/Users/arnavsinghal/Documents/Project/mun-platform/src/proxy.ts": {
+    "mtime": 1782471836.642032,
+    "ast_hash": "222c4794a1b5553219f7e7fd69201b50",
+    "semantic_hash": "222c4794a1b5553219f7e7fd69201b50"
+  },
+  "/Users/arnavsinghal/Documents/Project/mun-platform/tailwind.config.ts": {
+    "mtime": 1782461058.0149603,
+    "ast_hash": "c00c21ace02b927f27cd7756ee29d368",
+    "semantic_hash": "c00c21ace02b927f27cd7756ee29d368"
+  },
+  "/Users/arnavsinghal/Documents/Project/mun-platform/tsconfig.json": {
+    "mtime": 1782460769.2144012,
+    "ast_hash": "ee17fd1c97c735e9f3564e3f5251f125",
+    "semantic_hash": "ee17fd1c97c735e9f3564e3f5251f125"
+  },
+  "/Users/arnavsinghal/Documents/Project/mun-platform/AGENTS.md": {
+    "mtime": 1782460794.8449326,
+    "ast_hash": "9e09241799026ac05be315a2f0b50055",
+    "semantic_hash": "9e09241799026ac05be315a2f0b50055"
+  },
+  "/Users/arnavsinghal/Documents/Project/mun-platform/CLAUDE.md": {
+    "mtime": 1782460794.8451753,
+    "ast_hash": "5c27369b226fcf2be8a6cfe52224e767",
+    "semantic_hash": "5c27369b226fcf2be8a6cfe52224e767"
+  },
+  "/Users/arnavsinghal/Documents/Project/mun-platform/README.md": {
+    "mtime": 1782470517.452248,
+    "ast_hash": "0a3a2baf5e4de55d3da383176b6ff3cd",
+    "semantic_hash": "0a3a2baf5e4de55d3da383176b6ff3cd"
+  },
+  "/Users/arnavsinghal/Documents/Project/mun-platform/docs/POA.md": {
+    "mtime": 1782470262.6604612,
+    "ast_hash": "487ec4733236b0145b6ddd940b01987a",
+    "semantic_hash": "487ec4733236b0145b6ddd940b01987a"
+  },
+  "/Users/arnavsinghal/Documents/Project/mun-platform/docs/README.md": {
+    "mtime": 1782461082.775569,
+    "ast_hash": "4febdfba85f5d48237968d1385662c2a",
+    "semantic_hash": "4febdfba85f5d48237968d1385662c2a"
+  },
+  "/Users/arnavsinghal/Documents/Project/mun-platform/docs/SPEC.md": {
+    "mtime": 1782461670.0835001,
+    "ast_hash": "c8fd3df8f0eece5e4b1edaac5ca5f998",
+    "semantic_hash": "c8fd3df8f0eece5e4b1edaac5ca5f998"
+  },
+  "/Users/arnavsinghal/Documents/Project/mun-platform/public/file.svg": {
+    "mtime": 1782460769.2118325,
+    "ast_hash": "d09f95206c3fa0bb9bd9fefabfd0ea71",
+    "semantic_hash": "d09f95206c3fa0bb9bd9fefabfd0ea71"
+  },
+  "/Users/arnavsinghal/Documents/Project/mun-platform/public/globe.svg": {
+    "mtime": 1782460769.2131095,
+    "ast_hash": "2aaafa6a49b6563925fe440891e32717",
+    "semantic_hash": "2aaafa6a49b6563925fe440891e32717"
+  },
+  "/Users/arnavsinghal/Documents/Project/mun-platform/public/next.svg": {
+    "mtime": 1782460769.2137158,
+    "ast_hash": "8e061864f388b47f33a1c3780831193e",
+    "semantic_hash": "8e061864f388b47f33a1c3780831193e"
+  },
+  "/Users/arnavsinghal/Documents/Project/mun-platform/public/vercel.svg": {
+    "mtime": 1782460769.2135527,
+    "ast_hash": "c0af2f507b369b085b35ef4bbe3bcf1e",
+    "semantic_hash": "c0af2f507b369b085b35ef4bbe3bcf1e"
+  },
+  "/Users/arnavsinghal/Documents/Project/mun-platform/public/window.svg": {
+    "mtime": 1782460769.2136714,
+    "ast_hash": "a2760511c65806022ad20adf74370ff3",
+    "semantic_hash": "a2760511c65806022ad20adf74370ff3"
+  }
+}
