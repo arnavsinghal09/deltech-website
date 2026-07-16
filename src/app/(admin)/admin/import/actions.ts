@@ -4,9 +4,7 @@ import { redirect } from "next/navigation"
 import { read, utils } from "xlsx"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
-import type { ColumnMapping, MappedRow, PaymentMode } from "@/lib/schemas/import"
-
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? ""
+import type { ColumnMapping, MappedRow } from "@/lib/schemas/import"
 
 async function requireAdmin() {
   const session = await auth()
@@ -19,10 +17,10 @@ async function requireAdmin() {
 // ---------------------------------------------------------------------------
 
 export interface ParseResult {
-  success: boolean
-  error?: string
-  headers?: string[]
-  rows?: Record<string, string>[]
+  success:   boolean
+  error?:    string
+  headers?:  string[]
+  rows?:     Record<string, string>[]
   rowCount?: number
 }
 
@@ -85,7 +83,7 @@ export async function getImportPresets(): Promise<ImportPresetRecord[]> {
 }
 
 export async function saveImportPreset(
-  name: string,
+  name:    string,
   partner: string,
   mapping: ColumnMapping,
 ): Promise<{ success: boolean; error?: string; preset?: ImportPresetRecord }> {
@@ -93,7 +91,7 @@ export async function saveImportPreset(
   if (!name.trim()) return { success: false, error: "Preset name is required." }
   try {
     const preset = await prisma.importPreset.upsert({
-      where: { name: name.trim() },
+      where:  { name: name.trim() },
       create: { name: name.trim(), partner: partner || null, mapping },
       update: { partner: partner || null, mapping },
     })
@@ -119,25 +117,65 @@ export async function deleteImportPreset(id: string): Promise<{ success: boolean
 }
 
 // ---------------------------------------------------------------------------
-// Commit import
+// Commit import — all delegates are CONFIRMED, 3-preference allotment fallback
 // ---------------------------------------------------------------------------
 
 export interface CommitResult {
-  created:   number
-  allotted:  number
-  skipped:   number
-  errors:    { row: number; email: string; reason: string }[]
+  created:  number
+  allotted: number
+  skipped:  number
+  errors:   { row: number; email: string; reason: string }[]
+}
+
+async function tryAllot(
+  tx: Parameters<Parameters<typeof prisma.$transaction>[0]>[0],
+  delegateId: string,
+  adminEmail: string,
+  prefs: { committee?: string; portfolio?: string }[],
+): Promise<boolean> {
+  for (const { committee, portfolio } of prefs) {
+    if (!committee || !portfolio) continue
+
+    const comm = await tx.committee.findFirst({
+      where:  { name: { equals: committee, mode: "insensitive" }, isActive: true },
+      select: { id: true },
+    })
+    if (!comm) continue
+
+    const port = await tx.portfolio.findFirst({
+      where: {
+        committeeId: comm.id,
+        name:        { equals: portfolio, mode: "insensitive" },
+        status:      "AVAILABLE",
+      },
+      select: { id: true },
+    })
+    if (!port) continue
+
+    await tx.allotment.create({
+      data: {
+        delegateId,
+        committeeId: comm.id,
+        portfolioId: port.id,
+        allottedBy:  `import:${adminEmail}`,
+      },
+    })
+    await tx.portfolio.update({
+      where: { id: port.id },
+      data:  { status: "ALLOTTED" },
+    })
+    return true
+  }
+  return false
 }
 
 export async function commitImport(params: {
-  rows:         MappedRow[]
-  skippedRows:  number[]
-  paymentMode:  PaymentMode
-  partnerNote:  string
+  rows:        MappedRow[]
+  skippedRows: number[]
 }): Promise<CommitResult> {
-  const session = await requireAdmin()
+  const session   = await requireAdmin()
   const adminEmail = session.user.email ?? "import"
-  const { rows, skippedRows, paymentMode, partnerNote } = params
+  const { rows, skippedRows } = params
   const skippedSet = new Set(skippedRows)
 
   let created  = 0
@@ -150,7 +188,6 @@ export async function commitImport(params: {
   for (let i = 0; i < activeRows.length; i++) {
     const row = activeRows[i]
     try {
-      // Duplicate guard
       const existing = await prisma.delegate.findFirst({ where: { email: row.email } })
       if (existing) {
         skipped++
@@ -158,105 +195,36 @@ export async function commitImport(params: {
         continue
       }
 
-      // Determine committee + portfolio upfront (need committeeType for fee)
-      let committeeId: string | null   = null
-      let committeeType: string | null = null
-      let portfolioId:   string | null = null
-
-      if (row.committee) {
-        const committee = await prisma.committee.findFirst({
-          where: { name: { equals: row.committee, mode: "insensitive" }, isActive: true },
-          select: { id: true, type: true },
-        })
-        if (committee) {
-          committeeId   = committee.id
-          committeeType = committee.type
-          if (row.portfolio) {
-            const portfolio = await prisma.portfolio.findFirst({
-              where: {
-                committeeId: committee.id,
-                name:   { equals: row.portfolio, mode: "insensitive" },
-                status: "AVAILABLE",
-              },
-              select: { id: true },
-            })
-            if (portfolio) portfolioId = portfolio.id
-          }
-        }
-      }
-
-      // Fee lookup (needed for UPI-collect)
-      let feeAmount = 0
-      if (paymentMode === "upi" && committeeType) {
-        const fee = await prisma.fee.findFirst({
-          where: { committeeType, isDtu: row.isDtu ?? false },
-        })
-        feeAmount = fee?.amountInr ?? 0
-      }
-
-      // Determine delegate status
-      const willAllot     = !!(committeeId && portfolioId)
-      const delegateStatus =
-        paymentMode === "comp"
-          ? "CONFIRMED"
-          : willAllot
-          ? "PAYMENT_SENT"
-          : "REGISTERED"
-
-      // Single transaction per delegate
-      const delegate = await prisma.$transaction(async (tx) => {
+      const { delegateId, wasAllotted } = await prisma.$transaction(async (tx) => {
         const d = await tx.delegate.create({
           data: {
-            fullName:      row.fullName,
-            email:         row.email,
-            whatsapp:      row.whatsapp ?? row.email,
-            institution:   row.institution ?? "N/A",
-            isDtu:         row.isDtu ?? false,
-            munExperience: row.munExperience ?? null,
-            source:        "CROSS_DEL",
-            sourceNote:    partnerNote.trim() || null,
-            status:        delegateStatus,
+            fullName:    row.fullName,
+            email:       row.email,
+            whatsapp:    row.whatsapp ?? row.email,
+            institution: row.institution ?? "N/A",
+            isDtu:       false,
+            source:      "CROSS_DEL",
+            sourceNote:  row.note?.trim() || null,
+            status:      "CONFIRMED",
           },
         })
 
-        if (willAllot && committeeId && portfolioId) {
-          await tx.allotment.create({
-            data: {
-              delegateId:  d.id,
-              committeeId,
-              portfolioId,
-              allottedBy:  `import:${adminEmail}`,
-            },
-          })
-          await tx.portfolio.update({
-            where: { id: portfolioId },
-            data:  { status: "ALLOTTED" },
-          })
-        }
+        const didAllot = await tryAllot(tx, d.id, adminEmail, [
+          { committee: row.committee,  portfolio: row.portfolio  },
+          { committee: row.committee2, portfolio: row.portfolio2 },
+          { committee: row.committee3, portfolio: row.portfolio3 },
+        ])
 
-        if (paymentMode === "upi" && willAllot) {
-          await tx.payment.create({
-            data: {
-              delegateId:  d.id,
-              provider:    "upi_qr",
-              amountInr:   feeAmount,
-              status:      "PENDING",
-              paymentLink: `${APP_URL}/pay/${d.id}`,
-            },
-          })
-        }
-
-        // No Payment row for comp (as per spec)
-        return d
+        return { delegateId: d.id, wasAllotted: didAllot }
       })
 
       created++
-      if (willAllot) allotted++
+      if (wasAllotted) allotted++
 
-      // Fire allotment email async (best-effort, don't block or fail import)
-      if (willAllot) {
+      // Fire allotment email async if allotted
+      if (wasAllotted) {
         void import("@/lib/resend")
-          .then(({ sendAllotmentEmail }) => sendAllotmentEmail(delegate.id))
+          .then(({ sendAllotmentEmail }) => sendAllotmentEmail(delegateId))
           .catch(() => undefined)
       }
     } catch (err) {

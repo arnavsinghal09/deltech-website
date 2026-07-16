@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useTransition } from "react"
-import { Save, Trash2 } from "lucide-react"
+import { Save, Trash2, Sparkles, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -10,24 +10,29 @@ import { Separator } from "@/components/ui/separator"
 import { toast } from "sonner"
 import {
   IMPORT_FIELDS,
+  mappedRowSchema,
+  applyMapping,
   type ColumnMapping,
   type ValidatedRow,
-  validateRow,
 } from "@/lib/schemas/import"
+
 import type { ImportPresetRecord } from "../actions"
 import { saveImportPreset, deleteImportPreset } from "../actions"
+import { suggestMappingWithGemini, cleanImportRowsWithGemini } from "../actions-ai"
 
 const NONE_SENTINEL = "__none__"
 
 interface Props {
-  headers:         string[]
-  rawRows:         Record<string, string>[]
-  mapping:         ColumnMapping
-  presets:         ImportPresetRecord[]
-  onMappingChange: (m: ColumnMapping) => void
-  onPresetsChange: (p: ImportPresetRecord[]) => void
-  onBack:          () => void
-  onNext:          (mapping: ColumnMapping, validated: ValidatedRow[]) => void
+  headers:            string[]
+  rawRows:            Record<string, string>[]
+  mapping:            ColumnMapping
+  presets:            ImportPresetRecord[]
+  committeeNames:     string[]
+  defaultInstitution: string
+  onMappingChange:    (m: ColumnMapping) => void
+  onPresetsChange:    (p: ImportPresetRecord[]) => void
+  onBack:             () => void
+  onNext:             (mapping: ColumnMapping, validated: ValidatedRow[]) => void
 }
 
 export function StepMapping({
@@ -35,6 +40,8 @@ export function StepMapping({
   rawRows,
   mapping,
   presets,
+  committeeNames,
+  defaultInstitution,
   onMappingChange,
   onPresetsChange,
   onBack,
@@ -44,6 +51,8 @@ export function StepMapping({
   const [presetPartner, setPresetPartner] = useState("")
   const [saving,        startSave]        = useTransition()
   const [deleting,      startDelete]      = useTransition()
+  const [aiSuggesting,  startAiSuggest]   = useTransition()
+  const [proceeding,    startProceed]     = useTransition()
 
   const setField = (key: keyof ColumnMapping, col: string) => {
     onMappingChange({ ...mapping, [key]: col === NONE_SENTINEL ? undefined : col })
@@ -53,11 +62,56 @@ export function StepMapping({
     .filter((f) => f.required)
     .every((f) => !!mapping[f.key])
 
-  const handleNext = () => {
-    const validated = rawRows.map((r, i) => validateRow(i, r, mapping))
-    onNext(mapping, validated)
+  // ── Auto-map with AI ──────────────────────────────────────────────────────
+  const handleAISuggest = () => {
+    startAiSuggest(async () => {
+      const result = await suggestMappingWithGemini(headers, rawRows.slice(0, 5))
+      if (!result.success || !result.mapping) {
+        toast.error(result.error ?? "AI mapping failed.")
+        return
+      }
+      onMappingChange(result.mapping)
+      const count = Object.values(result.mapping).filter(Boolean).length
+      toast.success(`AI mapped ${count} column${count !== 1 ? "s" : ""}.`)
+    })
   }
 
+  // ── Preview — always normalises with AI ──────────────────────────────────
+  const handleNext = () => {
+    startProceed(async () => {
+      const prelimRows = rawRows.map((r) => applyMapping(r, mapping, defaultInstitution))
+
+      const cleanResult = await cleanImportRowsWithGemini(prelimRows, committeeNames)
+
+      let validated: ValidatedRow[]
+
+      if (!cleanResult.success || !cleanResult.cleaned) {
+        if (cleanResult.rateLimited) {
+          toast.error("AI quota exceeded — please retry in a few minutes.")
+          return
+        }
+        toast.warning(cleanResult.error ?? "AI normalisation failed — showing raw values.")
+        validated = rawRows.map((r, i) => {
+          const mapped = applyMapping(r, mapping, defaultInstitution)
+          const parse  = mappedRowSchema.safeParse(mapped)
+          const errors = parse.success ? [] : parse.error.issues.map((e) => e.message)
+          return { index: i, raw: r, mapped, errors }
+        })
+      } else {
+        validated = cleanResult.cleaned.map(({ _note, _skip, ...mapped }, i) => {
+          const parse  = mappedRowSchema.safeParse(mapped)
+          const errors = parse.success ? [] : parse.error.issues.map((e) => e.message)
+          return { index: i, raw: rawRows[i], mapped, errors, aiNote: _note }
+        })
+        const noteCount = cleanResult.cleaned.filter((c) => c._note).length
+        if (noteCount > 0) toast.info(`AI normalised ${noteCount} row${noteCount !== 1 ? "s" : ""}.`)
+      }
+
+      onNext(mapping, validated)
+    })
+  }
+
+  // ── Presets ───────────────────────────────────────────────────────────────
   const handleLoadPreset = (id: string) => {
     const preset = presets.find((p) => p.id === id)
     if (preset) {
@@ -72,13 +126,10 @@ export function StepMapping({
     if (!presetName.trim()) { toast.error("Enter a preset name."); return }
     startSave(async () => {
       const result = await saveImportPreset(presetName.trim(), presetPartner.trim(), mapping)
-      if (!result.success || !result.preset) {
-        toast.error(result.error ?? "Save failed.")
-        return
-      }
-      const saved = result.preset!
+      if (!result.success || !result.preset) { toast.error(result.error ?? "Save failed."); return }
+      const saved = result.preset
       onPresetsChange([...presets.filter((p) => p.id !== saved.id), saved])
-      toast.success(`Preset "${result.preset.name}" saved.`)
+      toast.success(`Preset "${saved.name}" saved.`)
     })
   }
 
@@ -90,7 +141,6 @@ export function StepMapping({
     })
   }
 
-  // Preview of first row with current mapping
   const firstRow = rawRows[0]
 
   return (
@@ -131,11 +181,31 @@ export function StepMapping({
         </div>
       )}
 
-      {/* Mapping table */}
+      {/* Column mapping */}
       <div>
-        <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-          Column mapping
-        </p>
+        <div className="mb-3 flex items-center justify-between">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              Column mapping
+            </p>
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              AI will normalise data regardless of how the columns are labelled.
+            </p>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleAISuggest}
+            disabled={aiSuggesting || proceeding}
+          >
+            {aiSuggesting ? (
+              <Loader2 className="mr-1.5 size-3.5 animate-spin" />
+            ) : (
+              <Sparkles className="mr-1.5 size-3.5" />
+            )}
+            {aiSuggesting ? "Detecting…" : "Auto-detect columns"}
+          </Button>
+        </div>
         <div className="overflow-hidden rounded-lg border border-border">
           <table className="w-full text-sm">
             <thead className="bg-muted/50">
@@ -185,7 +255,9 @@ export function StepMapping({
                     </td>
                     <td className="px-4 py-2">
                       {previewVal != null ? (
-                        <span className="text-xs text-foreground">{previewVal || <span className="text-muted-foreground">(empty)</span>}</span>
+                        <span className="text-xs text-foreground">
+                          {previewVal || <span className="text-muted-foreground">(empty)</span>}
+                        </span>
                       ) : (
                         <span className="text-xs text-muted-foreground">—</span>
                       )}
@@ -224,10 +296,17 @@ export function StepMapping({
       </div>
 
       {/* Navigation */}
-      <div className="flex items-center justify-between pt-2">
-        <Button variant="ghost" onClick={onBack}>← Back</Button>
-        <Button onClick={handleNext} disabled={!requiredMapped}>
-          Preview {rawRows.length} rows →
+      <div className="flex items-center justify-between pt-1">
+        <Button variant="ghost" onClick={onBack} disabled={proceeding}>← Back</Button>
+        <Button onClick={handleNext} disabled={!requiredMapped || proceeding}>
+          {proceeding ? (
+            <>
+              <Loader2 className="mr-2 size-4 animate-spin" />
+              Normalising…
+            </>
+          ) : (
+            <>Preview {rawRows.length} rows →</>
+          )}
         </Button>
       </div>
     </div>

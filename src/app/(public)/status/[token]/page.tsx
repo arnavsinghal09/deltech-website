@@ -6,6 +6,7 @@ import { Separator } from "@/components/ui/separator"
 import { cn } from "@/lib/utils"
 import { buttonVariants } from "@/components/ui/button"
 import Link from "next/link"
+import { STRINGS } from "@/content/strings"
 
 const STATUS_LABEL: Record<string, string> = {
   REGISTERED: "Registered",
@@ -84,7 +85,7 @@ export default async function StatusPage(props: {
         <div className="flex items-start justify-between gap-4">
           <div>
             <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              DelTech MUN — Application Status
+              {STRINGS.brand.name} — Application Status
             </p>
             <h1 className="mt-1 text-xl font-bold">{delegate.fullName}</h1>
             <p className="text-sm text-muted-foreground">{delegate.email}</p>

@@ -5,6 +5,7 @@ import { Separator } from "@/components/ui/separator"
 import { cn } from "@/lib/utils"
 import { buttonVariants } from "@/components/ui/button"
 import { QRBlock } from "./_components/qr-block"
+import { STRINGS } from "@/content/strings"
 
 export default async function PayPage(props: {
   params: Promise<{ token: string }>
@@ -54,7 +55,7 @@ export default async function PayPage(props: {
         {/* Header */}
         <div>
           <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            DelTech MUN — Payment
+            {STRINGS.brand.name} — Payment
           </p>
           <h1 className="mt-1 text-xl font-bold">{delegate.fullName}</h1>
           <p className="text-sm text-muted-foreground">{delegate.email}</p>

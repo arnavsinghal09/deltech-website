@@ -1,43 +1,25 @@
 "use client"
 
 import { useState, useTransition } from "react"
-import { CheckCircle2, XCircle, AlertCircle, Users, Kanban } from "lucide-react"
+import { CheckCircle2, XCircle, Users, Kanban } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Badge } from "@/components/ui/badge"
-import { Separator } from "@/components/ui/separator"
 import { toast } from "sonner"
-import { cn } from "@/lib/utils"
-import type { ValidatedRow, PaymentMode } from "@/lib/schemas/import"
+import type { ValidatedRow } from "@/lib/schemas/import"
 import type { CommitResult } from "../actions"
 import { commitImport } from "../actions"
 
 interface Props {
-  validated:            ValidatedRow[]
-  skipped:              Set<number>
-  paymentMode:          PaymentMode
-  partnerNote:          string
-  onPaymentModeChange:  (m: PaymentMode) => void
-  onPartnerNoteChange:  (n: string) => void
-  onBack:               () => void
-  onDone:               () => void
+  validated: ValidatedRow[]
+  skipped:   Set<number>
+  onBack:    () => void
+  onDone:    () => void
 }
 
-export function StepCommit({
-  validated,
-  skipped,
-  paymentMode,
-  partnerNote,
-  onPaymentModeChange,
-  onPartnerNoteChange,
-  onBack,
-  onDone,
-}: Props) {
-  const [result,   setResult]   = useState<CommitResult | null>(null)
-  const [pending,  startCommit] = useTransition()
+export function StepCommit({ validated, skipped, onBack, onDone }: Props) {
+  const [result,  setResult]   = useState<CommitResult | null>(null)
+  const [pending, startCommit] = useTransition()
 
-  const importRows = validated.filter((r) => !skipped.has(r.index) && r.errors.length === 0)
+  const importRows    = validated.filter((r) => !skipped.has(r.index) && r.errors.length === 0)
   const withAllotment = importRows.filter((r) => r.mapped.committee && r.mapped.portfolio).length
 
   const handleCommit = () => {
@@ -45,12 +27,10 @@ export function StepCommit({
       const res = await commitImport({
         rows:        importRows.map((r) => r.mapped),
         skippedRows: [],
-        paymentMode,
-        partnerNote,
       })
       setResult(res)
       if (res.created > 0) {
-        toast.success(`Imported ${res.created} delegate${res.created !== 1 ? "s" : ""}.`)
+        toast.success(`Imported ${res.created} delegate${res.created !== 1 ? "s" : ""}${res.allotted > 0 ? `, ${res.allotted} allotted` : ""}.`)
       } else {
         toast.error("No delegates were created.")
       }
@@ -60,14 +40,12 @@ export function StepCommit({
   if (result) {
     return (
       <div className="rounded-xl border border-border bg-card p-8 space-y-6">
-        <div>
-          <p className="text-base font-semibold text-foreground">Import results</p>
-        </div>
+        <p className="text-base font-semibold text-foreground">Import results</p>
 
         <div className="grid grid-cols-3 gap-4">
-          <div className="rounded-lg bg-green-50 border border-green-200 p-4 text-center">
-            <p className="text-2xl font-bold text-green-700">{result.created}</p>
-            <p className="text-xs text-green-600 mt-1">Created</p>
+          <div className="rounded-lg bg-green-50 border border-green-200 p-4 text-center dark:bg-green-950/30 dark:border-green-800">
+            <p className="text-2xl font-bold text-green-700 dark:text-green-400">{result.created}</p>
+            <p className="text-xs text-green-600 dark:text-green-500 mt-1">Imported</p>
           </div>
           <div className="rounded-lg bg-primary/5 border border-primary/20 p-4 text-center">
             <p className="text-2xl font-bold text-primary">{result.allotted}</p>
@@ -104,87 +82,32 @@ export function StepCommit({
   return (
     <div className="rounded-xl border border-border bg-card p-6 space-y-6">
       {/* Summary */}
-      <div className="flex gap-4">
-        <div className="flex items-center gap-2 text-sm">
-          <Users className="size-4 text-primary" />
-          <span className="font-medium">{importRows.length}</span>
-          <span className="text-muted-foreground">delegates to import</span>
-        </div>
-        {withAllotment > 0 && (
-          <div className="flex items-center gap-2 text-sm">
-            <Kanban className="size-4 text-primary" />
-            <span className="font-medium">{withAllotment}</span>
-            <span className="text-muted-foreground">will be auto-allotted</span>
-          </div>
-        )}
-      </div>
-
-      <Separator />
-
-      {/* Payment choice */}
       <div className="space-y-3">
-        <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-          Payment arrangement
-        </p>
-        <div className="grid grid-cols-2 gap-3">
-          <button
-            type="button"
-            onClick={() => onPaymentModeChange("comp")}
-            className={cn(
-              "rounded-lg border-2 p-4 text-left transition-colors",
-              paymentMode === "comp"
-                ? "border-primary bg-primary/5"
-                : "border-border hover:border-primary/40",
-            )}
-          >
-            <div className="flex items-center gap-2">
-              <CheckCircle2 className={cn("size-4", paymentMode === "comp" ? "text-primary" : "text-muted-foreground")} />
-              <span className="text-sm font-semibold text-foreground">Comp</span>
-              <Badge variant="secondary" className="text-[10px]">free</Badge>
+        <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Ready to import</p>
+        <div className="flex flex-wrap gap-4">
+          <div className="flex items-center gap-2 text-sm">
+            <Users className="size-4 text-primary" />
+            <span className="font-medium">{importRows.length}</span>
+            <span className="text-muted-foreground">delegates</span>
+          </div>
+          {withAllotment > 0 && (
+            <div className="flex items-center gap-2 text-sm">
+              <Kanban className="size-4 text-primary" />
+              <span className="font-medium">{withAllotment}</span>
+              <span className="text-muted-foreground">will be auto-allotted (best available preference)</span>
             </div>
-            <p className="mt-2 text-xs text-muted-foreground leading-relaxed">
-              Mark delegates as <strong>CONFIRMED</strong> immediately. No payment record created.
-              Use for partner delegates covered by your MoU.
-            </p>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => onPaymentModeChange("upi")}
-            className={cn(
-              "rounded-lg border-2 p-4 text-left transition-colors",
-              paymentMode === "upi"
-                ? "border-primary bg-primary/5"
-                : "border-border hover:border-primary/40",
-            )}
-          >
-            <div className="flex items-center gap-2">
-              <AlertCircle className={cn("size-4", paymentMode === "upi" ? "text-primary" : "text-muted-foreground")} />
-              <span className="text-sm font-semibold text-foreground">Collect via UPI</span>
-            </div>
-            <p className="mt-2 text-xs text-muted-foreground leading-relaxed">
-              Create a <strong>PENDING</strong> payment for allotted delegates. Admin marks paid
-              in the drawer after verifying. Avoids Razorpay's 2% fee.
-            </p>
-          </button>
+          )}
         </div>
-      </div>
 
-      {/* Partner note */}
-      <div className="space-y-1.5">
-        <Label htmlFor="partner-note" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-          Partner / source note (optional)
-        </Label>
-        <Input
-          id="partner-note"
-          placeholder="e.g. NITI Aayog MUN 2026"
-          className="h-9 text-sm"
-          value={partnerNote}
-          onChange={(e) => onPartnerNoteChange(e.target.value)}
-        />
-        <p className="text-xs text-muted-foreground">
-          Stored as <code className="text-[11px]">sourceNote</code> on each delegate record.
-        </p>
+        <div className="rounded-lg border border-border bg-muted/30 px-4 py-3">
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="size-4 text-green-600" />
+            <p className="text-sm font-medium text-foreground">All delegates will be marked Confirmed</p>
+          </div>
+          <p className="mt-1 text-xs text-muted-foreground pl-6">
+            Cross-delegation imports are always confirmed immediately — no payment requests sent.
+          </p>
+        </div>
       </div>
 
       {/* Navigation */}

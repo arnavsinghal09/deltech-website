@@ -5,6 +5,7 @@ import { Clock, ChevronLeft } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { prisma } from "@/lib/prisma"
 import { TiptapContent } from "@/lib/tiptap-renderer"
+import { STRINGS } from "@/content/strings"
 
 type Props = { params: Promise<{ slug: string }> }
 
@@ -16,7 +17,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   })
   if (!post) return { title: "Not Found" }
   return {
-    title: `${post.title} — DelTech MUN Blog`,
+    title: `${post.title} — ${STRINGS.brand.name} Blog`,
     description: post.subtitle ?? undefined,
     openGraph: post.coverImage ? { images: [{ url: post.coverImage }] } : undefined,
   }

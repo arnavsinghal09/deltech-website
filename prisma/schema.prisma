@@ -17,6 +17,7 @@ model User {
   name          String?
   image         String?
   role          Role      @default(AUTHOR)
+  passwordHash  String?
   emailVerified DateTime?
   accounts      Account[]
   sessions      Session[]
@@ -26,6 +27,7 @@ model User {
 enum Role {
   ADMIN
   AUTHOR
+  REGISTERER
 }
 
 model Account {

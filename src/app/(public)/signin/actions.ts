@@ -10,17 +10,30 @@ export async function requestMagicLink(
   const email = (formData.get("email") as string)?.trim();
 
   try {
+    // redirectTo "/" lets NextAuth use the callbackUrl from the URL query param
+    // (e.g. /signin?callbackUrl=/admin preserves the intended destination).
     await signIn("resend", { email, redirectTo: "/" });
-    // signIn always throws a redirect on success — the return below is unreachable
     return {};
   } catch (err) {
-    // Re-throw Next.js redirects so the browser navigates to /signin/sent
-    if ((err as { digest?: string }).digest?.startsWith("NEXT_REDIRECT")) {
-      throw err;
-    }
-    if (err instanceof AuthError) {
-      return { error: "auth.errorDefault" };
-    }
-    return { error: "auth.errorDefault" };
+    if ((err as { digest?: string }).digest?.startsWith("NEXT_REDIRECT")) throw err;
+    if (err instanceof AuthError) return { error: "errorDefault" };
+    return { error: "errorDefault" };
+  }
+}
+
+export async function signInWithPassword(
+  _prev: { error?: string } | null,
+  formData: FormData,
+): Promise<{ error?: string }> {
+  const email = (formData.get("email") as string)?.trim().toLowerCase();
+  const password = formData.get("password") as string;
+
+  try {
+    await signIn("credentials", { email, password, redirectTo: "/" });
+    return {};
+  } catch (err) {
+    if ((err as { digest?: string }).digest?.startsWith("NEXT_REDIRECT")) throw err;
+    if (err instanceof AuthError) return { error: "invalidCredentials" };
+    return { error: "errorDefault" };
   }
 }

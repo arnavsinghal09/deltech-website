@@ -3,10 +3,11 @@ import Link from "next/link"
 import { Clock } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { prisma } from "@/lib/prisma"
+import { STRINGS } from "@/content/strings"
 
 export const metadata: Metadata = {
-  title: "Blog — DelTech MUN",
-  description: "Stories, insights, and updates from the DelTech MUN community.",
+  title: `Blog — ${STRINGS.brand.name}`,
+  description: `Stories, insights, and updates from the ${STRINGS.brand.name} community.`,
 }
 
 export default async function BlogIndexPage() {
@@ -30,7 +31,7 @@ export default async function BlogIndexPage() {
     <div className="mx-auto max-w-5xl px-4 py-12 sm:px-6">
       <div className="mb-10">
         <h1 className="font-serif text-4xl font-bold text-foreground">Blog</h1>
-        <p className="mt-2 text-muted-foreground">Stories and insights from the DelTech MUN community</p>
+        <p className="mt-2 text-muted-foreground">Stories and insights from the {STRINGS.brand.name} community</p>
       </div>
 
       {posts.length === 0 ? (

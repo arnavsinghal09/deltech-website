@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Providers } from "@/components/providers";
+import { STRINGS } from "@/content/strings";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -14,8 +15,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "DelTech MUN",
-  description: "Model United Nations at Delhi Technological University — registrations, committees, and more.",
+  title: STRINGS.brand.name,
+  description: `${STRINGS.brand.tagline} — registrations, committees, and more.`,
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

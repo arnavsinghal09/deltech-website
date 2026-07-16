@@ -1,5 +1,5 @@
 import "dotenv/config";
-import { PrismaClient, CommitteeType, Role } from "../src/generated/prisma/client";
+import { PrismaClient, CommitteeType, Role, Prisma } from "../src/generated/prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { Pool } from "pg";
 
@@ -9,16 +9,16 @@ const prisma = new PrismaClient({ adapter });
 
 async function main() {
   // Settings
-  const settings = [
+  const settings: Array<{ key: string; value: Prisma.InputJsonValue }> = [
     { key: "registrationOpen", value: false },
-    { key: "conferenceDates", value: "" },
-    { key: "venue", value: "" },
-    { key: "paymentProvider", value: "upi_qr" },
+    { key: "conferenceDates",  value: "" },
+    { key: "venue",            value: "" },
+    { key: "paymentProvider",  value: "upi_qr" },
     { key: "accommodationNote", value: "" },
-    { key: "agendasBlurb", value: "" },
-    { key: "awards", value: [] as unknown[] },
-    { key: "queryContacts", value: [] as unknown[] },
-    { key: "landingHero", value: { title: "DelTech MUN", subtitle: "", ctaLabel: "Register Now" } },
+    { key: "agendasBlurb",    value: "" },
+    { key: "awards",          value: [] },
+    { key: "queryContacts",   value: [] },
+    { key: "landingHero",     value: { title: "DelTech MUN", subtitle: "", ctaLabel: "Register Now" } },
   ];
 
   for (const s of settings) {
@@ -65,15 +65,21 @@ async function main() {
     ],
   });
 
-  // Admin user
-  const adminEmail = process.env.ADMIN_EMAIL;
-  if (!adminEmail) throw new Error("ADMIN_EMAIL is not set in .env");
+  // Admin users
+  const adminEmails: Array<{ email: string; name: string }> = [
+    { email: "arnavsinghal06@gmail.com", name: "Arnav Singhal" },
+  ];
+  if (process.env.ADMIN_EMAIL) {
+    adminEmails.push({ email: process.env.ADMIN_EMAIL, name: "Admin" });
+  }
 
-  await prisma.user.upsert({
-    where: { email: adminEmail },
-    update: { role: Role.ADMIN },
-    create: { email: adminEmail, name: "Admin", role: Role.ADMIN },
-  });
+  for (const { email, name } of adminEmails) {
+    await prisma.user.upsert({
+      where: { email },
+      update: { role: Role.ADMIN },
+      create: { email, name, role: Role.ADMIN },
+    });
+  }
 
   console.log("Seed complete.");
 }

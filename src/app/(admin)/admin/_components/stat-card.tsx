@@ -1,4 +1,5 @@
 import { type LucideIcon } from "lucide-react"
+import { CountUpValue } from "./count-up-value"
 
 interface Props {
   title: string
@@ -16,7 +17,9 @@ export function StatCard({ title, value, icon: Icon, description, trend }: Props
           <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
             {title}
           </p>
-          <p className="mt-2 text-2xl font-bold tabular-nums text-card-foreground">{value}</p>
+          <p className="mt-2 text-2xl font-bold tabular-nums text-card-foreground">
+            {typeof value === "number" ? <CountUpValue target={value} /> : value}
+          </p>
           {description && (
             <p className="mt-1 text-xs text-muted-foreground">
               {description}

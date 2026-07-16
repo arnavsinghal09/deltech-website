@@ -1,3 +1,5 @@
+import { redirect } from "next/navigation";
+import { auth } from "@/lib/auth";
 import {
   Card,
   CardContent,
@@ -6,13 +8,12 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { t } from "@/content/strings";
-import { SignInForm } from "./_components/sign-in-form";
+import { SignupForm } from "./_components/signup-form";
 import Link from "next/link";
 
-export default async function SignInPage(props: {
-  searchParams: Promise<{ created?: string; callbackUrl?: string }>;
-}) {
-  const { created } = await props.searchParams;
+export default async function SignupPage() {
+  const session = await auth();
+  if (session) redirect("/dashboard");
 
   return (
     <div className="flex min-h-svh items-center justify-center bg-muted/30 p-4">
@@ -21,29 +22,23 @@ export default async function SignInPage(props: {
           <span className="text-2xl font-semibold tracking-tight">{t("brand.name")}</span>
         </div>
 
-        {created && (
-          <div className="mb-4 rounded-lg bg-primary/10 border border-primary/20 px-4 py-3 text-sm text-primary">
-            Account created! Sign in with your email and password below.
-          </div>
-        )}
-
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">{t("auth.signInTitle")}</CardTitle>
-            <CardDescription>{t("auth.signInDescription")}</CardDescription>
+            <CardTitle className="text-lg">{t("auth.signUpTitle")}</CardTitle>
+            <CardDescription>{t("auth.signUpDescription")}</CardDescription>
           </CardHeader>
           <CardContent>
-            <SignInForm />
+            <SignupForm />
           </CardContent>
         </Card>
 
         <p className="mt-4 text-center text-sm text-muted-foreground">
-          New delegate?{" "}
+          Already have an account?{" "}
           <Link
-            href="/signup"
+            href="/signin"
             className="text-foreground underline-offset-2 hover:underline"
           >
-            {t("auth.signUpLinkText")}
+            {t("auth.signInLinkText")}
           </Link>
         </p>
       </div>
