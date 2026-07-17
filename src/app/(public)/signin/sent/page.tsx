@@ -1,34 +1,25 @@
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import Link from "next/link";
 import { t } from "@/content/strings";
-
 
 export default function CheckEmailPage() {
   return (
-    <div className="flex min-h-svh items-center justify-center bg-muted/30 p-4">
+    <div className="paper-grid flex min-h-svh items-center justify-center p-4">
       <div className="w-full max-w-sm">
-        <div className="mb-8 text-center">
-          <span className="text-2xl font-semibold tracking-tight">{t("brand.name")}</span>
+        <div className="mb-10 text-center">
+          <Link href="/" className="display text-3xl text-foreground">
+            {t("brand.name")}
+          </Link>
         </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">
-              {t("auth.checkEmailTitle")}
-            </CardTitle>
-            <CardDescription>{t("auth.checkEmailMessage")}</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="text-xs text-muted-foreground">
-              {t("auth.checkEmailExpiry")}
-            </p>
-          </CardContent>
-        </Card>
+        <div className="editorial-card p-6 text-center sm:p-8">
+          <span aria-hidden className="text-2xl text-gold-500">
+            ✉
+          </span>
+          <h1 className="mt-3 font-heading text-2xl">{t("auth.checkEmailTitle")}</h1>
+          <p className="mt-2 text-sm text-muted-foreground">{t("auth.checkEmailMessage")}</p>
+          <div className="rule my-5" />
+          <p className="text-xs text-muted-foreground">{t("auth.checkEmailExpiry")}</p>
+        </div>
       </div>
     </div>
   );

@@ -8,12 +8,12 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { requestMagicLink, signInWithPassword } from "../actions";
 
-export function SignInForm() {
+export function SignInForm({ defaultTab = "magic" }: { defaultTab?: "magic" | "password" }) {
   const [mlState, mlAction, mlPending] = useActionState(requestMagicLink, null);
   const [pwState, pwAction, pwPending] = useActionState(signInWithPassword, null);
 
   return (
-    <Tabs defaultValue="magic">
+    <Tabs defaultValue={defaultTab}>
       <TabsList className="w-full mb-5">
         <TabsTrigger value="magic" className="flex-1">
           {t("auth.magicLinkTab")}

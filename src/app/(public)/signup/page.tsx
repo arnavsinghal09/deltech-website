@@ -1,12 +1,5 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { t } from "@/content/strings";
 import { SignupForm } from "./_components/signup-form";
 import Link from "next/link";
@@ -16,28 +9,25 @@ export default async function SignupPage() {
   if (session) redirect("/dashboard");
 
   return (
-    <div className="flex min-h-svh items-center justify-center bg-muted/30 p-4">
+    <div className="paper-grid flex min-h-svh items-center justify-center p-4">
       <div className="w-full max-w-sm">
-        <div className="mb-8 text-center">
-          <span className="text-2xl font-semibold tracking-tight">{t("brand.name")}</span>
+        <div className="mb-10 text-center">
+          <Link href="/" className="display text-3xl text-foreground">
+            {t("brand.name")}
+          </Link>
+          <p className="eyebrow mt-3">Delegate account</p>
         </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">{t("auth.signUpTitle")}</CardTitle>
-            <CardDescription>{t("auth.signUpDescription")}</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <SignupForm />
-          </CardContent>
-        </Card>
+        <div className="editorial-card p-6 sm:p-8">
+          <h1 className="font-heading text-2xl">{t("auth.signUpTitle")}</h1>
+          <p className="mt-1.5 text-sm text-muted-foreground">{t("auth.signUpDescription")}</p>
+          <div className="rule mt-5 mb-6" />
+          <SignupForm />
+        </div>
 
-        <p className="mt-4 text-center text-sm text-muted-foreground">
+        <p className="mt-5 text-center text-sm text-muted-foreground">
           Already have an account?{" "}
-          <Link
-            href="/signin"
-            className="text-foreground underline-offset-2 hover:underline"
-          >
+          <Link href="/signin" className="text-foreground underline-offset-2 hover:underline">
             {t("auth.signInLinkText")}
           </Link>
         </p>
