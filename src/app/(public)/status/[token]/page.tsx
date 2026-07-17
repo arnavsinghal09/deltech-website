@@ -12,7 +12,6 @@ const STATUS_LABEL: Record<string, string> = {
   REGISTERED: "Registered",
   ALLOTTED: "Allotted — payment link coming soon",
   PAYMENT_SENT: "Payment pending",
-  PAID: "Paid",
   CONFIRMED: "Confirmed",
   CANCELLED: "Cancelled",
   WAITLISTED: "Waitlisted",
@@ -22,7 +21,6 @@ const STATUS_VARIANT: Record<string, "default" | "secondary" | "destructive" | "
   REGISTERED: "secondary",
   ALLOTTED: "outline",
   PAYMENT_SENT: "outline",
-  PAID: "default",
   CONFIRMED: "default",
   CANCELLED: "destructive",
   WAITLISTED: "secondary",
@@ -51,9 +49,9 @@ export default async function StatusPage(props: {
 }) {
   const { token } = await props.params
 
-  // token = delegateId
+  // token = Delegate.publicToken (random, unguessable — never the row id)
   const delegate = await prisma.delegate.findUnique({
-    where: { id: token },
+    where: { publicToken: token },
     include: {
       payment: true,
       allotment: {

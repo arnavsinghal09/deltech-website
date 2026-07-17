@@ -34,7 +34,8 @@ export async function GET(request: Request) {
 // POST  — admin creates a session
 export async function POST(request: Request) {
   const authSession = await auth()
-  if (!authSession || (authSession.user as { role?: string }).role !== "ADMIN") {
+  const role = (authSession?.user as { role?: string } | undefined)?.role
+  if (!authSession || (role !== "ADMIN" && role !== "MAINTAINER")) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 })
   }
 

@@ -1,11 +1,9 @@
-import { redirect } from "next/navigation"
-import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+import { requireStaff } from "@/lib/authz"
 import { AllotmentBoard } from "./_components/allotment-board"
 
 export default async function AllotmentPage() {
-  const session = await auth()
-  if (!session || (session.user as { role?: string }).role !== "ADMIN") redirect("/signin")
+  const session = await requireStaff()
 
   const [committees, delegates, fees] = await Promise.all([
     prisma.committee.findMany({

@@ -8,7 +8,8 @@ import { PresenterApp } from "./_components/presenter-app"
 
 export default async function PresentPage(props: { params: Promise<{ id: string }> }) {
   const authSession = await auth()
-  if (!authSession || (authSession.user as { role?: string }).role !== "ADMIN") {
+  const role = (authSession?.user as { role?: string } | undefined)?.role
+  if (!authSession || (role !== "ADMIN" && role !== "MAINTAINER")) {
     return notFound()
   }
 

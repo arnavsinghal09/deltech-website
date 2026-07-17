@@ -26,7 +26,7 @@ export const authConfig = {
       const role = (auth?.user as { role?: string } | undefined)?.role;
 
       if (pathname.startsWith("/admin")) {
-        return role === "ADMIN";
+        return role === "ADMIN" || role === "MAINTAINER";
       }
 
       if (pathname.startsWith("/write")) {
@@ -34,7 +34,7 @@ export const authConfig = {
       }
 
       if (pathname.startsWith("/dashboard")) {
-        if (role === "ADMIN") {
+        if (role === "ADMIN" || role === "MAINTAINER") {
           return Response.redirect(new URL("/admin", request.nextUrl));
         }
         return role === "REGISTERER";

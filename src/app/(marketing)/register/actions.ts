@@ -6,7 +6,7 @@ import { registerSchema, type RegisterFormValues } from "@/lib/schemas/register"
 import { sendRegistrationReceived } from "@/lib/resend"
 
 type ActionResult =
-  | { success: true; delegateId: string }
+  | { success: true; delegateId: string; publicToken: string }
   | { success: false; error: string; fieldErrors?: Record<string, string[]> }
 
 export async function registerDelegate(data: RegisterFormValues): Promise<ActionResult> {
@@ -44,13 +44,15 @@ export async function registerDelegate(data: RegisterFormValues): Promise<Action
     return { success: false, error: "Co-delegate information is required for this committee." }
   }
 
-  // Duplicate email guard
+  // Duplicate email guard (DB unique index is the hard guard; this gives a friendly error)
   const existing = await prisma.delegate.findFirst({ where: { email: vals.email } })
   if (existing) {
     return { success: false, error: "An application with this email already exists." }
   }
 
-  const delegate = await prisma.delegate.create({
+  let delegate
+  try {
+    delegate = await prisma.delegate.create({
     data: {
       fullName: vals.fullName,
       email: vals.email,
@@ -82,8 +84,14 @@ export async function registerDelegate(data: RegisterFormValues): Promise<Action
             },
           }
         : {}),
-    },
-  })
+      },
+    })
+  } catch (err) {
+    if (typeof err === "object" && err !== null && "code" in err && (err as { code: unknown }).code === "P2002") {
+      return { success: false, error: "An application with this email already exists." }
+    }
+    throw err
+  }
 
   try {
     await sendRegistrationReceived(delegate.id)
@@ -91,5 +99,5 @@ export async function registerDelegate(data: RegisterFormValues): Promise<Action
     // intentionally silent
   }
 
-  return { success: true, delegateId: delegate.id }
+  return { success: true, delegateId: delegate.id, publicToken: delegate.publicToken }
 }

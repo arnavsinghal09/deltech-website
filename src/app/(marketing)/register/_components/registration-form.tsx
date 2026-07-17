@@ -99,7 +99,7 @@ export function RegistrationForm({ committees }: Props) {
     try {
       const result = await registerDelegate(data)
       if (result.success) {
-        router.push("/register/success")
+        router.push(`/register/success?t=${result.publicToken}`)
       } else {
         toast.error(result.error ?? t("toast.errorGeneric"))
       }

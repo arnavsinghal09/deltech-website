@@ -68,7 +68,7 @@ async function loggedSend({
 export async function sendRegistrationReceived(delegateId: string): Promise<void> {
   const delegate = await prisma.delegate.findUniqueOrThrow({
     where: { id: delegateId },
-    select: { fullName: true, email: true },
+    select: { fullName: true, email: true, publicToken: true },
   })
 
   await loggedSend({
@@ -76,7 +76,11 @@ export async function sendRegistrationReceived(delegateId: string): Promise<void
     template: "registration-received",
     toEmail: delegate.email,
     subject: STRINGS.email.subjects.registrationReceived,
-    reactElement: RegistrationReceivedEmail({ fullName: delegate.fullName, email: delegate.email }),
+    reactElement: RegistrationReceivedEmail({
+      fullName: delegate.fullName,
+      email: delegate.email,
+      statusUrl: `${APP_URL}/status/${delegate.publicToken}`,
+    }),
   })
 }
 
@@ -86,6 +90,7 @@ export async function sendAllotmentEmail(delegateId: string): Promise<void> {
     select: {
       fullName: true,
       email: true,
+      publicToken: true,
       needsAccommodation: true,
       allotment: {
         include: {
@@ -108,7 +113,7 @@ export async function sendAllotmentEmail(delegateId: string): Promise<void> {
     .replace("{committee}", committee.name)
     .replace("{portfolio}", portfolio.name)
 
-  const payLink = delegate.payment.paymentLink ?? `${APP_URL}/pay/${delegateId}`
+  const payLink = delegate.payment.paymentLink ?? `${APP_URL}/pay/${delegate.publicToken}`
 
   await loggedSend({
     delegateId,
@@ -204,6 +209,7 @@ export async function sendPaymentReminder(delegateId: string): Promise<void> {
     select: {
       fullName: true,
       email: true,
+      publicToken: true,
       allotment: {
         include: { portfolio: { include: { committee: true } } },
       },
@@ -215,7 +221,7 @@ export async function sendPaymentReminder(delegateId: string): Promise<void> {
 
   const committee = delegate.allotment.portfolio.committee
   const portfolio = delegate.allotment.portfolio
-  const payLink = delegate.payment.paymentLink ?? `${APP_URL}/pay/${delegateId}`
+  const payLink = delegate.payment.paymentLink ?? `${APP_URL}/pay/${delegate.publicToken}`
 
   await loggedSend({
     delegateId,

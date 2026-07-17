@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useTransition } from "react"
-import { X, Edit2, CheckCircle, RefreshCw } from "lucide-react"
+import { X, Edit2, CheckCircle, RefreshCw, Gift, Ban, Clock, Link2 } from "lucide-react"
 import {
   Drawer,
   DrawerContent,
@@ -15,7 +15,14 @@ import { Separator } from "@/components/ui/separator"
 import { toast } from "sonner"
 import type { SerializedDelegate } from "../_lib/types"
 import { DelegateEditForm } from "./delegate-edit-form"
-import { markPaidOffline, resendEmail } from "../actions"
+import {
+  markPaidOffline,
+  resendEmail,
+  compDelegate,
+  cancelDelegate,
+  waitlistDelegate,
+  regeneratePaymentLink,
+} from "../actions"
 
 interface Props {
   delegate: SerializedDelegate | null
@@ -52,17 +59,24 @@ export function DelegateDrawer({ delegate, committees, onClose, onUpdated }: Pro
   const [isPending, startTransition] = useTransition()
   const [resendingLogId, setResendingLogId] = useState<string | null>(null)
 
-  const handleMarkPaid = () => {
-    if (!delegate) return
+  const runAction = (
+    fn: () => Promise<{ success: boolean; error?: string; delegate?: SerializedDelegate }>,
+    successMsg: string,
+  ) => {
     startTransition(async () => {
-      const result = await markPaidOffline(delegate.id)
+      const result = await fn()
       if (result.success && result.delegate) {
-        toast.success("Marked as paid — delegate confirmed.")
+        toast.success(successMsg)
         onUpdated(result.delegate)
       } else {
-        toast.error(result.error ?? "Failed to mark as paid.")
+        toast.error(result.error ?? "Action failed.")
       }
     })
+  }
+
+  const handleMarkPaid = () => {
+    if (!delegate) return
+    runAction(() => markPaidOffline(delegate.id), "Marked as paid — delegate confirmed.")
   }
 
   const committeeMap = new Map(committees.map(c => [c.id, c.name]))
@@ -123,6 +137,66 @@ export function DelegateDrawer({ delegate, committees, onClose, onUpdated }: Pro
                   <span className="text-xs text-muted-foreground">
                     Registered {new Date(delegate.createdAt).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
                   </span>
+                </div>
+
+                {/* Lifecycle actions */}
+                <div className="flex flex-wrap gap-2">
+                  {(delegate.status === "REGISTERED" || delegate.status === "WAITLISTED") && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-8 gap-1.5 text-xs"
+                      disabled={isPending}
+                      onClick={() =>
+                        runAction(
+                          () => waitlistDelegate(delegate.id, delegate.status === "REGISTERED"),
+                          delegate.status === "REGISTERED" ? "Moved to waitlist." : "Removed from waitlist.",
+                        )
+                      }
+                    >
+                      <Clock className="size-3.5" />
+                      {delegate.status === "REGISTERED" ? "Waitlist" : "Un-waitlist"}
+                    </Button>
+                  )}
+                  {delegate.status === "ALLOTTED" && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-8 gap-1.5 text-xs"
+                      disabled={isPending}
+                      onClick={() =>
+                        runAction(() => regeneratePaymentLink(delegate.id), "Payment link regenerated.")
+                      }
+                    >
+                      <Link2 className="size-3.5" /> Regenerate pay link
+                    </Button>
+                  )}
+                  {delegate.status !== "CONFIRMED" && delegate.status !== "CANCELLED" && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-8 gap-1.5 text-xs"
+                      disabled={isPending}
+                      onClick={() => runAction(() => compDelegate(delegate.id), "Comped — delegate confirmed.")}
+                    >
+                      <Gift className="size-3.5" /> Comp
+                    </Button>
+                  )}
+                  {delegate.status !== "CANCELLED" && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-8 gap-1.5 text-xs text-destructive hover:text-destructive"
+                      disabled={isPending}
+                      onClick={() => {
+                        if (window.confirm(`Cancel ${delegate.fullName}'s registration? Frees their portfolio.`)) {
+                          runAction(() => cancelDelegate(delegate.id), "Registration cancelled.")
+                        }
+                      }}
+                    >
+                      <Ban className="size-3.5" /> Cancel
+                    </Button>
+                  )}
                 </div>
 
                 <Separator />
@@ -248,8 +322,9 @@ export function DelegateDrawer({ delegate, committees, onClose, onUpdated }: Pro
                           </a>
                         </div>
                       )}
-                      {delegate.payment.provider === "upi_qr" &&
-                        (delegate.payment.status === "PENDING" || delegate.payment.status === "SENT") && (
+                      {(delegate.payment.status === "PENDING" ||
+                        delegate.payment.status === "SENT" ||
+                        delegate.payment.status === "FAILED") && (
                         <Button
                           size="sm"
                           className="w-full gap-1.5"
@@ -257,7 +332,7 @@ export function DelegateDrawer({ delegate, committees, onClose, onUpdated }: Pro
                           disabled={isPending}
                         >
                           <CheckCircle className="size-3.5" />
-                          {isPending ? "Confirming…" : "Mark as Paid (UPI)"}
+                          {isPending ? "Confirming…" : "Mark as Paid (manual)"}
                         </Button>
                       )}
                     </div>

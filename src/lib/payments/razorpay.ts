@@ -15,10 +15,12 @@ export class RazorpayProvider implements PaymentProvider {
 
   async createPaymentLink({
     delegateId,
+    publicToken,
     amountInr,
     email,
   }: {
     delegateId: string
+    publicToken: string
     amountInr: number
     email: string
   }): Promise<{ link: string; orderId?: string }> {
@@ -39,7 +41,7 @@ export class RazorpayProvider implements PaymentProvider {
         reminder_enable: false,
         notes: { delegateId },
         // After payment, Razorpay redirects back to our pay page
-        callback_url: `${appUrl}/pay/${delegateId}`,
+        callback_url: `${appUrl}/pay/${publicToken}`,
         callback_method: "get",
       }),
     })

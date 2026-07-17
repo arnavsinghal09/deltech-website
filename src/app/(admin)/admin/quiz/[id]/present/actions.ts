@@ -1,22 +1,14 @@
 "use server"
 
-import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
-import { redirect } from "next/navigation"
-
-async function requireAdmin() {
-  const session = await auth()
-  if (!session || (session.user as { role?: string }).role !== "ADMIN") {
-    throw new Error("Unauthorized")
-  }
-}
+import { requireStaff } from "@/lib/authz"
 
 function generateRoomCode(): string {
   return Math.floor(100000 + Math.random() * 900000).toString()
 }
 
 export async function createOrGetSession(presentationId: string): Promise<string> {
-  await requireAdmin()
+  await requireStaff()
 
   const existing = await prisma.quizSession.findFirst({
     where: { presentationId, status: { in: ["lobby", "active"] } },
@@ -39,7 +31,7 @@ export async function createOrGetSession(presentationId: string): Promise<string
 }
 
 export async function endSession(sessionId: string): Promise<void> {
-  await requireAdmin()
+  await requireStaff()
   await prisma.quizSession.update({
     where: { id: sessionId },
     data: { status: "ended", endedAt: new Date() },
@@ -49,7 +41,7 @@ export async function endSession(sessionId: string): Promise<void> {
 export async function computeLeaderboard(
   sessionId: string,
 ): Promise<{ nickname: string; avatar: string; totalPoints: number; rank: number }[]> {
-  await requireAdmin()
+  await requireStaff()
 
   const rows = await prisma.response.groupBy({
     by: ["nickname"],

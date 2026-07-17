@@ -1,14 +1,10 @@
-import { redirect } from "next/navigation"
-import { auth } from "@/lib/auth"
+import { requireStaff } from "@/lib/authz"
 import { t } from "@/content/strings"
 import { AdminSidebar } from "./_components/admin-sidebar"
 import { SignOutButton } from "./_components/sign-out-button"
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
-  const session = await auth()
-  if (!session || (session.user as { role?: string }).role !== "ADMIN") {
-    redirect("/signin")
-  }
+  const session = await requireStaff()
 
   return (
     <div className="flex min-h-svh">

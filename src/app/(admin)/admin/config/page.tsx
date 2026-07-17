@@ -1,12 +1,11 @@
-import { redirect } from "next/navigation"
-import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { getContent } from "@/lib/settings"
+import { requireStaff } from "@/lib/authz"
 import { ConfigTabs } from "./_components/config-tabs"
 
 export default async function ConfigPage() {
-  const session = await auth()
-  if (!session || (session.user as { role?: string }).role !== "ADMIN") redirect("/signin")
+  const session = await requireStaff()
+  const isAdmin = (session.user as { role?: string }).role === "ADMIN"
 
   const [content, committees, fees] = await Promise.all([
     getContent(),
@@ -50,7 +49,12 @@ export default async function ConfigPage() {
           Edit conference settings, committees, portfolios, and fees. All changes apply immediately.
         </p>
       </div>
-      <ConfigTabs content={content} committees={serializedCommittees} fees={serializedFees} />
+      <ConfigTabs
+        content={content}
+        committees={serializedCommittees}
+        fees={serializedFees}
+        isAdmin={isAdmin}
+      />
     </div>
   )
 }

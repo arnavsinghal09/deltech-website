@@ -2,7 +2,7 @@
 
 import { useTransition, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { useForm, useFieldArray, Controller } from "react-hook-form"
+import { useForm, useFieldArray } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import { toast } from "sonner"
@@ -11,13 +11,6 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
 import { Separator } from "@/components/ui/separator"
 import { saveContent } from "../actions"
 import type { Content } from "@/content/contentSchema"
@@ -32,7 +25,6 @@ const schema = z.object({
   accommodationNote: z.string(),
   blogIntro: z.string(),
   registrationClosedMessage: z.string(),
-  paymentProvider: z.enum(["upi_qr", "razorpay"]),
   awardsText: z.string(),
   contacts: z.array(
     z.object({ name: z.string(), role: z.string(), phone: z.string() }),
@@ -78,7 +70,6 @@ export function TabContent({ content }: Props) {
       accommodationNote: content.accommodationNote,
       blogIntro: content.blogIntro,
       registrationClosedMessage: content.registrationClosedMessage,
-      paymentProvider: content.paymentProvider,
       awardsText: content.awards.join("\n"),
       contacts: content.queryContacts,
     },
@@ -104,7 +95,6 @@ export function TabContent({ content }: Props) {
         accommodationNote: data.accommodationNote,
         blogIntro: data.blogIntro,
         registrationClosedMessage: data.registrationClosedMessage,
-        paymentProvider: data.paymentProvider,
         awards: data.awardsText
           .split("\n")
           .map((s) => s.trim())
@@ -176,27 +166,6 @@ export function TabContent({ content }: Props) {
         <Field label="One award per line">
           <Textarea {...form.register("awardsText")} rows={5} placeholder="Best Delegate&#10;High Commendation&#10;Verbal Mention" />
         </Field>
-      </Section>
-
-      <Separator />
-
-      {/* Payment provider */}
-      <Section title="Payment Provider">
-        <Controller
-          control={form.control}
-          name="paymentProvider"
-          render={({ field }) => (
-            <Select value={field.value} onValueChange={(v) => field.onChange(v)}>
-              <SelectTrigger className="w-48">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="upi_qr">UPI / QR</SelectItem>
-                <SelectItem value="razorpay">Razorpay</SelectItem>
-              </SelectContent>
-            </Select>
-          )}
-        />
       </Section>
 
       <Separator />

@@ -5,6 +5,7 @@ import {
 interface Props {
   fullName: string
   email: string
+  statusUrl?: string
 }
 
 const brand = "#0f766e"
@@ -12,7 +13,7 @@ const bg = "#f4f4f5"
 const card = "#ffffff"
 const muted = "#71717a"
 
-export function RegistrationReceivedEmail({ fullName, email }: Props) {
+export function RegistrationReceivedEmail({ fullName, email, statusUrl }: Props) {
   return (
     <Html>
       <Head />
@@ -38,6 +39,15 @@ export function RegistrationReceivedEmail({ fullName, email }: Props) {
             <Text style={{ color: "#3f3f46", fontSize: 15, lineHeight: "1.6", margin: 0 }}>
               Allotments are typically sent within a few days of the registration deadline.
             </Text>
+            {statusUrl && (
+              <Text style={{ color: "#3f3f46", fontSize: 15, lineHeight: "1.6", margin: "12px 0 0" }}>
+                Track your application any time at{" "}
+                <a href={statusUrl} style={{ color: brand }}>
+                  {statusUrl}
+                </a>
+                . This link is private to you — don&apos;t share it.
+              </Text>
+            )}
           </Section>
 
           <Hr style={{ borderColor: "transparent", margin: "12px 0 0" }} />

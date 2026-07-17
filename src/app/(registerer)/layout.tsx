@@ -8,7 +8,7 @@ export default async function RegistererLayout({ children }: { children: React.R
   const role = (session?.user as { role?: string } | undefined)?.role;
 
   if (!session) redirect("/signin");
-  if (role === "ADMIN") redirect("/admin");
+  if (role === "ADMIN" || role === "MAINTAINER") redirect("/admin");
   if (role !== "REGISTERER") redirect("/signin");
 
   return <>{children}</>;

@@ -12,9 +12,9 @@ export default async function PayPage(props: {
 }) {
   const { token } = await props.params
 
-  // token = delegateId
+  // token = Delegate.publicToken (random, unguessable — never the row id)
   const delegate = await prisma.delegate.findUnique({
-    where: { id: token },
+    where: { publicToken: token },
     include: {
       payment: true,
       allotment: {
@@ -44,7 +44,7 @@ export default async function PayPage(props: {
           const payeeName = process.env.UPI_PAYEE_NAME ?? "DelTech MUN"
           return (
             `upi://pay?pa=${encodeURIComponent(vpa)}&pn=${encodeURIComponent(payeeName)}` +
-            `&am=${payment.amountInr.toFixed(2)}&tn=${encodeURIComponent(delegate.id)}&cu=INR`
+            `&am=${payment.amountInr.toFixed(2)}&tn=${encodeURIComponent(delegate.publicToken)}&cu=INR`
           )
         })()
       : null

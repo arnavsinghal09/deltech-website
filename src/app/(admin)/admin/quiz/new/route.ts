@@ -1,12 +1,9 @@
 import { redirect } from "next/navigation"
-import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+import { requireStaff } from "@/lib/authz"
 
 export async function GET(): Promise<never> {
-  const session = await auth()
-  if (!session || (session.user as { role?: string }).role !== "ADMIN") {
-    redirect("/signin")
-  }
+  const session = await requireStaff()
 
   const presentation = await prisma.presentation.create({
     data: {

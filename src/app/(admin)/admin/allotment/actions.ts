@@ -1,16 +1,10 @@
 "use server"
 
-import { redirect } from "next/navigation"
-import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+import { requireStaff, requireAdmin } from "@/lib/authz"
+import { audit } from "@/lib/audit"
 import { getActiveProvider } from "@/lib/payments"
 import { sendAllotmentEmail, sendCoDelegateNotice } from "@/lib/resend"
-
-async function requireAdmin() {
-  const session = await auth()
-  if (!session || (session.user as { role?: string }).role !== "ADMIN") redirect("/signin")
-  return session
-}
 
 function isPrismaP2002(err: unknown): boolean {
   // Prisma unique constraint violation
@@ -26,7 +20,7 @@ function isPrismaP2002(err: unknown): boolean {
 // Soft-locks a portfolio to ON_HOLD while the dialog is open.
 // Only transitions AVAILABLE → ON_HOLD (ignores if already ON_HOLD or ALLOTTED).
 export async function holdPortfolio(portfolioId: string): Promise<{ success: boolean }> {
-  await requireAdmin()
+  await requireStaff()
   await prisma.portfolio.updateMany({
     where: { id: portfolioId, status: "AVAILABLE" },
     data: { status: "ON_HOLD" },
@@ -37,7 +31,7 @@ export async function holdPortfolio(portfolioId: string): Promise<{ success: boo
 // ── releaseHold ────────────────────────────────────────────────────────────────
 // Releases ON_HOLD back to AVAILABLE (called when dialog closes without confirming).
 export async function releaseHold(portfolioId: string): Promise<void> {
-  await requireAdmin()
+  await requireStaff()
   await prisma.portfolio.updateMany({
     where: { id: portfolioId, status: "ON_HOLD" },
     data: { status: "AVAILABLE" },
@@ -57,8 +51,8 @@ export async function allotPortfolio(input: {
   error?: string
   code?: "ALREADY_ALLOTTED" | "DELEGATE_UNAVAILABLE"
 }> {
-  const session = await requireAdmin()
-  const adminEmail = session.user.email ?? "admin"
+  const session = await requireStaff()
+  const adminEmail = session.user?.email ?? "admin"
 
   try {
     const txResult = await prisma.$transaction(async (tx) => {
@@ -76,7 +70,7 @@ export async function allotPortfolio(input: {
       // 2. Confirm delegate is still REGISTERED
       const delegate = await tx.delegate.findUnique({
         where: { id: input.delegateId },
-        select: { isDtu: true, status: true, email: true },
+        select: { isDtu: true, status: true, email: true, publicToken: true },
       })
       if (!delegate || delegate.status !== "REGISTERED") {
         const e = new Error("Delegate unavailable") as Error & { code: string }
@@ -140,6 +134,7 @@ export async function allotPortfolio(input: {
       return {
         fee: fee ? { amountInr: fee.amountInr } : null,
         delegateEmail: delegate.email,
+        delegateToken: delegate.publicToken,
       }
     })
 
@@ -148,6 +143,7 @@ export async function allotPortfolio(input: {
       const provider = await getActiveProvider()
       const { link, orderId } = await provider.createPaymentLink({
         delegateId: input.delegateId,
+        publicToken: txResult.delegateToken,
         amountInr: txResult.fee.amountInr,
         email: txResult.delegateEmail,
       })
@@ -176,6 +172,11 @@ export async function allotPortfolio(input: {
     } catch {
       // intentionally silent
     }
+
+    await audit(adminEmail, "allotment.create", "Delegate", input.delegateId, {
+      portfolioId: input.portfolioId,
+      committeeId: input.committeeId,
+    })
 
     return { success: true }
   } catch (err: unknown) {
@@ -211,7 +212,7 @@ export async function revokeAllotment(input: {
   portfolioId: string
   delegateId: string
 }): Promise<{ success: boolean; error?: string }> {
-  await requireAdmin()
+  const session = await requireAdmin()
 
   try {
     await prisma.$transaction(async (tx) => {
@@ -230,6 +231,10 @@ export async function revokeAllotment(input: {
       await tx.payment.deleteMany({
         where: { delegateId: input.delegateId, status: "PENDING" },
       })
+    })
+
+    await audit(session.user?.email ?? "unknown", "allotment.revoke", "Delegate", input.delegateId, {
+      portfolioId: input.portfolioId,
     })
 
     return { success: true }

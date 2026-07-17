@@ -6,6 +6,7 @@ import { TabRegistration } from "./tab-registration"
 import { TabCommittees } from "./tab-committees"
 import { TabPortfolios } from "./tab-portfolios"
 import { TabFees } from "./tab-fees"
+import { TabPayments } from "./tab-payments"
 import type { Content } from "@/content/contentSchema"
 
 export interface ClientPortfolio {
@@ -39,9 +40,10 @@ interface Props {
   content: Content
   committees: ClientCommittee[]
   fees: ClientFee[]
+  isAdmin: boolean
 }
 
-export function ConfigTabs({ content, committees, fees }: Props) {
+export function ConfigTabs({ content, committees, fees, isAdmin }: Props) {
   return (
     <Tabs defaultValue="content">
       <TabsList>
@@ -50,6 +52,7 @@ export function ConfigTabs({ content, committees, fees }: Props) {
         <TabsTrigger value="committees">Committees</TabsTrigger>
         <TabsTrigger value="portfolios">Portfolios</TabsTrigger>
         <TabsTrigger value="fees">Fees</TabsTrigger>
+        {isAdmin && <TabsTrigger value="payments">Payments</TabsTrigger>}
       </TabsList>
 
       <TabsContent value="content" className="mt-6">
@@ -71,6 +74,16 @@ export function ConfigTabs({ content, committees, fees }: Props) {
       <TabsContent value="fees" className="mt-6">
         <TabFees fees={fees} />
       </TabsContent>
+
+      {isAdmin && (
+        <TabsContent value="payments" className="mt-6">
+          <TabPayments
+            paymentProvider={content.paymentProvider}
+            staticPaymentLink={content.staticPaymentLink}
+            sheetSyncUrl={content.sheetSyncUrl}
+          />
+        </TabsContent>
+      )}
     </Tabs>
   )
 }

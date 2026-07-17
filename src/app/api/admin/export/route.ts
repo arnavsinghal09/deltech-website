@@ -6,7 +6,8 @@ import { buildDelegateWhere } from "@/app/(admin)/admin/registrations/_lib/build
 
 export async function GET(request: NextRequest) {
   const session = await auth()
-  if (!session || (session.user as { role?: string }).role !== "ADMIN") {
+  const role = (session?.user as { role?: string } | undefined)?.role
+  if (!session || (role !== "ADMIN" && role !== "MAINTAINER")) {
     return new NextResponse("Unauthorized", { status: 401 })
   }
 
