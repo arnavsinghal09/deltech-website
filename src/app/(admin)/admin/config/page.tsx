@@ -25,6 +25,7 @@ export default async function ConfigPage() {
     doubleDelegation: c.doubleDelegation,
     isActive: c.isActive,
     sortOrder: c.sortOrder,
+    aliases: c.aliases,
     portfolios: c.portfolios.map((p) => ({
       id: p.id,
       committeeId: p.committeeId,

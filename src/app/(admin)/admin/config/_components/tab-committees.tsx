@@ -40,6 +40,7 @@ const schema = z.object({
   doubleDelegation: z.boolean(),
   isActive: z.boolean(),
   sortOrder: z.coerce.number().int().min(0),
+  aliasesText: z.string(),
 })
 
 type FormValues = z.infer<typeof schema>
@@ -71,6 +72,7 @@ export function TabCommittees({ committees }: Props) {
       doubleDelegation: false,
       isActive: true,
       sortOrder: 0,
+      aliasesText: "",
     },
     resolver: zodResolver(schema) as never,
   })
@@ -94,6 +96,7 @@ export function TabCommittees({ committees }: Props) {
       doubleDelegation: false,
       isActive: true,
       sortOrder: committees.length,
+      aliasesText: "",
     })
     setDialogOpen(true)
   }
@@ -108,6 +111,7 @@ export function TabCommittees({ committees }: Props) {
       doubleDelegation: c.doubleDelegation,
       isActive: c.isActive,
       sortOrder: c.sortOrder,
+      aliasesText: c.aliases.join(", "),
     })
     setDialogOpen(true)
   }
@@ -122,6 +126,10 @@ export function TabCommittees({ committees }: Props) {
         doubleDelegation: data.doubleDelegation,
         isActive: data.isActive,
         sortOrder: data.sortOrder,
+        aliases: data.aliasesText
+          .split(",")
+          .map((s) => s.trim())
+          .filter(Boolean),
       }
 
       const result = editTarget
@@ -266,6 +274,17 @@ export function TabCommittees({ committees }: Props) {
                 {...form.register("agenda")}
                 placeholder="e.g. Digital Healthcare"
               />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-xs">Aliases (comma-separated, for imports)</Label>
+              <Input
+                {...form.register("aliasesText")}
+                placeholder="e.g. DISEC, GA1, General Assembly 1"
+              />
+              <p className="text-xs text-muted-foreground">
+                Alternative names partners use in their sheets — matched automatically on import.
+              </p>
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2">

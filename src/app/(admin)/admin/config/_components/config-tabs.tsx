@@ -25,6 +25,7 @@ export interface ClientCommittee {
   doubleDelegation: boolean
   isActive: boolean
   sortOrder: number
+  aliases: string[]
   portfolios: ClientPortfolio[]
 }
 

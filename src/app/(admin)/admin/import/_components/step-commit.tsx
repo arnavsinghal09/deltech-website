@@ -42,7 +42,7 @@ export function StepCommit({ validated, skipped, onBack, onDone }: Props) {
       <div className="rounded-xl border border-border bg-card p-8 space-y-6">
         <p className="text-base font-semibold text-foreground">Import results</p>
 
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-4 gap-4">
           <div className="rounded-lg bg-green-50 border border-green-200 p-4 text-center dark:bg-green-950/30 dark:border-green-800">
             <p className="text-2xl font-bold text-green-700 dark:text-green-400">{result.created}</p>
             <p className="text-xs text-green-600 dark:text-green-500 mt-1">Imported</p>
@@ -54,6 +54,10 @@ export function StepCommit({ validated, skipped, onBack, onDone }: Props) {
           <div className="rounded-lg bg-muted border border-border p-4 text-center">
             <p className="text-2xl font-bold text-muted-foreground">{result.skipped}</p>
             <p className="text-xs text-muted-foreground mt-1">Skipped (duplicate)</p>
+          </div>
+          <div className="rounded-lg bg-amber-50 border border-amber-200 p-4 text-center dark:bg-amber-950/30 dark:border-amber-800">
+            <p className="text-2xl font-bold text-amber-700 dark:text-amber-400">{result.quarantined}</p>
+            <p className="text-xs text-amber-600 dark:text-amber-500 mt-1">Quarantined</p>
           </div>
         </div>
 

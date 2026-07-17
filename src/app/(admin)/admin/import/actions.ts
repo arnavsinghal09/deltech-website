@@ -1,16 +1,11 @@
 "use server"
 
-import { redirect } from "next/navigation"
 import { read, utils } from "xlsx"
-import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+import { requireStaff, requireAdmin } from "@/lib/authz"
+import { audit } from "@/lib/audit"
+import { createDelegateFromRow } from "@/lib/intake"
 import type { ColumnMapping, MappedRow } from "@/lib/schemas/import"
-
-async function requireAdmin() {
-  const session = await auth()
-  if (!session || (session.user as { role?: string }).role !== "ADMIN") redirect("/signin")
-  return session
-}
 
 // ---------------------------------------------------------------------------
 // Parse uploaded file
@@ -25,7 +20,7 @@ export interface ParseResult {
 }
 
 export async function parseUpload(formData: FormData): Promise<ParseResult> {
-  await requireAdmin()
+  await requireStaff()
   try {
     const file = formData.get("file") as File | null
     if (!file) return { success: false, error: "No file provided." }
@@ -71,7 +66,7 @@ export interface ImportPresetRecord {
 }
 
 export async function getImportPresets(): Promise<ImportPresetRecord[]> {
-  await requireAdmin()
+  await requireStaff()
   const presets = await prisma.importPreset.findMany({ orderBy: { name: "asc" } })
   return presets.map((p) => ({
     id:        p.id,
@@ -87,7 +82,7 @@ export async function saveImportPreset(
   partner: string,
   mapping: ColumnMapping,
 ): Promise<{ success: boolean; error?: string; preset?: ImportPresetRecord }> {
-  await requireAdmin()
+  await requireStaff()
   if (!name.trim()) return { success: false, error: "Preset name is required." }
   try {
     const preset = await prisma.importPreset.upsert({
@@ -117,70 +112,32 @@ export async function deleteImportPreset(id: string): Promise<{ success: boolean
 }
 
 // ---------------------------------------------------------------------------
-// Commit import — all delegates are CONFIRMED, 3-preference allotment fallback
+// Commit import — routed through the shared intake pipeline (lib/intake.ts).
+// Invalid rows are quarantined, never silently dropped:
+// created + allotted-in + duplicates + quarantined = total.
 // ---------------------------------------------------------------------------
 
 export interface CommitResult {
-  created:  number
-  allotted: number
-  skipped:  number
-  errors:   { row: number; email: string; reason: string }[]
-}
-
-async function tryAllot(
-  tx: Parameters<Parameters<typeof prisma.$transaction>[0]>[0],
-  delegateId: string,
-  adminEmail: string,
-  prefs: { committee?: string; portfolio?: string }[],
-): Promise<boolean> {
-  for (const { committee, portfolio } of prefs) {
-    if (!committee || !portfolio) continue
-
-    const comm = await tx.committee.findFirst({
-      where:  { name: { equals: committee, mode: "insensitive" }, isActive: true },
-      select: { id: true },
-    })
-    if (!comm) continue
-
-    const port = await tx.portfolio.findFirst({
-      where: {
-        committeeId: comm.id,
-        name:        { equals: portfolio, mode: "insensitive" },
-        status:      "AVAILABLE",
-      },
-      select: { id: true },
-    })
-    if (!port) continue
-
-    await tx.allotment.create({
-      data: {
-        delegateId,
-        committeeId: comm.id,
-        portfolioId: port.id,
-        allottedBy:  `import:${adminEmail}`,
-      },
-    })
-    await tx.portfolio.update({
-      where: { id: port.id },
-      data:  { status: "ALLOTTED" },
-    })
-    return true
-  }
-  return false
+  created:     number
+  allotted:    number
+  skipped:     number
+  quarantined: number
+  errors:      { row: number; email: string; reason: string }[]
 }
 
 export async function commitImport(params: {
   rows:        MappedRow[]
   skippedRows: number[]
 }): Promise<CommitResult> {
-  const session   = await requireAdmin()
-  const adminEmail = session.user.email ?? "import"
+  const session = await requireStaff()
+  const adminEmail = session.user?.email ?? "import"
   const { rows, skippedRows } = params
   const skippedSet = new Set(skippedRows)
 
-  let created  = 0
+  let created = 0
   let allotted = 0
-  let skipped  = 0
+  let skipped = 0
+  let quarantined = 0
   const errors: CommitResult["errors"] = []
 
   const activeRows = rows.filter((_, i) => !skippedSet.has(i))
@@ -188,44 +145,28 @@ export async function commitImport(params: {
   for (let i = 0; i < activeRows.length; i++) {
     const row = activeRows[i]
     try {
-      const existing = await prisma.delegate.findFirst({ where: { email: row.email } })
-      if (existing) {
-        skipped++
-        errors.push({ row: i, email: row.email, reason: "Email already registered — skipped." })
-        continue
-      }
-
-      const { delegateId, wasAllotted } = await prisma.$transaction(async (tx) => {
-        const d = await tx.delegate.create({
-          data: {
-            fullName:    row.fullName,
-            email:       row.email,
-            whatsapp:    row.whatsapp ?? row.email,
-            institution: row.institution ?? "N/A",
-            isDtu:       false,
-            source:      "CROSS_DEL",
-            sourceNote:  row.note?.trim() || null,
-            status:      "CONFIRMED",
-          },
-        })
-
-        const didAllot = await tryAllot(tx, d.id, adminEmail, [
-          { committee: row.committee,  portfolio: row.portfolio  },
-          { committee: row.committee2, portfolio: row.portfolio2 },
-          { committee: row.committee3, portfolio: row.portfolio3 },
-        ])
-
-        return { delegateId: d.id, wasAllotted: didAllot }
+      const result = await createDelegateFromRow(row, "CROSS_DEL", {
+        allottedBy: `import:${adminEmail}`,
       })
 
-      created++
-      if (wasAllotted) allotted++
-
-      // Fire allotment email async if allotted
-      if (wasAllotted) {
-        void import("@/lib/resend")
-          .then(({ sendAllotmentEmail }) => sendAllotmentEmail(delegateId))
-          .catch(() => undefined)
+      if (result.ok) {
+        created++
+        if (result.allotted) {
+          allotted++
+          void import("@/lib/resend")
+            .then(({ sendAllotmentEmail }) => sendAllotmentEmail(result.delegateId))
+            .catch(() => undefined)
+        }
+      } else if (result.reason === "duplicate") {
+        skipped++
+        errors.push({ row: i, email: row.email, reason: "Email already registered — skipped." })
+      } else {
+        quarantined++
+        errors.push({
+          row: i,
+          email: row.email,
+          reason: `Quarantined for review: ${result.errors.join("; ")}`,
+        })
       }
     } catch (err) {
       errors.push({
@@ -236,5 +177,67 @@ export async function commitImport(params: {
     }
   }
 
-  return { created, allotted, skipped, errors }
+  await audit(adminEmail, "import.commit", "Delegate", undefined, {
+    total: activeRows.length, created, allotted, skipped, quarantined,
+  })
+
+  return { created, allotted, skipped, quarantined, errors }
+}
+
+// ---------------------------------------------------------------------------
+// Quarantine — rows that failed hard validation from any intake channel
+// ---------------------------------------------------------------------------
+
+export interface QuarantineRecord {
+  id:        string
+  source:    string
+  raw:       MappedRow
+  errors:    string[]
+  createdAt: string
+}
+
+export async function getQuarantine(): Promise<QuarantineRecord[]> {
+  await requireStaff()
+  const rows = await prisma.quarantinedRow.findMany({
+    where: { resolvedAt: null },
+    orderBy: { createdAt: "desc" },
+    take: 200,
+  })
+  return rows.map((r) => ({
+    id:        r.id,
+    source:    r.source,
+    raw:       r.raw as MappedRow,
+    errors:    r.errors,
+    createdAt: r.createdAt.toISOString(),
+  }))
+}
+
+export async function retryQuarantined(
+  id: string,
+  fixedRow: MappedRow,
+): Promise<{ success: boolean; error?: string }> {
+  const session = await requireStaff()
+  const q = await prisma.quarantinedRow.findUnique({ where: { id } })
+  if (!q || q.resolvedAt) return { success: false, error: "Row not found or already resolved." }
+
+  const result = await createDelegateFromRow(fixedRow, q.source as "SELF" | "CROSS_DEL", {
+    allottedBy: `quarantine:${session.user?.email ?? "staff"}`,
+    presetName: q.presetName ?? undefined,
+  })
+  if (!result.ok) {
+    return {
+      success: false,
+      error: result.reason === "duplicate" ? "Email already registered." : result.errors.join("; "),
+    }
+  }
+  await prisma.quarantinedRow.update({ where: { id }, data: { resolvedAt: new Date() } })
+  await audit(session.user?.email ?? "unknown", "quarantine.retry", "QuarantinedRow", id)
+  return { success: true }
+}
+
+export async function dismissQuarantined(id: string): Promise<{ success: boolean }> {
+  const session = await requireStaff()
+  await prisma.quarantinedRow.update({ where: { id }, data: { resolvedAt: new Date() } })
+  await audit(session.user?.email ?? "unknown", "quarantine.dismiss", "QuarantinedRow", id)
+  return { success: true }
 }
