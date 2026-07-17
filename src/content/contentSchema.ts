@@ -25,7 +25,19 @@ export const ContentSchema = z.object({
       }),
     )
     .default([]),
-  paymentProvider: z.enum(["upi_qr", "razorpay"]).default("upi_qr"),
+  paymentProvider: z.enum(["upi_qr", "razorpay", "static_link"]).default("upi_qr"),
+  staticPaymentLink: z.string().default(""),
+  sheetSyncUrl: z.string().default(""),
+  sheetPullSources: z
+    .array(
+      z.object({
+        presetName: z.string(),
+        csvUrl: z.string(),
+        source: z.enum(["SELF", "CROSS_DEL"]),
+      }),
+    )
+    .default([]),
+  matrixPublic: z.boolean().default(true),
   accommodationNote: z.string().default(""),
   blogIntro: z.string().default(""),
 });

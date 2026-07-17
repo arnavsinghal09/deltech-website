@@ -26,7 +26,7 @@ interface Props {
 
 const STATUS_VARIANT: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
   REGISTERED: "secondary", ALLOTTED: "outline", PAYMENT_SENT: "outline",
-  PAID: "default", CONFIRMED: "default", CANCELLED: "destructive", WAITLISTED: "secondary",
+  CONFIRMED: "default", CANCELLED: "destructive", WAITLISTED: "secondary",
 }
 
 function Field({ label, value }: { label: string; value: React.ReactNode }) {

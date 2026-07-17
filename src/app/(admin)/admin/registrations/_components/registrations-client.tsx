@@ -40,19 +40,19 @@ interface Props {
   filters: Filters
 }
 
-const STATUS_OPTIONS = ["REGISTERED", "ALLOTTED", "PAYMENT_SENT", "PAID", "CONFIRMED", "CANCELLED", "WAITLISTED"]
+const STATUS_OPTIONS = ["REGISTERED", "ALLOTTED", "PAYMENT_SENT", "CONFIRMED", "CANCELLED", "WAITLISTED"]
 const SOURCE_OPTIONS = ["SELF", "CROSS_DEL", "SPONSORED", "INTERNAL", "MANUAL"]
 
 const STATUS_LABEL: Record<string, string> = {
   REGISTERED: "Registered", ALLOTTED: "Allotted", PAYMENT_SENT: "Pay link sent",
-  PAID: "Paid", CONFIRMED: "Confirmed", CANCELLED: "Cancelled", WAITLISTED: "Waitlisted",
+  CONFIRMED: "Confirmed", CANCELLED: "Cancelled", WAITLISTED: "Waitlisted",
 }
 const SOURCE_LABEL: Record<string, string> = {
   SELF: "Self", CROSS_DEL: "Cross-del", SPONSORED: "Sponsored", INTERNAL: "Internal", MANUAL: "Manual",
 }
 const STATUS_VARIANT: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
   REGISTERED: "secondary", ALLOTTED: "outline", PAYMENT_SENT: "outline",
-  PAID: "default", CONFIRMED: "default", CANCELLED: "destructive", WAITLISTED: "secondary",
+  CONFIRMED: "default", CANCELLED: "destructive", WAITLISTED: "secondary",
 }
 
 function formatDate(iso: string) {

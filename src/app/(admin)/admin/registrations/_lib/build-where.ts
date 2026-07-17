@@ -1,6 +1,6 @@
 import type { Prisma, AppStatus, Source } from "@/generated/prisma/client"
 
-const VALID_STATUSES = new Set(["REGISTERED", "ALLOTTED", "PAYMENT_SENT", "PAID", "CONFIRMED", "CANCELLED", "WAITLISTED"])
+const VALID_STATUSES = new Set(["REGISTERED", "ALLOTTED", "PAYMENT_SENT", "CONFIRMED", "CANCELLED", "WAITLISTED"])
 const VALID_SOURCES = new Set(["SELF", "CROSS_DEL", "SPONSORED", "INTERNAL", "MANUAL"])
 
 export interface FilterParams {

@@ -26,6 +26,7 @@ model User {
 
 enum Role {
   ADMIN
+  MAINTAINER
   AUTHOR
   REGISTERER
 }
@@ -83,6 +84,7 @@ model Committee {
   name             String
   slug             String        @unique
   agenda           String?
+  aliases          String[]      @default([])
   type             CommitteeType @default(STANDARD)
   doubleDelegation Boolean       @default(false)
   ebMembers        Json?
@@ -127,8 +129,9 @@ model Fee {
 
 model Delegate {
   id                 String     @id @default(cuid())
+  publicToken        String     @unique @default(uuid(4))
   fullName           String
-  email              String
+  email              String     @unique
   whatsapp           String
   altPhone           String?
   institution        String
@@ -140,6 +143,8 @@ model Delegate {
   pref1Portfolio     String?
   pref2CommitteeId   String?
   pref2Portfolio     String?
+  pref3CommitteeId   String?
+  pref3Portfolio     String?
   needsAccommodation Boolean    @default(false)
   outsideNcr         Boolean    @default(false)
   reference          String?
@@ -163,7 +168,6 @@ enum AppStatus {
   REGISTERED
   ALLOTTED
   PAYMENT_SENT
-  PAID
   CONFIRMED
   CANCELLED
   WAITLISTED
@@ -236,6 +240,98 @@ enum PayStatus {
   FAILED
   COMPED
   OFFLINE
+}
+
+// ---- Society recruitment (GD/PI) ----
+
+model Applicant {
+  id        String          @id @default(cuid())
+  fullName  String
+  email     String          @unique
+  phone     String?
+  year      String?
+  branch    String?
+  answers   Json?
+  status    ApplicantStatus @default(APPLIED)
+  gdSlotId  String?
+  gdSlot    InterviewSlot?  @relation("gd", fields: [gdSlotId], references: [id])
+  gdScore   Int?
+  gdVerdict Verdict?
+  piSlotId  String?
+  piSlot    InterviewSlot?  @relation("pi", fields: [piSlotId], references: [id])
+  piScore   Int?
+  piVerdict Verdict?
+  createdAt DateTime        @default(now())
+}
+
+model InterviewSlot {
+  id           String         @id @default(cuid())
+  round        InterviewRound
+  startsAt     DateTime
+  venue        String?
+  capacity     Int            @default(8)
+  panel        Json?
+  gdApplicants Applicant[]    @relation("gd")
+  piApplicants Applicant[]    @relation("pi")
+}
+
+enum InterviewRound {
+  GD
+  PI
+}
+
+enum Verdict {
+  SHORTLIST
+  REJECT
+  SELECT
+}
+
+enum ApplicantStatus {
+  APPLIED
+  GD_SCHEDULED
+  GD_DONE
+  PI_SCHEDULED
+  PI_DONE
+  SELECTED
+  REJECTED
+}
+
+// ---- Team ----
+
+model Member {
+  id          String  @id @default(cuid())
+  name        String
+  designation String
+  order       Int     @default(0)
+  imageUrl    String?
+  socials     Json?
+  isActive    Boolean @default(true)
+}
+
+// ---- Audit ----
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  actorEmail String
+  action     String
+  entity     String
+  entityId   String?
+  meta       Json?
+  at         DateTime @default(now())
+
+  @@index([at])
+}
+
+// ---- Intake quarantine ----
+
+model QuarantinedRow {
+  id         String    @id @default(cuid())
+  source     String
+  presetName String?
+  raw        Json
+  errors     String[]
+  resolvedAt DateTime?
+  createdAt  DateTime  @default(now())
 }
 
 // ---- Blog ----

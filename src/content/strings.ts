@@ -280,7 +280,6 @@ export const STRINGS = {
     REGISTERED: "Registered",
     ALLOTTED: "Allotted",
     PAYMENT_SENT: "Payment link sent",
-    PAID: "Paid",
     CONFIRMED: "Confirmed",
     CANCELLED: "Cancelled",
     WAITLISTED: "Waitlisted",
