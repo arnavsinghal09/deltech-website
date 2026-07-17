@@ -2,6 +2,7 @@ import { createHmac, timingSafeEqual } from "crypto"
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { sendPaymentConfirmed } from "@/lib/resend"
+import { syncSheetForDelegate } from "@/lib/sheet-sync"
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -119,6 +120,8 @@ export async function POST(req: NextRequest) {
       data: { status: "CONFIRMED" },
     })
   })
+
+  await syncSheetForDelegate(delegateId)
 
   try {
     await sendPaymentConfirmed(delegateId)

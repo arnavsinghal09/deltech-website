@@ -6,6 +6,7 @@ import { audit } from "@/lib/audit"
 import { getActiveProvider } from "@/lib/payments"
 import { delegateInclude, serializeDelegate, type SerializedDelegate } from "./_lib/types"
 import { sendPaymentConfirmed, resendByLogId } from "@/lib/resend"
+import { syncSheetCell, syncSheetForDelegate } from "@/lib/sheet-sync"
 
 export interface DelegateEditData {
   fullName: string
@@ -79,6 +80,7 @@ export async function markPaidOffline(
       })
     })
     await audit(session.user?.email ?? "unknown", "delegate.markPaidOffline", "Delegate", delegateId)
+    await syncSheetForDelegate(delegateId)
     try {
       await sendPaymentConfirmed(delegateId)
     } catch {
@@ -105,6 +107,7 @@ export async function compDelegate(
       await tx.delegate.update({ where: { id: delegateId }, data: { status: "CONFIRMED" } })
     })
     await audit(session.user?.email ?? "unknown", "delegate.comp", "Delegate", delegateId)
+    await syncSheetForDelegate(delegateId)
     try {
       await sendPaymentConfirmed(delegateId)
     } catch {
@@ -122,8 +125,11 @@ export async function cancelDelegate(
 ): Promise<{ success: boolean; error?: string; delegate?: SerializedDelegate }> {
   const session = await requireAdmin()
   try {
-    await prisma.$transaction(async (tx) => {
-      const allotment = await tx.allotment.findUnique({ where: { delegateId } })
+    const freedCell = await prisma.$transaction(async (tx) => {
+      const allotment = await tx.allotment.findUnique({
+        where: { delegateId },
+        include: { portfolio: { include: { committee: { select: { name: true } } } } },
+      })
       if (allotment) {
         await tx.allotment.delete({ where: { id: allotment.id } })
         await tx.portfolio.update({
@@ -135,8 +141,14 @@ export async function cancelDelegate(
         where: { delegateId, status: { in: ["PENDING", "SENT", "FAILED"] } },
       })
       await tx.delegate.update({ where: { id: delegateId }, data: { status: "CANCELLED" } })
+      return allotment
+        ? { committee: allotment.portfolio.committee.name, portfolio: allotment.portfolio.name }
+        : null
     })
     await audit(session.user?.email ?? "unknown", "delegate.cancel", "Delegate", delegateId)
+    if (freedCell) {
+      await syncSheetCell({ ...freedCell, state: "available" })
+    }
     return { success: true, delegate: await reloadDelegate(delegateId) }
   } catch {
     return { success: false, error: "Failed to cancel. Please try again." }

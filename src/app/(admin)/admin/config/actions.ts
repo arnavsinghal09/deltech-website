@@ -1,9 +1,12 @@
 "use server"
 
+import { z } from "zod"
 import { prisma } from "@/lib/prisma"
 import { setContent } from "@/lib/settings"
 import { requireStaff, requireAdmin } from "@/lib/authz"
 import { audit } from "@/lib/audit"
+import { callAI, AIRateLimitError } from "@/lib/ai"
+import { UN_MEMBERS } from "@/lib/un-countries"
 
 // Money/sync config only an ADMIN may touch — kept out of saveContent entirely.
 const PAYMENT_KEYS = new Set(["paymentProvider", "staticPaymentLink", "sheetSyncUrl"])
@@ -167,6 +170,60 @@ export async function deletePortfolio(
     return { success: true }
   } catch {
     return { success: false, error: "Cannot delete — portfolio has an allotment." }
+  }
+}
+
+// ── AI matrix generation ───────────────────────────────────────────────────────
+// STANDARD committees never need AI — the UN member list is deterministic.
+// CRISIS/PRESS (cabinets, parliaments, press corps) get a Groq call, validated.
+const portfolioListSchema = z.object({
+  portfolios: z.array(z.string().min(2).max(80)).min(1).max(300),
+})
+
+export async function generatePortfolios(
+  committeeId: string,
+  size: number,
+): Promise<{ success: boolean; portfolios?: string[]; error?: string; rateLimited?: boolean }> {
+  await requireStaff()
+  const committee = await prisma.committee.findUnique({
+    where: { id: committeeId },
+    select: { name: true, agenda: true, type: true },
+  })
+  if (!committee) return { success: false, error: "Committee not found." }
+  const count = Math.min(Math.max(size, 1), 300)
+
+  if (committee.type === "STANDARD") {
+    return { success: true, portfolios: UN_MEMBERS.slice(0, count) }
+  }
+
+  const prompt = `You are preparing the portfolio matrix for a Model United Nations committee.
+
+Committee: ${committee.name}
+Type: ${committee.type === "CRISIS" ? "Crisis / specialized (cabinet, parliament, or historical body)" : "International Press"}
+Agenda: ${committee.agenda ?? "(not set)"}
+
+Generate exactly ${count} portfolio names appropriate for this committee:
+- For an Indian parliamentary committee (e.g. Lok Sabha, AIPPM): real, currently relevant Indian politicians / Members of Parliament, correctly spelled, across parties.
+- For a crisis cabinet or historical committee: the characters/positions that belong to that body.
+- For International Press: roles like "Reporter — <outlet>" or "Photojournalist — <outlet>" using real news outlets.
+
+Rules: real names/roles only, no duplicates, no numbering, each under 60 characters.
+
+Respond with a JSON object: {"portfolios": ["...", "..."]} with exactly ${count} entries.`
+
+  try {
+    const raw = await callAI<unknown>(prompt)
+    const parsed = portfolioListSchema.safeParse(raw)
+    if (!parsed.success) {
+      return { success: false, error: "AI returned an invalid list — try again." }
+    }
+    const unique = [...new Set(parsed.data.portfolios.map((p) => p.trim()).filter(Boolean))]
+    return { success: true, portfolios: unique.slice(0, count) }
+  } catch (err) {
+    if (err instanceof AIRateLimitError) {
+      return { success: false, error: err.message, rateLimited: true }
+    }
+    return { success: false, error: err instanceof Error ? err.message : "AI generation failed." }
   }
 }
 

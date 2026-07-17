@@ -219,6 +219,11 @@ export async function createDelegateFromRow(
       return { delegateId: d.id, allotted: didAllot }
     })
 
+    if (allotted) {
+      const { syncSheetForDelegate } = await import("@/lib/sheet-sync")
+      await syncSheetForDelegate(delegateId)
+    }
+
     return { ok: true, delegateId, allotted }
   } catch (err) {
     if (isP2002(err)) {

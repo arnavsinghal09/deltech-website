@@ -5,6 +5,7 @@ import { requireStaff, requireAdmin } from "@/lib/authz"
 import { audit } from "@/lib/audit"
 import { getActiveProvider } from "@/lib/payments"
 import { sendAllotmentEmail, sendCoDelegateNotice } from "@/lib/resend"
+import { syncSheetCell, syncSheetForDelegate } from "@/lib/sheet-sync"
 
 function isPrismaP2002(err: unknown): boolean {
   // Prisma unique constraint violation
@@ -177,6 +178,7 @@ export async function allotPortfolio(input: {
       portfolioId: input.portfolioId,
       committeeId: input.committeeId,
     })
+    await syncSheetForDelegate(input.delegateId)
 
     return { success: true }
   } catch (err: unknown) {
@@ -214,6 +216,11 @@ export async function revokeAllotment(input: {
 }): Promise<{ success: boolean; error?: string }> {
   const session = await requireAdmin()
 
+  const cell = await prisma.portfolio.findUnique({
+    where: { id: input.portfolioId },
+    select: { name: true, committee: { select: { name: true } } },
+  })
+
   try {
     await prisma.$transaction(async (tx) => {
       await tx.allotment.delete({ where: { id: input.allotmentId } })
@@ -236,6 +243,9 @@ export async function revokeAllotment(input: {
     await audit(session.user?.email ?? "unknown", "allotment.revoke", "Delegate", input.delegateId, {
       portfolioId: input.portfolioId,
     })
+    if (cell) {
+      await syncSheetCell({ committee: cell.committee.name, portfolio: cell.name, state: "available" })
+    }
 
     return { success: true }
   } catch {

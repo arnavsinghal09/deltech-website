@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
-import { Plus, Trash2 } from "lucide-react"
+import { Plus, Trash2, Sparkles } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -17,7 +17,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Separator } from "@/components/ui/separator"
-import { addPortfolio, bulkAddPortfolios, deletePortfolio } from "../actions"
+import { addPortfolio, bulkAddPortfolios, deletePortfolio, generatePortfolios } from "../actions"
 import type { ClientCommittee } from "./config-tabs"
 
 const STATUS_VARIANT: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
@@ -43,6 +43,7 @@ export function TabPortfolios({ committees }: Props) {
   const [selectedId, setSelectedId] = useState(committees[0]?.id ?? "")
   const [newName, setNewName] = useState("")
   const [bulkText, setBulkText] = useState("")
+  const [genSize, setGenSize] = useState(30)
   const [isPending, startTransition] = useTransition()
 
   const selected = committees.find((c) => c.id === selectedId)
@@ -75,6 +76,23 @@ export function TabPortfolios({ committees }: Props) {
       )
       setBulkText("")
       router.refresh()
+    })
+  }
+
+  // Generated names land in the bulk textarea for review — the existing
+  // bulk-add path is the only insert path.
+  const handleGenerate = () => {
+    if (!selectedId) return
+    startTransition(async () => {
+      const result = await generatePortfolios(selectedId, genSize)
+      if (result.success && result.portfolios) {
+        setBulkText(result.portfolios.join("\n"))
+        toast.success(
+          `Generated ${result.portfolios.length} portfolios — review below, then Bulk add.`,
+        )
+      } else {
+        toast.error(result.error ?? "Generation failed.")
+      }
     })
   }
 
@@ -139,6 +157,37 @@ export function TabPortfolios({ committees }: Props) {
           </div>
 
           <Separator />
+
+          {/* Generate matrix */}
+          <div className="space-y-1.5">
+            <Label className="text-xs text-muted-foreground">
+              Generate matrix — countries for GA committees, MPs/characters for
+              crisis, outlets for press
+            </Label>
+            <div className="flex items-center gap-2">
+              <Input
+                type="number"
+                min={1}
+                max={300}
+                value={genSize}
+                onChange={(e) => setGenSize(Number(e.target.value) || 30)}
+                className="w-24"
+              />
+              <Button
+                onClick={handleGenerate}
+                disabled={isPending}
+                size="sm"
+                variant="outline"
+                className="gap-1.5"
+              >
+                <Sparkles className="size-3.5" />
+                {isPending ? "Generating…" : `Generate for ${selected.name}`}
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Fills the bulk box below for review — nothing is saved until you Bulk add.
+            </p>
+          </div>
 
           {/* Bulk paste */}
           <div className="space-y-1.5">
