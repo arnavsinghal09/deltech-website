@@ -1,13 +1,40 @@
 import type { Metadata } from "next"
 import Link from "next/link"
-import { Clock } from "lucide-react"
-import { Badge } from "@/components/ui/badge"
 import { prisma } from "@/lib/prisma"
 import { STRINGS } from "@/content/strings"
 
 export const metadata: Metadata = {
   title: `Blog — ${STRINGS.brand.name}`,
   description: `Stories, insights, and updates from the ${STRINGS.brand.name} community.`,
+}
+
+function metaLine(post: {
+  author: { name: string | null }
+  publishedAt: Date | null
+  readMin: number | null
+}) {
+  const parts = [
+    post.author.name ?? "Anonymous",
+    post.publishedAt
+      ? new Date(post.publishedAt).toLocaleDateString("en-IN", {
+          day: "numeric",
+          month: "short",
+          year: "numeric",
+        })
+      : null,
+    post.readMin ? `${post.readMin} min` : null,
+  ].filter(Boolean)
+  return parts.join(" · ")
+}
+
+function PlaceholderCover({ className }: { className?: string }) {
+  return (
+    <div className={`flex items-center justify-center bg-secondary ${className ?? ""}`}>
+      <span aria-hidden className="display text-4xl text-gold-500">
+        ◆
+      </span>
+    </div>
+  )
 }
 
 export default async function BlogIndexPage() {
@@ -27,75 +54,84 @@ export default async function BlogIndexPage() {
     },
   })
 
+  const [featured, ...rest] = posts
+
   return (
-    <div className="mx-auto max-w-5xl px-4 py-12 sm:px-6">
-      <div className="mb-10">
-        <h1 className="font-serif text-4xl font-bold text-foreground">Blog</h1>
-        <p className="mt-2 text-muted-foreground">Stories and insights from the {STRINGS.brand.name} community</p>
+    <div className="mx-auto max-w-4xl px-4 py-16 sm:px-6">
+      <div className="mb-12">
+        <p className="eyebrow">{STRINGS.brand.name}</p>
+        <h1 className="display mt-3 text-4xl md:text-5xl">The Dispatch</h1>
+        <p className="mt-3 text-muted-foreground">
+          Stories and insights from the {STRINGS.brand.name} community
+        </p>
+        <div className="rule mt-8" />
       </div>
 
       {posts.length === 0 ? (
-        <div className="rounded-xl border bg-card py-20 text-center text-muted-foreground">
+        <p className="py-20 text-center text-muted-foreground">
           No articles published yet. Check back soon.
-        </div>
+        </p>
       ) : (
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {posts.map((post) => (
+        <div className="space-y-2">
+          {/* Featured — most recent post */}
+          <Link href={`/blog/${featured.slug}`} className="group grid gap-6 pb-10 md:grid-cols-5">
+            {featured.coverImage ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={featured.coverImage}
+                alt={featured.title}
+                className="aspect-[3/2] w-full rounded-sm border border-foreground/15 object-cover md:col-span-2"
+              />
+            ) : (
+              <PlaceholderCover className="aspect-[3/2] w-full rounded-sm border border-foreground/15 md:col-span-2" />
+            )}
+            <div className="flex flex-col justify-center md:col-span-3">
+              <p className="eyebrow">Latest</p>
+              <h2 className="display mt-3 text-3xl leading-tight transition-colors group-hover:text-primary">
+                {featured.title}
+              </h2>
+              {featured.subtitle && (
+                <p className="mt-3 line-clamp-3 leading-relaxed text-muted-foreground">
+                  {featured.subtitle}
+                </p>
+              )}
+              <p className="mt-4 text-xs uppercase tracking-[0.12em] text-muted-foreground">
+                {metaLine(featured)}
+              </p>
+            </div>
+          </Link>
+
+          {/* The rest — hairline-divided editorial rows */}
+          {rest.map((post) => (
             <Link
               key={post.id}
               href={`/blog/${post.slug}`}
-              className="group flex flex-col rounded-xl border bg-card overflow-hidden transition-shadow hover:shadow-md"
+              className="group flex items-center gap-6 border-t border-border/70 py-7"
             >
-              {/* Cover */}
+              <div className="min-w-0 flex-1">
+                <h2 className="font-heading text-xl leading-snug transition-colors group-hover:text-primary">
+                  {post.title}
+                </h2>
+                {post.subtitle && (
+                  <p className="mt-1.5 line-clamp-2 text-sm leading-relaxed text-muted-foreground">
+                    {post.subtitle}
+                  </p>
+                )}
+                <p className="mt-2.5 text-xs uppercase tracking-[0.12em] text-muted-foreground">
+                  {metaLine(post)}
+                  {post.tags.length > 0 && <> · {post.tags.slice(0, 2).join(", ")}</>}
+                </p>
+              </div>
               {post.coverImage ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
                   src={post.coverImage}
-                  alt={post.title}
-                  className="h-44 w-full object-cover transition-transform group-hover:scale-[1.02]"
+                  alt=""
+                  className="hidden size-24 shrink-0 rounded-sm border border-foreground/15 object-cover sm:block"
                 />
               ) : (
-                <div className="h-44 w-full bg-gradient-to-br from-teal-50 to-teal-100 flex items-center justify-center">
-                  <span className="font-serif text-3xl text-teal-300">DM</span>
-                </div>
+                <PlaceholderCover className="hidden size-24 shrink-0 rounded-sm border border-foreground/15 sm:block" />
               )}
-
-              <div className="flex flex-1 flex-col p-5">
-                <h2 className="font-serif text-lg font-bold leading-snug text-foreground line-clamp-2 group-hover:text-primary transition-colors">
-                  {post.title}
-                </h2>
-
-                {post.subtitle && (
-                  <p className="mt-1.5 text-sm text-muted-foreground line-clamp-2 leading-relaxed">
-                    {post.subtitle}
-                  </p>
-                )}
-
-                <div className="mt-auto pt-4 flex items-center justify-between gap-2">
-                  <div className="text-xs text-muted-foreground">
-                    <span className="font-medium text-foreground">{post.author.name ?? "Anonymous"}</span>
-                    {post.publishedAt && (
-                      <> · {new Date(post.publishedAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}</>
-                    )}
-                  </div>
-                  {post.readMin && (
-                    <span className="flex items-center gap-1 text-xs text-muted-foreground shrink-0">
-                      <Clock className="size-3" />
-                      {post.readMin} min
-                    </span>
-                  )}
-                </div>
-
-                {post.tags.length > 0 && (
-                  <div className="mt-3 flex flex-wrap gap-1.5">
-                    {post.tags.slice(0, 3).map((tag) => (
-                      <Badge key={tag} variant="secondary" className="text-xs px-2 py-0">
-                        {tag}
-                      </Badge>
-                    ))}
-                  </div>
-                )}
-              </div>
             </Link>
           ))}
         </div>

@@ -24,19 +24,19 @@ const TYPE_LABEL: Record<string, string> = {
 
 const STATE_STYLE: Record<PortfolioState, string> = {
   available:
-    "border-border/70 bg-card text-foreground hover:border-primary/50 hover:shadow-sm",
+    "border-foreground/20 bg-card text-foreground hover:border-primary",
   allotted:
-    "border-amber-300/70 bg-amber-50 text-amber-900 dark:border-amber-700/60 dark:bg-amber-950/40 dark:text-amber-200",
+    "border-gold-500/40 bg-accent text-accent-foreground",
   paid:
-    "border-green-300/70 bg-green-50 text-green-900 dark:border-green-800/60 dark:bg-green-950/40 dark:text-green-200",
+    "border-primary/40 bg-primary/10 text-primary",
   blocked:
     "border-border/40 bg-muted/60 text-muted-foreground/60 line-through",
 }
 
-const LEGEND: { state: PortfolioState; label: string; dot: string }[] = [
-  { state: "available", label: "Available", dot: "bg-card border border-border" },
-  { state: "allotted", label: "Allotted — payment pending", dot: "bg-amber-400" },
-  { state: "paid", label: "Confirmed (paid)", dot: "bg-green-500" },
+const LEGEND: { state: PortfolioState; label: string; square: string }[] = [
+  { state: "available", label: "Available", square: "bg-card border border-foreground/25" },
+  { state: "allotted", label: "Allotted — payment pending", square: "bg-accent border border-gold-500/50" },
+  { state: "paid", label: "Confirmed (paid)", square: "bg-primary/15 border border-primary/50" },
 ]
 
 export function MatrixBoard({ committees }: { committees: MatrixCommittee[] }) {
@@ -67,10 +67,13 @@ export function MatrixBoard({ committees }: { committees: MatrixCommittee[] }) {
   return (
     <div className="space-y-10">
       {/* Legend */}
-      <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2">
+      <div className="flex flex-wrap items-center justify-center gap-x-7 gap-y-2">
         {LEGEND.map((l) => (
-          <span key={l.state} className="flex items-center gap-2 text-xs text-muted-foreground">
-            <span className={`size-2.5 rounded-full ${l.dot}`} />
+          <span
+            key={l.state}
+            className="flex items-center gap-2 text-xs uppercase tracking-[0.1em] text-muted-foreground"
+          >
+            <span className={`size-3 rounded-[2px] ${l.square}`} />
             {l.label}
           </span>
         ))}
@@ -86,17 +89,17 @@ export function MatrixBoard({ committees }: { committees: MatrixCommittee[] }) {
             viewport={{ once: true, margin: "-40px" }}
             transition={{ duration: 0.4, delay: Math.min(ci * 0.05, 0.3), ease: "easeOut" }}
           >
-            <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
+            <div className="mb-4 flex flex-wrap items-baseline justify-between gap-2 border-b border-border/70 pb-3">
               <div>
-                <h2 className="text-lg font-semibold tracking-tight">{committee.name}</h2>
-                <p className="text-xs text-muted-foreground">
+                <h2 className="font-heading text-2xl">{committee.name}</h2>
+                <p className="mt-1 text-xs uppercase tracking-[0.12em] text-muted-foreground">
                   {TYPE_LABEL[committee.type]}
                   {committee.doubleDelegation && " · double delegation"}
                   {committee.agenda && <> · {committee.agenda}</>}
                 </p>
               </div>
               <span
-                className={`text-xs font-medium ${openCount === 0 ? "text-destructive" : "text-primary"}`}
+                className={`font-mono text-sm tabular-nums ${openCount === 0 ? "text-destructive" : "text-primary"}`}
               >
                 {openCount === 0 ? "Full" : `${openCount} open`}
               </span>

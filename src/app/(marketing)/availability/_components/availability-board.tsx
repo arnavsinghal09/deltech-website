@@ -92,17 +92,15 @@ export function AvailabilityBoard({ initial }: Props) {
         <motion.div
           key={committee.id}
           layout
-          className="flex items-center justify-between gap-4 rounded-xl border border-border/60 bg-card px-5 py-4 shadow-sm"
+          className="editorial-card flex items-center justify-between gap-4 px-5 py-4"
         >
           <div className="min-w-0 flex-1">
-            <p className="truncate font-semibold text-card-foreground">{committee.name}</p>
+            <p className="truncate font-heading text-lg text-card-foreground">{committee.name}</p>
             <div className="mt-1 flex flex-wrap items-center gap-2">
-              <span className="text-xs text-muted-foreground">{TYPE_LABEL[committee.type]}</span>
-              {committee.doubleDelegation && (
-                <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary">
-                  double delegation
-                </span>
-              )}
+              <span className="text-xs uppercase tracking-[0.1em] text-muted-foreground">
+                {TYPE_LABEL[committee.type]}
+                {committee.doubleDelegation && " · double del"}
+              </span>
             </div>
           </div>
           <CountBadge count={Math.max(0, committee.availableCount)} />

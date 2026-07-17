@@ -44,13 +44,14 @@ export default async function AvailabilityPage() {
 
     return (
       <div className="mx-auto max-w-5xl px-4 py-16 sm:px-6">
-        <div className="mb-10 text-center">
-          <h1 className="text-3xl font-bold tracking-tight">{t("landing.sectionAgendas")}</h1>
-          <p className="mt-2 text-muted-foreground">
+        <div className="mb-12 text-center">
+          <p className="eyebrow">Live availability</p>
+          <h1 className="display mt-3 text-4xl md:text-5xl">{t("landing.sectionAgendas")}</h1>
+          <p className="mt-3 text-muted-foreground">
             Live portfolio availability — updates as allotments are made.
           </p>
           {totalAvailable > 0 && (
-            <p className="mt-1 text-sm text-primary font-medium">
+            <p className="mt-2 font-mono text-sm tabular-nums text-primary">
               {totalAvailable} portfolio{totalAvailable !== 1 ? "s" : ""} still open
             </p>
           )}
@@ -89,13 +90,14 @@ export default async function AvailabilityPage() {
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6">
-      <div className="mb-10 text-center">
-        <h1 className="text-3xl font-bold tracking-tight">Portfolio Matrix</h1>
-        <p className="mt-2 text-muted-foreground">
-          Live — every allotment and payment updates this page in real time.
+      <div className="mb-12 text-center">
+        <p className="eyebrow">Live · updates in real time</p>
+        <h1 className="display mt-3 text-4xl md:text-5xl">The Matrix</h1>
+        <p className="mt-3 text-muted-foreground">
+          Every allotment and payment updates this page the moment it happens.
         </p>
         {totalAvailable > 0 && (
-          <p className="mt-1 text-sm text-primary font-medium">
+          <p className="mt-2 font-mono text-sm tabular-nums text-primary">
             {totalAvailable} portfolio{totalAvailable !== 1 ? "s" : ""} still open
           </p>
         )}

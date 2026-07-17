@@ -36,25 +36,28 @@ export default function QuizJoinPage() {
   }
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center gap-6 bg-background px-4 py-16">
-      <h1 className="text-3xl font-bold tracking-tight">{t("quiz.joinTitle")}</h1>
-      <p className="text-muted-foreground">{t("quiz.joinPrompt")}</p>
+    <main className="flex min-h-[80svh] flex-col items-center justify-center bg-background px-4 py-16">
+      <div className="editorial-card w-full max-w-md p-8 text-center sm:p-10">
+        <p className="eyebrow">Live quiz</p>
+        <h1 className="display mt-3 text-3xl md:text-4xl">{t("quiz.joinTitle")}</h1>
+        <p className="mt-2 text-muted-foreground">{t("quiz.joinPrompt")}</p>
 
-      <form onSubmit={handleSubmit} className="w-full max-w-sm space-y-3">
-        <Input
-          value={code}
-          onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
-          placeholder={t("quiz.roomCodePlaceholder")}
-          className="text-center text-2xl font-bold tracking-[0.3em] h-14"
-          maxLength={6}
-          inputMode="numeric"
-          autoFocus
-        />
-        {error && <p className="text-center text-sm text-destructive">{error}</p>}
-        <Button type="submit" className="w-full" disabled={isPending || code.length !== 6}>
-          {isPending ? t("common.loading") : t("quiz.joinButton")}
-        </Button>
-      </form>
+        <form onSubmit={handleSubmit} className="mt-8 space-y-3">
+          <Input
+            value={code}
+            onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+            placeholder={t("quiz.roomCodePlaceholder")}
+            className="h-14 text-center font-mono text-2xl font-bold tabular-nums tracking-[0.3em]"
+            maxLength={6}
+            inputMode="numeric"
+            autoFocus
+          />
+          {error && <p className="text-center text-sm text-destructive">{error}</p>}
+          <Button type="submit" className="h-11 w-full font-semibold" disabled={isPending || code.length !== 6}>
+            {isPending ? t("common.loading") : t("quiz.joinButton")}
+          </Button>
+        </form>
+      </div>
     </main>
   )
 }

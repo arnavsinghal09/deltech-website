@@ -18,14 +18,17 @@ export default async function TeamPage() {
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-16 sm:px-6">
-      <FadeUp className="mb-12 text-center">
-        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">
-          {t("brand.name")}
-        </p>
-        <h1 className="mt-2 text-4xl font-bold tracking-tight">The Team</h1>
+      <FadeUp className="mb-14 text-center">
+        <p className="eyebrow">{t("brand.name")}</p>
+        <h1 className="display mt-3 text-4xl md:text-5xl">The Team</h1>
         <p className="mx-auto mt-3 max-w-xl text-muted-foreground">
           The heart and soul of the society — the people who make the conference happen.
         </p>
+        <div className="mx-auto mt-8 flex w-40 items-center gap-3">
+          <div className="rule-gold flex-1" />
+          <span aria-hidden className="text-[10px] text-gold-500">◆</span>
+          <div className="rule-gold flex-1" />
+        </div>
       </FadeUp>
 
       {members.length === 0 ? (
@@ -36,30 +39,28 @@ export default async function TeamPage() {
             const socials = (m.socials as { instagram?: string; linkedin?: string } | null) ?? {}
             return (
               <StaggerItem key={m.id}>
-                <div className="group relative flex flex-col items-center overflow-hidden rounded-2xl border border-border/60 bg-card p-6 text-center shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-primary/40 hover:shadow-lg">
-                  {/* soft glow accent on hover */}
-                  <div className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-primary/10 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+                <div className="editorial-card group flex h-full flex-col items-center p-6 text-center transition-colors hover:border-primary/50">
                   {m.imageUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
                       src={m.imageUrl}
                       alt={m.name}
-                      className="size-24 rounded-full object-cover ring-2 ring-border transition-all duration-300 group-hover:ring-primary/60"
+                      className="aspect-square w-full max-w-40 rounded-sm border border-foreground/15 object-cover"
                       loading="lazy"
                     />
                   ) : (
-                    <div className="flex size-24 items-center justify-center rounded-full bg-primary/10 text-2xl font-bold text-primary ring-2 ring-border">
-                      {m.name
-                        .split(" ")
-                        .slice(0, 2)
-                        .map((w) => w[0])
-                        .join("")}
+                    <div className="flex aspect-square w-full max-w-40 items-center justify-center rounded-sm border border-foreground/15 bg-secondary">
+                      <span className="display text-3xl text-gold-500">
+                        {m.name
+                          .split(" ")
+                          .slice(0, 2)
+                          .map((w) => w[0])
+                          .join("")}
+                      </span>
                     </div>
                   )}
-                  <p className="mt-4 font-semibold leading-tight">{m.name}</p>
-                  <p className="mt-1 text-xs uppercase tracking-wider text-muted-foreground">
-                    {m.designation}
-                  </p>
+                  <p className="mt-5 font-heading text-lg leading-tight">{m.name}</p>
+                  <p className="eyebrow mt-1.5 text-[10px]">{m.designation}</p>
                   {(socials.instagram || socials.linkedin) && (
                     <div className="mt-3 flex gap-2">
                       {socials.instagram && (

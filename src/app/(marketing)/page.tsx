@@ -1,139 +1,119 @@
 import Link from "next/link";
-import { CalendarDays, MapPin, Trophy, Phone } from "lucide-react";
 import { getContent } from "@/lib/settings";
+import { prisma } from "@/lib/prisma";
 import { t } from "@/content/strings";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { FadeUp, StaggerList, StaggerItem } from "./_components/motion";
 
 export default async function LandingPage() {
-  const content = await getContent();
+  const [content, committeeCount, portfolioCount] = await Promise.all([
+    getContent(),
+    prisma.committee.count({ where: { isActive: true } }),
+    prisma.portfolio.count(),
+  ]);
   const { landingHero, conferenceDates, venue, agendasBlurb, awards, queryContacts } = content;
 
   const ctaHref = content.registrationOpen ? "/register" : "/register/closed";
+  const eyebrowLine = [conferenceDates, venue].filter(Boolean).join(" · ");
 
   return (
     <div className="flex flex-col">
       {/* ── Hero ───────────────────────────────────────────────── */}
       <section
         aria-label={t("landing.sectionDetails")}
-        className="relative flex min-h-[88svh] flex-col items-center justify-center overflow-hidden px-4 py-24 text-center"
+        className="paper-grid relative flex min-h-[86svh] flex-col items-center justify-center px-4 py-24 text-center"
       >
-        {/* Teal radial gradient backdrop */}
+        {/* fade the grid toward the bottom */}
         <div
           aria-hidden
-          className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(ellipse_80%_60%_at_50%_0%,var(--teal-100),transparent)] dark:bg-[radial-gradient(ellipse_80%_60%_at_50%_0%,oklch(0.22_0.04_196),transparent)]"
+          className="pointer-events-none absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-background"
         />
 
-        <FadeUp>
-          <h1 className="mx-auto max-w-3xl text-[clamp(2.25rem,6vw,4.5rem)] font-bold leading-[1.08] tracking-tight text-foreground">
-            {landingHero.title}
-          </h1>
-        </FadeUp>
+        <div className="relative">
+          {eyebrowLine && (
+            <FadeUp>
+              <p className="eyebrow">{eyebrowLine}</p>
+            </FadeUp>
+          )}
 
-        {landingHero.subtitle && (
-          <FadeUp delay={0.1}>
-            <p className="mx-auto mt-5 max-w-xl text-lg leading-relaxed text-muted-foreground">
-              {landingHero.subtitle}
-            </p>
+          <FadeUp delay={0.05}>
+            <h1 className="display mx-auto mt-6 max-w-4xl text-[clamp(3rem,8vw,6.5rem)] leading-[1.02] text-foreground">
+              {landingHero.title}
+            </h1>
           </FadeUp>
-        )}
 
-        <FadeUp delay={0.2} className="mt-10 flex flex-wrap items-center justify-center gap-3">
-          <Link
-            href={ctaHref}
-            className={cn(buttonVariants({ size: "lg" }), "h-11 px-8 text-base font-semibold shadow-sm")}
-          >
-            {landingHero.ctaLabel}
-          </Link>
-          <Link
-            href="/blog"
-            className={cn(buttonVariants({ variant: "outline", size: "lg" }), "h-11 px-8 text-base")}
-          >
-            {t("nav.blog")}
-          </Link>
-        </FadeUp>
+          {landingHero.subtitle && (
+            <FadeUp delay={0.12}>
+              <p className="mx-auto mt-7 max-w-2xl text-lg leading-relaxed text-muted-foreground md:text-xl">
+                {landingHero.subtitle}
+              </p>
+            </FadeUp>
+          )}
 
-        {(conferenceDates || venue) && (
-          <FadeUp delay={0.3} className="mt-12 flex flex-wrap justify-center gap-6 text-sm text-muted-foreground">
-            {conferenceDates && (
-              <span className="flex items-center gap-1.5">
-                <CalendarDays className="size-4 text-primary" aria-hidden />
-                {conferenceDates}
-              </span>
-            )}
-            {venue && (
-              <span className="flex items-center gap-1.5">
-                <MapPin className="size-4 text-primary" aria-hidden />
-                {venue}
-              </span>
-            )}
+          {/* ornament */}
+          <FadeUp delay={0.18} className="mx-auto mt-10 flex w-40 items-center gap-3">
+            <div className="rule-gold flex-1" />
+            <span aria-hidden className="text-[10px] text-gold-500">
+              ◆
+            </span>
+            <div className="rule-gold flex-1" />
           </FadeUp>
-        )}
+
+          <FadeUp delay={0.24} className="mt-10 flex flex-wrap items-center justify-center gap-6">
+            <Link
+              href={ctaHref}
+              className={cn(buttonVariants({ size: "lg" }), "h-12 px-9 text-base font-semibold")}
+            >
+              {landingHero.ctaLabel}
+            </Link>
+            <Link
+              href="/blog"
+              className="text-sm font-medium text-muted-foreground underline-offset-4 transition-colors hover:text-foreground hover:underline"
+            >
+              {t("nav.blog")} →
+            </Link>
+          </FadeUp>
+        </div>
       </section>
 
-      {/* ── Conference Details ────────────────────────────────── */}
-      {(conferenceDates || venue) && (
-        <section
-          aria-labelledby="details-heading"
-          className="border-y border-border/60 bg-muted/40 py-16"
-        >
-          <div className="mx-auto max-w-6xl px-4 sm:px-6">
-            <FadeUp>
-              <h2
-                id="details-heading"
-                className="mb-8 text-center text-2xl font-semibold tracking-tight"
-              >
-                {t("landing.sectionDetails")}
-              </h2>
-            </FadeUp>
-            <div className="flex flex-wrap justify-center gap-12">
-              {conferenceDates && (
-                <FadeUp delay={0.05} className="flex items-start gap-3">
-                  <CalendarDays className="mt-0.5 size-5 shrink-0 text-primary" aria-hidden />
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                      {t("landing.dateLabel")}
-                    </p>
-                    <p className="mt-0.5 text-base font-medium">{conferenceDates}</p>
-                  </div>
-                </FadeUp>
-              )}
-              {venue && (
-                <FadeUp delay={0.1} className="flex items-start gap-3">
-                  <MapPin className="mt-0.5 size-5 shrink-0 text-primary" aria-hidden />
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                      {t("landing.venueLabel")}
-                    </p>
-                    <p className="mt-0.5 text-base font-medium">{venue}</p>
-                  </div>
-                </FadeUp>
-              )}
+      {/* ── Stats strip ───────────────────────────────────────── */}
+      <section aria-label="Conference at a glance" className="border-y border-border/70">
+        <div className="mx-auto grid max-w-5xl grid-cols-1 divide-y divide-border/70 sm:grid-cols-3 sm:divide-x sm:divide-y-0">
+          {[
+            { value: String(committeeCount).padStart(2, "0"), label: "Committees" },
+            { value: String(portfolioCount).padStart(2, "0"), label: "Portfolios" },
+            { value: conferenceDates || "TBA", label: t("landing.dateLabel") },
+          ].map((stat) => (
+            <div key={stat.label} className="px-6 py-8 text-center">
+              <p className="font-mono text-3xl tabular-nums text-foreground">{stat.value}</p>
+              <p className="eyebrow mt-2">{stat.label}</p>
             </div>
-          </div>
-        </section>
-      )}
+          ))}
+        </div>
+      </section>
 
       {/* ── Agendas ──────────────────────────────────────────── */}
       {agendasBlurb && (
-        <section aria-labelledby="agendas-heading" className="py-20">
-          <div className="mx-auto max-w-3xl px-4 text-center sm:px-6">
+        <section aria-labelledby="agendas-heading" className="py-24">
+          <div className="mx-auto max-w-3xl px-4 sm:px-6">
             <FadeUp>
-              <h2 id="agendas-heading" className="mb-6 text-2xl font-semibold tracking-tight">
-                {t("landing.sectionAgendas")}
+              <p className="eyebrow">{t("landing.sectionAgendas")}</p>
+              <h2 id="agendas-heading" className="display mt-3 text-3xl md:text-4xl">
+                The floor is yours.
               </h2>
-              <p className="text-base leading-relaxed text-muted-foreground">{agendasBlurb}</p>
-              <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
+              <div className="rule mt-6" />
+              <p className="mt-6 text-lg leading-relaxed text-muted-foreground">{agendasBlurb}</p>
+              <div className="mt-8 flex flex-wrap items-center gap-6 text-sm font-medium">
                 <Link
                   href="/availability"
-                  className="rounded-lg border border-primary/40 px-5 py-2.5 text-sm font-medium text-primary transition-colors hover:bg-primary/10"
+                  className="text-primary underline-offset-4 hover:underline"
                 >
                   Live portfolio matrix →
                 </Link>
                 <Link
                   href="/team"
-                  className="rounded-lg border border-border px-5 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:border-primary/40 hover:text-primary"
+                  className="text-muted-foreground underline-offset-4 transition-colors hover:text-primary hover:underline"
                 >
                   Meet the team →
                 </Link>
@@ -145,26 +125,25 @@ export default async function LandingPage() {
 
       {/* ── Awards ───────────────────────────────────────────── */}
       {awards.length > 0 && (
-        <section
-          aria-labelledby="awards-heading"
-          className="border-t border-border/60 bg-muted/40 py-20"
-        >
-          <div className="mx-auto max-w-4xl px-4 sm:px-6">
+        <section aria-labelledby="awards-heading" className="border-t border-border/70 py-24">
+          <div className="mx-auto max-w-3xl px-4 sm:px-6">
             <FadeUp>
-              <div className="mb-10 flex items-center justify-center gap-2">
-                <Trophy className="size-5 text-primary" aria-hidden />
-                <h2 id="awards-heading" className="text-2xl font-semibold tracking-tight">
-                  {t("landing.sectionAwards")}
-                </h2>
-              </div>
+              <p className="eyebrow">{t("landing.sectionAwards")}</p>
+              <h2 id="awards-heading" className="display mt-3 text-3xl md:text-4xl">
+                Recognition worth arguing for.
+              </h2>
+              <div className="rule mt-6" />
             </FadeUp>
-            <StaggerList className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            <StaggerList className="mt-4 grid gap-x-12 sm:grid-cols-2">
               {awards.map((award) => (
                 <StaggerItem
                   key={award}
-                  className="flex items-center gap-3 rounded-xl border border-border/60 bg-card px-4 py-3 text-sm font-medium text-card-foreground shadow-sm"
+                  className="flex items-baseline gap-3 border-b border-border/60 py-4"
                 >
-                  {award}
+                  <span aria-hidden className="text-[9px] text-gold-500">
+                    ◆
+                  </span>
+                  <span className="font-heading text-lg">{award}</span>
                 </StaggerItem>
               ))}
             </StaggerList>
@@ -174,27 +153,23 @@ export default async function LandingPage() {
 
       {/* ── Contacts ─────────────────────────────────────────── */}
       {queryContacts.length > 0 && (
-        <section aria-labelledby="contacts-heading" className="border-t border-border/60 py-20">
+        <section aria-labelledby="contacts-heading" className="border-t border-border/70 py-24">
           <div className="mx-auto max-w-4xl px-4 sm:px-6">
             <FadeUp>
-              <div className="mb-10 flex items-center justify-center gap-2">
-                <Phone className="size-5 text-primary" aria-hidden />
-                <h2 id="contacts-heading" className="text-2xl font-semibold tracking-tight">
-                  {t("landing.sectionContacts")}
-                </h2>
-              </div>
+              <p className="eyebrow">{t("landing.sectionContacts")}</p>
+              <h2 id="contacts-heading" className="display mt-3 text-3xl md:text-4xl">
+                Questions? Ask the secretariat.
+              </h2>
+              <div className="rule mt-6" />
             </FadeUp>
-            <StaggerList className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            <StaggerList className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {queryContacts.map((contact) => (
-                <StaggerItem
-                  key={contact.phone}
-                  className="rounded-xl border border-border/60 bg-card p-5 shadow-sm"
-                >
-                  <p className="font-semibold text-card-foreground">{contact.name}</p>
-                  <p className="mt-0.5 text-sm text-muted-foreground">{contact.role}</p>
+                <StaggerItem key={contact.phone} className="editorial-card p-6">
+                  <p className="font-heading text-xl">{contact.name}</p>
+                  <p className="eyebrow mt-1.5">{contact.role}</p>
                   <a
                     href={`tel:${contact.phone}`}
-                    className="mt-2 block text-sm font-medium text-primary hover:underline"
+                    className="mt-4 block font-mono text-sm tabular-nums text-primary hover:underline"
                   >
                     {contact.phone}
                   </a>
@@ -206,13 +181,13 @@ export default async function LandingPage() {
       )}
 
       {/* ── Bottom CTA ───────────────────────────────────────── */}
-      <section className="border-t border-border/60 py-20">
+      <section className="border-t border-border/70 py-24">
         <FadeUp className="mx-auto max-w-xl px-4 text-center sm:px-6">
-          <h2 className="text-2xl font-semibold tracking-tight">{landingHero.title}</h2>
-          <p className="mt-3 text-muted-foreground">{t("brand.tagline")}</p>
+          <p className="eyebrow">{t("brand.tagline")}</p>
+          <h2 className="display mt-4 text-4xl md:text-5xl">{landingHero.title}</h2>
           <Link
             href={ctaHref}
-            className={cn(buttonVariants({ size: "lg" }), "mt-8 h-11 px-8 text-base font-semibold")}
+            className={cn(buttonVariants({ size: "lg" }), "mt-10 h-12 px-9 text-base font-semibold")}
           >
             {landingHero.ctaLabel}
           </Link>
