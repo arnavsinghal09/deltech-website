@@ -4,6 +4,63 @@ import { prisma } from "@/lib/prisma"
 import * as XLSX from "xlsx"
 import { buildDelegateWhere } from "@/app/(admin)/admin/registrations/_lib/build-where"
 
+function sheetResponse(
+  rows: Record<string, string | number>[],
+  format: "csv" | "xlsx",
+  name: string,
+) {
+  const ws = XLSX.utils.json_to_sheet(rows)
+
+  if (format === "csv") {
+    const csv = XLSX.utils.sheet_to_csv(ws)
+    return new NextResponse(csv, {
+      headers: {
+        "Content-Type": "text/csv; charset=utf-8",
+        "Content-Disposition": `attachment; filename="${name}.csv"`,
+      },
+    })
+  }
+
+  const wb = XLSX.utils.book_new()
+  XLSX.utils.book_append_sheet(wb, ws, name)
+  const buf = XLSX.write(wb, { type: "base64", bookType: "xlsx" }) as string
+  const binary = Buffer.from(buf, "base64")
+  return new NextResponse(binary.buffer.slice(binary.byteOffset, binary.byteOffset + binary.byteLength) as ArrayBuffer, {
+    headers: {
+      "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      "Content-Disposition": `attachment; filename="${name}.xlsx"`,
+    },
+  })
+}
+
+async function exportApplicants(format: "csv" | "xlsx") {
+  const applicants = await prisma.applicant.findMany({
+    orderBy: { createdAt: "asc" },
+    include: {
+      gdSlot: { select: { startsAt: true } },
+      piSlot: { select: { startsAt: true } },
+    },
+  })
+
+  const rows = applicants.map((a) => ({
+    "Full Name": a.fullName,
+    Email: a.email,
+    Phone: a.phone ?? "",
+    Year: a.year ?? "",
+    Branch: a.branch ?? "",
+    Status: a.status,
+    "GD Slot": a.gdSlot?.startsAt.toISOString() ?? "",
+    "GD Score": a.gdScore ?? "",
+    "GD Verdict": a.gdVerdict ?? "",
+    "PI Slot": a.piSlot?.startsAt.toISOString() ?? "",
+    "PI Score": a.piScore ?? "",
+    "PI Verdict": a.piVerdict ?? "",
+    "Applied At": a.createdAt.toISOString(),
+  }))
+
+  return sheetResponse(rows, format, "applicants")
+}
+
 export async function GET(request: NextRequest) {
   const session = await auth()
   const role = (session?.user as { role?: string } | undefined)?.role
@@ -13,6 +70,10 @@ export async function GET(request: NextRequest) {
 
   const sp = request.nextUrl.searchParams
   const format = sp.get("format") === "csv" ? "csv" : "xlsx"
+
+  if (sp.get("entity") === "applicants") {
+    return exportApplicants(format)
+  }
 
   const delegates = await prisma.delegate.findMany({
     where: buildDelegateWhere({
