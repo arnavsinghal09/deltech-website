@@ -1,6 +1,7 @@
 "use client"
 
 import { useCallback, useEffect, useRef, useState } from "react"
+import { motion, useReducedMotion } from "framer-motion"
 import { supabase } from "@/lib/supabase"
 import { t } from "@/content/strings"
 import { Input } from "@/components/ui/input"
@@ -200,7 +201,7 @@ export function ParticipantApp({ sessionId, roomCode, initialStatus, presentatio
 
   if (appState === "ended") {
     return (
-      <Screen>
+      <Screen k={appState}>
         <div className="flex flex-col items-center gap-4 text-center">
           <span className="text-5xl">🎉</span>
           <h1 className="text-2xl font-bold">{t("quiz.sessionEnded")}</h1>
@@ -216,7 +217,7 @@ export function ParticipantApp({ sessionId, roomCode, initialStatus, presentatio
 
   if (appState === "nickname") {
     return (
-      <Screen>
+      <Screen k={appState}>
         <form onSubmit={handleNicknameSubmit} className="flex w-full max-w-sm flex-col gap-4">
           <h1 className="text-2xl font-bold text-center">{presentationTitle || t("quiz.joinTitle")}</h1>
           <p className="text-center text-muted-foreground">{t("quiz.enterNickname")}</p>
@@ -236,7 +237,7 @@ export function ParticipantApp({ sessionId, roomCode, initialStatus, presentatio
 
   if (appState === "avatar") {
     return (
-      <Screen>
+      <Screen k={appState}>
         <div className="flex w-full max-w-sm flex-col gap-4">
           <h1 className="text-2xl font-bold text-center">{t("quiz.pickAvatar")}</h1>
           <div className="grid grid-cols-5 gap-3">
@@ -257,7 +258,7 @@ export function ParticipantApp({ sessionId, roomCode, initialStatus, presentatio
 
   if (appState === "lobby") {
     return (
-      <Screen>
+      <Screen k={appState}>
         <div className="flex flex-col items-center gap-4 text-center">
           <span className="text-5xl">{avatar || "👤"}</span>
           <p className="text-lg font-semibold">{nickname}</p>
@@ -278,7 +279,7 @@ export function ParticipantApp({ sessionId, roomCode, initialStatus, presentatio
 
   if ((appState === "submitted") && !currentSlide) {
     return (
-      <Screen>
+      <Screen k={appState}>
         <p className="text-muted-foreground text-center">{t("quiz.votingLocked")}</p>
       </Screen>
     )
@@ -286,7 +287,7 @@ export function ParticipantApp({ sessionId, roomCode, initialStatus, presentatio
 
   if (appState === "leaderboard") {
     return (
-      <Screen>
+      <Screen k={appState}>
         <div className="w-full max-w-sm space-y-4">
           <h2 className="text-2xl font-bold text-center">
             {lbFinal ? t("quiz.finalResults") : t("quiz.leaderboard")}
@@ -321,12 +322,12 @@ export function ParticipantApp({ sessionId, roomCode, initialStatus, presentatio
     )
   }
 
-  if (!currentSlide) return <Screen><p className="text-muted-foreground">{t("common.loading")}</p></Screen>
+  if (!currentSlide) return <Screen k="loading"><p className="text-muted-foreground">{t("common.loading")}</p></Screen>
 
   // ── Question screen ──────────────────────────────────────────────────────
   if (appState === "result" && result) {
     return (
-      <Screen>
+      <Screen k={appState}>
         <div className="flex flex-col items-center gap-4 text-center">
           {result.correct === true && (
             <>
@@ -360,7 +361,7 @@ export function ParticipantApp({ sessionId, roomCode, initialStatus, presentatio
 
   if (appState === "submitted") {
     return (
-      <Screen>
+      <Screen k={appState}>
         <div className="flex flex-col items-center gap-3 text-center">
           <span className="text-4xl">✓</span>
           <p className="text-xl font-semibold">{t("quiz.answerReceived")}</p>
@@ -374,7 +375,7 @@ export function ParticipantApp({ sessionId, roomCode, initialStatus, presentatio
   const isLocked = locked || submittedRef.current
 
   return (
-    <Screen padding>
+    <Screen padding k={`${appState}-${currentSlide?.id ?? ""}`}>
       <div className="w-full max-w-lg space-y-6">
         <div className="space-y-1">
           <p className="text-xs text-muted-foreground">
@@ -531,10 +532,21 @@ export function ParticipantApp({ sessionId, roomCode, initialStatus, presentatio
   )
 }
 
-function Screen({ children, padding }: { children: React.ReactNode; padding?: boolean }) {
+// k remounts the inner motion wrapper on phase change so the entrance replays —
+// hard cuts between phases become a quick fade/rise.
+function Screen({ children, padding, k }: { children: React.ReactNode; padding?: boolean; k?: string }) {
+  const reduce = useReducedMotion()
   return (
     <div className={`flex min-h-screen flex-col items-center justify-center bg-background ${padding ? "px-4 py-12" : "px-4 py-8"}`}>
-      {children}
+      <motion.div
+        key={k}
+        initial={reduce || k === undefined ? false : { opacity: 0, y: 18, scale: 0.98 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
+        className="flex w-full flex-col items-center"
+      >
+        {children}
+      </motion.div>
     </div>
   )
 }

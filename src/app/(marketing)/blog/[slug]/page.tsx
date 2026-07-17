@@ -43,7 +43,7 @@ export default async function BlogArticlePage({ params }: Props) {
   if (!post) notFound()
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-background">
       {/* Back link */}
       <div className="mx-auto max-w-[680px] px-6 pt-8">
         <Link
@@ -71,24 +71,24 @@ export default async function BlogArticlePage({ params }: Props) {
       <article className="mx-auto max-w-[680px] px-6 pb-24">
         <div className={post.coverImage ? "pt-10" : "pt-12"}>
           {/* Title */}
-          <h1 className="font-serif text-[2.25rem] font-bold leading-tight text-gray-900">
+          <h1 className="font-serif text-[2.25rem] font-bold leading-tight text-foreground">
             {post.title}
           </h1>
 
           {/* Subtitle */}
           {post.subtitle && (
-            <p className="mt-4 font-serif text-xl leading-relaxed text-gray-500">
+            <p className="mt-4 font-serif text-xl leading-relaxed text-muted-foreground">
               {post.subtitle}
             </p>
           )}
 
           {/* Byline */}
-          <div className="mt-6 flex flex-wrap items-center gap-3 text-sm text-gray-500">
-            <span className="font-medium text-gray-700">{post.author.name ?? "Anonymous"}</span>
+          <div className="mt-6 flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
+            <span className="font-medium text-foreground">{post.author.name ?? "Anonymous"}</span>
 
             {post.publishedAt && (
               <>
-                <span className="text-gray-300">·</span>
+                <span className="text-border">·</span>
                 <time dateTime={post.publishedAt.toISOString()}>
                   {new Date(post.publishedAt).toLocaleDateString("en-IN", {
                     day: "numeric",
@@ -101,7 +101,7 @@ export default async function BlogArticlePage({ params }: Props) {
 
             {post.readMin && (
               <>
-                <span className="text-gray-300">·</span>
+                <span className="text-border">·</span>
                 <span className="flex items-center gap-1">
                   <Clock className="size-3.5" />
                   {post.readMin} min read
@@ -120,7 +120,7 @@ export default async function BlogArticlePage({ params }: Props) {
             </div>
           )}
 
-          <div className="my-8 border-t border-gray-100" />
+          <div className="my-8 border-t border-border/60" />
 
           {/* Content */}
           <TiptapContent json={post.contentJson} className="blog-prose" />

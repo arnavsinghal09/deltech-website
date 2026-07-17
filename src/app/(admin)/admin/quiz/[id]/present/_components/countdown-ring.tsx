@@ -54,9 +54,15 @@ export function CountdownRing({ durationSeconds, running, accentColor, onExpire 
   const circumference = 2 * Math.PI * r
   const offset = circumference * (1 - pct)
   const secs = Math.ceil(remaining)
+  // final-3-seconds urgency: ring and number go red and pulse with each second
+  const critical = running && remaining > 0 && remaining <= 3
+  const ringColor = critical ? "#ef4444" : accentColor
 
   return (
-    <div className="relative flex items-center justify-center" style={{ width: 112, height: 112 }}>
+    <div
+      className={`relative flex items-center justify-center ${critical ? "motion-safe:animate-pulse" : ""}`}
+      style={{ width: 112, height: 112 }}
+    >
       <svg width={112} height={112} className="-rotate-90">
         <circle cx={56} cy={56} r={r} strokeWidth={8} stroke="rgba(255,255,255,0.15)" fill="none" />
         <circle
@@ -64,17 +70,17 @@ export function CountdownRing({ durationSeconds, running, accentColor, onExpire 
           cy={56}
           r={r}
           strokeWidth={8}
-          stroke={accentColor}
+          stroke={ringColor}
           fill="none"
           strokeLinecap="round"
           strokeDasharray={circumference}
           strokeDashoffset={offset}
-          style={{ transition: "stroke-dashoffset 0.1s linear" }}
+          style={{ transition: "stroke-dashoffset 0.1s linear, stroke 0.3s ease" }}
         />
       </svg>
       <span
-        className="absolute text-2xl font-bold tabular-nums"
-        style={{ color: accentColor }}
+        className={`absolute font-bold tabular-nums ${critical ? "text-3xl" : "text-2xl"}`}
+        style={{ color: ringColor, transition: "color 0.3s ease, font-size 0.2s ease" }}
       >
         {secs}
       </span>

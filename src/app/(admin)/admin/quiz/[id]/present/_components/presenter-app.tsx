@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useRef, useState, useCallback } from "react"
+import { AnimatePresence, motion } from "framer-motion"
 import { supabase } from "@/lib/supabase"
 import { LobbyScreen } from "./lobby-screen"
 import { QuestionScreen } from "./question-screen"
@@ -210,51 +211,58 @@ export function PresenterApp({ session, presentation, slides }: Props) {
   }
   const joinUrl = `${APP_URL}/quiz/${session.roomCode}`
 
-  if (screen === "lobby") {
-    return (
-      <LobbyScreen
-        roomCode={session.roomCode}
-        joinUrl={joinUrl}
-        participants={participants}
-        theme={theme}
-        onStart={handleStart}
-      />
-    )
-  }
-
-  if (screen === "leaderboard") {
-    return (
-      <LeaderboardScreen
-        entries={lbEntries}
-        final={lbFinal}
-        theme={theme}
-        onNext={!lbFinal && slideIndex < slides.length - 1 ? () => gotoSlide(slideIndex + 1) : undefined}
-        onEnd={handleEnd}
-      />
-    )
-  }
-
-  if (!currentSlide) return null
+  // Which screen is live — keyed so AnimatePresence can cross-fade slides too.
+  const screenKey =
+    screen === "lobby" ? "lobby" : screen === "leaderboard" ? "leaderboard" : `slide-${currentSlide?.id ?? slideIndex}`
 
   return (
-    <QuestionScreen
-      slide={currentSlide}
-      slideIndex={slideIndex}
-      slideCount={slides.length}
-      tally={tally}
-      theme={theme}
-      mode={presentation.mode}
-      locked={locked}
-      revealed={revealed}
-      revealedIndices={revealedIndices}
-      timerRunning={timerRunning}
-      onLock={handleLock}
-      onUnlock={handleUnlock}
-      onReveal={handleReveal}
-      onNext={handleNext}
-      onPrev={handlePrev}
-      onLeaderboard={() => handleShowLeaderboard(false)}
-      onTimerExpire={handleTimerExpire}
-    />
+    <AnimatePresence mode="wait">
+      <motion.div
+        key={screenKey}
+        className="h-full"
+        initial={{ opacity: 0, x: 32 }}
+        animate={{ opacity: 1, x: 0 }}
+        exit={{ opacity: 0, x: -32 }}
+        transition={{ duration: 0.25, ease: "easeOut" }}
+      >
+        {screen === "lobby" ? (
+          <LobbyScreen
+            roomCode={session.roomCode}
+            joinUrl={joinUrl}
+            participants={participants}
+            theme={theme}
+            onStart={handleStart}
+          />
+        ) : screen === "leaderboard" ? (
+          <LeaderboardScreen
+            entries={lbEntries}
+            final={lbFinal}
+            theme={theme}
+            onNext={!lbFinal && slideIndex < slides.length - 1 ? () => gotoSlide(slideIndex + 1) : undefined}
+            onEnd={handleEnd}
+          />
+        ) : currentSlide ? (
+          <QuestionScreen
+            slide={currentSlide}
+            slideIndex={slideIndex}
+            slideCount={slides.length}
+            tally={tally}
+            theme={theme}
+            mode={presentation.mode}
+            locked={locked}
+            revealed={revealed}
+            revealedIndices={revealedIndices}
+            timerRunning={timerRunning}
+            onLock={handleLock}
+            onUnlock={handleUnlock}
+            onReveal={handleReveal}
+            onNext={handleNext}
+            onPrev={handlePrev}
+            onLeaderboard={() => handleShowLeaderboard(false)}
+            onTimerExpire={handleTimerExpire}
+          />
+        ) : null}
+      </motion.div>
+    </AnimatePresence>
   )
 }

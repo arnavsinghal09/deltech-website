@@ -7,6 +7,9 @@ export const metadata = {
   description: "The people behind DelTech MUN.",
 }
 
+// Member edits in /admin/team must show up without a redeploy.
+export const revalidate = 0
+
 export default async function TeamPage() {
   const members = await prisma.member.findMany({
     where: { isActive: true },

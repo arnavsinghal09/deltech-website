@@ -124,6 +124,20 @@ export default async function LandingPage() {
                 {t("landing.sectionAgendas")}
               </h2>
               <p className="text-base leading-relaxed text-muted-foreground">{agendasBlurb}</p>
+              <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
+                <Link
+                  href="/availability"
+                  className="rounded-lg border border-primary/40 px-5 py-2.5 text-sm font-medium text-primary transition-colors hover:bg-primary/10"
+                >
+                  Live portfolio matrix →
+                </Link>
+                <Link
+                  href="/team"
+                  className="rounded-lg border border-border px-5 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:border-primary/40 hover:text-primary"
+                >
+                  Meet the team →
+                </Link>
+              </div>
             </FadeUp>
           </div>
         </section>

@@ -1,6 +1,7 @@
 "use client"
 
 import { QRCodeSVG } from "qrcode.react"
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion"
 import { t } from "@/content/strings"
 import type { PresenceEntry, PresentationTheme } from "@/lib/quiz-types"
 
@@ -13,6 +14,7 @@ interface Props {
 }
 
 export function LobbyScreen({ roomCode, joinUrl, participants, theme, onStart }: Props) {
+  const reduce = useReducedMotion()
   return (
     <div
       className="flex h-full flex-col items-center justify-center gap-8 px-8 py-12"
@@ -35,12 +37,15 @@ export function LobbyScreen({ roomCode, joinUrl, participants, theme, onStart }:
         {/* Room code */}
         <div className="flex flex-col items-center gap-2">
           <p className="text-sm opacity-60 uppercase tracking-widest">Room code</p>
-          <p
+          <motion.p
+            initial={reduce ? false : { scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ type: "spring", stiffness: 200, damping: 18 }}
             className="text-7xl font-bold tracking-[0.15em] tabular-nums"
             style={{ color: theme.accentColor }}
           >
             {roomCode}
-          </p>
+          </motion.p>
         </div>
       </div>
 
@@ -50,12 +55,29 @@ export function LobbyScreen({ roomCode, joinUrl, participants, theme, onStart }:
           {t("quiz.connected", { count: participants.length })}
         </p>
         <div className="flex flex-wrap justify-center gap-3">
-          {participants.map((p) => (
-            <div key={p.userId} className="flex flex-col items-center gap-1">
-              <span className="text-3xl">{p.avatar || "👤"}</span>
-              <span className="max-w-20 truncate text-xs opacity-70">{p.nickname}</span>
-            </div>
-          ))}
+          <AnimatePresence>
+            {participants.map((p) => (
+              <motion.div
+                key={p.userId}
+                layout
+                initial={reduce ? false : { scale: 0.3, y: 16, opacity: 0 }}
+                animate={{ scale: 1, y: 0, opacity: 1 }}
+                exit={reduce ? undefined : { scale: 0.3, opacity: 0 }}
+                transition={{ type: "spring", stiffness: 400, damping: 22 }}
+                className="flex flex-col items-center gap-1"
+              >
+                <motion.span
+                  className="text-3xl"
+                  initial={reduce ? false : { rotate: -12 }}
+                  animate={{ rotate: 0 }}
+                  transition={{ type: "spring", stiffness: 300, damping: 10, delay: 0.1 }}
+                >
+                  {p.avatar || "👤"}
+                </motion.span>
+                <span className="max-w-20 truncate text-xs opacity-70">{p.nickname}</span>
+              </motion.div>
+            ))}
+          </AnimatePresence>
         </div>
       </div>
 
