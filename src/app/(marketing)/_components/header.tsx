@@ -12,6 +12,7 @@ import { ThemeToggle } from "./theme-toggle";
 const NAV_LINKS = [
   { href: "/", label: () => t("nav.home") },
   { href: "/availability", label: () => t("nav.availability") },
+  { href: "/team", label: () => "Team" },
   { href: "/blog", label: () => t("nav.blog") },
   { href: "/register", label: () => t("nav.register") },
   { href: "/quiz/join", label: () => t("nav.quizJoin") },

@@ -11,6 +11,9 @@ import {
   FileText,
   Presentation,
   Settings2,
+  Contact,
+  ScrollText,
+  ShieldCheck,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { t } from "@/content/strings"
@@ -23,11 +26,18 @@ const NAV = [
   { href: "/admin/recruitment",    icon: UserPlus,        label: "Recruitment"                },
   { href: "/admin/blog",           icon: FileText,        label: t("admin.nav.blog")          },
   { href: "/admin/quiz",           icon: Presentation,    label: t("admin.nav.quiz")          },
+  { href: "/admin/team",           icon: Contact,         label: "Team"                       },
+  { href: "/admin/logs",           icon: ScrollText,      label: "Logs"                       },
   { href: "/admin/config",         icon: Settings2,       label: t("admin.nav.config")        },
 ] as const
 
-export function AdminSidebar() {
+const ADMIN_ONLY_NAV = [
+  { href: "/admin/users", icon: ShieldCheck, label: "Users" },
+] as const
+
+export function AdminSidebar({ isAdmin = false }: { isAdmin?: boolean }) {
   const pathname = usePathname()
+  const items = isAdmin ? [...NAV, ...ADMIN_ONLY_NAV] : [...NAV]
 
   return (
     <aside className="hidden w-56 shrink-0 flex-col border-r border-sidebar-border bg-sidebar lg:flex">
@@ -38,7 +48,7 @@ export function AdminSidebar() {
 
       {/* Nav */}
       <nav className="flex-1 space-y-0.5 p-3">
-        {NAV.map(({ href, icon: Icon, label }) => {
+        {items.map(({ href, icon: Icon, label }) => {
           const active =
             href === "/admin" ? pathname === href : pathname.startsWith(href)
           return (

@@ -5,10 +5,11 @@ import { SignOutButton } from "./_components/sign-out-button"
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const session = await requireStaff()
+  const isAdmin = (session.user as { role?: string }).role === "ADMIN"
 
   return (
     <div className="flex min-h-svh">
-      <AdminSidebar />
+      <AdminSidebar isAdmin={isAdmin} />
 
       <div className="flex flex-1 flex-col overflow-hidden">
         {/* Top bar */}
