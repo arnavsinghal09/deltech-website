@@ -249,6 +249,26 @@
     border: 1px solid color-mix(in oklch, var(--foreground) 14%, transparent);
     border-radius: var(--radius-lg);
   }
+  /* Admin is an operations surface: readable at a glance, with less card chrome. */
+  .admin-shell .text-xs {
+    font-size: 0.875rem;
+    line-height: 1.45;
+  }
+  .admin-shell .text-sm {
+    font-size: 1rem;
+    line-height: 1.55;
+  }
+  .admin-shell .eyebrow,
+  .admin-shell .data-label {
+    font-size: 0.875rem;
+  }
+  .admin-shell .editorial-card {
+    border-radius: 0;
+    box-shadow: none;
+  }
+  .admin-shell :where(input, textarea, button, [role="combobox"]) {
+    font-size: 1rem;
+  }
   /* subtle background grid for heroes */
   .paper-grid {
     background-image:

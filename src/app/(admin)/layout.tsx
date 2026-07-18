@@ -13,7 +13,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const isPreview = !!process.env.VERCEL_ENV && process.env.VERCEL_ENV !== "production"
 
   return (
-    <div className="flex min-h-svh">
+    <div className="admin-shell flex min-h-svh">
       <AdminSidebar user={user} />
 
       <div className="flex flex-1 flex-col overflow-hidden">
