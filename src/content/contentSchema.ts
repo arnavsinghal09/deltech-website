@@ -60,6 +60,7 @@ export const ContentSchema = z.object({
   whatsappCommunityUrl: z.string().default(""),
   secretariatEmail: z.string().default("secretariat.deltechmun@gmail.com"),
   sheetSyncUrl: z.string().default(""),
+  recruitmentSheetUrl: z.string().default(""),
   sheetPullSources: z
     .array(
       z.object({

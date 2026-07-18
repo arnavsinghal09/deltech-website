@@ -33,8 +33,11 @@ function sheetResponse(
   })
 }
 
-async function exportApplicants(format: "csv" | "xlsx") {
-  const applicants = await prisma.applicant.findMany({ orderBy: { createdAt: "asc" } })
+async function exportApplicants(format: "csv" | "xlsx", status?: string | null) {
+  const applicants = await prisma.applicant.findMany({
+    where: status === "SELECTED" ? { status: "SELECTED" } : undefined,
+    orderBy: { createdAt: "asc" },
+  })
 
   const rows = applicants.map((a) => ({
     "Full Name": a.fullName,
@@ -50,7 +53,7 @@ async function exportApplicants(format: "csv" | "xlsx") {
     "Applied At": a.createdAt.toISOString(),
   }))
 
-  return sheetResponse(rows, format, "applicants")
+  return sheetResponse(rows, format, status === "SELECTED" ? "selected-applicants" : "applicants")
 }
 
 async function exportMatrix(format: "csv" | "xlsx", committeeId?: string | null) {
@@ -88,7 +91,7 @@ export async function GET(request: NextRequest) {
   const format = sp.get("format") === "csv" ? "csv" : "xlsx"
 
   if (sp.get("entity") === "applicants") {
-    return exportApplicants(format)
+    return exportApplicants(format, sp.get("status"))
   }
   if (sp.get("entity") === "matrix") {
     return exportMatrix(format, sp.get("committeeId"))
