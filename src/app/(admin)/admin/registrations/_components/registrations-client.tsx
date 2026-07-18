@@ -265,7 +265,7 @@ export function RegistrationsClient({ delegates, committees, total, filters }: P
       </div>
 
       {/* Table */}
-      <div className="overflow-x-auto rounded-xl border border-border/60 bg-card shadow-sm">
+      <div className="editorial-card overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-border/60">

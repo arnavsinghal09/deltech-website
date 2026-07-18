@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma"
 import { requireStaff } from "@/lib/authz"
 import { TeamManager } from "./_components/team-manager"
+import { PageHeader } from "@/app/(admin)/_components/page-header"
 
 export default async function AdminTeamPage() {
   const session = await requireStaff()
@@ -20,12 +21,11 @@ export default async function AdminTeamPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Team</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Society members shown on the public /team page. Order controls display position.
-        </p>
-      </div>
+      <PageHeader
+        eyebrow="Content"
+        title="Team"
+        description="Society members shown on the public /team page. Order controls display position."
+      />
       <TeamManager members={serialized} isAdmin={isAdmin} />
     </div>
   )

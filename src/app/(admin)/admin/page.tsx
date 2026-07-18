@@ -1,6 +1,7 @@
 import { Users, IndianRupee, BedDouble, CheckCircle2 } from "lucide-react"
 import { prisma } from "@/lib/prisma"
 import { t, type StringKey } from "@/content/strings"
+import { PageHeader } from "../_components/page-header"
 import { StatCard } from "./_components/stat-card"
 import { StatusBarChart } from "./_components/status-bar-chart"
 import { SourcePieChart } from "./_components/source-pie-chart"
@@ -59,15 +60,11 @@ export default async function AdminOverviewPage() {
 
   return (
     <div className="space-y-8">
-      {/* Page heading */}
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">
-          {t("admin.nav.overview")}
-        </h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Live numbers from the database.
-        </p>
-      </div>
+      <PageHeader
+        eyebrow="Conference"
+        title={t("admin.nav.overview")}
+        description="Live numbers from the database."
+      />
 
       {/* KPI cards */}
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -100,26 +97,20 @@ export default async function AdminOverviewPage() {
 
       {/* Charts */}
       <div className="grid gap-6 lg:grid-cols-2">
-        <div className="rounded-xl border border-border/60 bg-card p-5 shadow-sm">
-          <h2 className="mb-4 text-sm font-semibold text-card-foreground">
-            {t("admin.overview.byStatus")}
-          </h2>
+        <div className="editorial-card p-5">
+          <h2 className="eyebrow mb-5 text-[10px]">{t("admin.overview.byStatus")}</h2>
           <StatusBarChart data={statusData} />
         </div>
 
-        <div className="rounded-xl border border-border/60 bg-card p-5 shadow-sm">
-          <h2 className="mb-4 text-sm font-semibold text-card-foreground">
-            {t("admin.overview.sourceBreakdown")}
-          </h2>
+        <div className="editorial-card p-5">
+          <h2 className="eyebrow mb-5 text-[10px]">{t("admin.overview.sourceBreakdown")}</h2>
           <SourcePieChart data={sourceData} />
         </div>
       </div>
 
       {/* Committee fill-rate table */}
-      <div className="rounded-xl border border-border/60 bg-card p-5 shadow-sm">
-        <h2 className="mb-4 text-sm font-semibold text-card-foreground">
-          {t("admin.overview.byCommittee")} — Fill Rate
-        </h2>
+      <div className="editorial-card p-5">
+        <h2 className="eyebrow mb-5 text-[10px]">{t("admin.overview.byCommittee")} — fill rate</h2>
         <CommitteeFillTable data={committeeData} />
       </div>
     </div>

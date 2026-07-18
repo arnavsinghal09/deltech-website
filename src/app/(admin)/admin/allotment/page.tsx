@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma"
 import { requireStaff } from "@/lib/authz"
 import { AllotmentBoard } from "./_components/allotment-board"
+import { PageHeader } from "@/app/(admin)/_components/page-header"
 
 export default async function AllotmentPage() {
   const session = await requireStaff()
@@ -72,12 +73,11 @@ export default async function AllotmentPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Allotment Board</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Select a committee, then click a portfolio to allot.
-        </p>
-      </div>
+      <PageHeader
+        eyebrow="Conference"
+        title="Allotment Board"
+        description="Select a committee, then click a portfolio to allot."
+      />
       <AllotmentBoard
         committees={serializedCommittees}
         delegates={serializedDelegates}

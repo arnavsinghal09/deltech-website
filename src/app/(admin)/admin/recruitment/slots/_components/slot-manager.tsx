@@ -119,10 +119,10 @@ export function SlotManager({ slots, isAdmin }: { slots: SlotRow[]; isAdmin: boo
           No slots yet — create GD slots first, PI slots once shortlists are out.
         </div>
       ) : (
-        <div className="overflow-x-auto rounded-xl border border-border bg-card">
+        <div className="editorial-card overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-border text-left text-xs uppercase tracking-wider text-muted-foreground">
+              <tr className="border-b border-border text-left text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
                 <th className="px-4 py-3">Round</th>
                 <th className="px-4 py-3">When</th>
                 <th className="px-4 py-3">Venue / link</th>
@@ -133,7 +133,7 @@ export function SlotManager({ slots, isAdmin }: { slots: SlotRow[]; isAdmin: boo
             </thead>
             <tbody>
               {slots.map((s) => (
-                <tr key={s.id} className="border-b border-border/60 last:border-0 hover:bg-muted/40">
+                <tr key={s.id} className="border-b border-border/60 last:border-0 hover:bg-accent/40">
                   <td className="px-4 py-3">
                     <Badge variant={s.round === "GD" ? "secondary" : "outline"}>{s.round}</Badge>
                   </td>

@@ -4,6 +4,7 @@ import { delegateInclude, serializeDelegate } from "./_lib/types"
 import { RegistrationsClient } from "./_components/registrations-client"
 import type { Prisma } from "@/generated/prisma/client"
 import { t } from "@/content/strings"
+import { PageHeader } from "@/app/(admin)/_components/page-header"
 
 const PAGE_SIZE_DEFAULT = 25
 const PAGE_SIZE_MAX = 100
@@ -55,12 +56,11 @@ export default async function RegistrationsPage(props: {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">{t("admin.nav.registrations")}</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          {total} {total === 1 ? "delegate" : "delegates"} total
-        </p>
-      </div>
+      <PageHeader
+        eyebrow="Conference"
+        title={t("admin.nav.registrations")}
+        description={`${total} ${total === 1 ? "delegate" : "delegates"} total`}
+      />
       <RegistrationsClient
         delegates={delegates}
         committees={committees}

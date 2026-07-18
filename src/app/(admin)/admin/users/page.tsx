@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma"
 import { requireAdmin } from "@/lib/authz"
 import { UsersTable } from "./_components/users-table"
+import { PageHeader } from "@/app/(admin)/_components/page-header"
 
 export default async function UsersPage() {
   const session = await requireAdmin()
@@ -12,14 +13,11 @@ export default async function UsersPage() {
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Users & roles</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Maintainers can do everything in this panel except deletions, payment
-          config, revokes, and role changes. Role changes apply on the user&apos;s
-          next sign-in.
-        </p>
-      </div>
+      <PageHeader
+        eyebrow="System"
+        title="Users & roles"
+        description="Maintainers can do everything here except deletions, payment config, revokes, and role changes. Role changes apply on the user's next sign-in."
+      />
       <UsersTable users={users} selfEmail={session.user?.email ?? ""} />
     </div>
   )

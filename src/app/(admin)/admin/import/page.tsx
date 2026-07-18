@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma"
 import { getImportPresets, getQuarantine } from "./actions"
 import { ImportWizard } from "./_components/import-wizard"
 import { QuarantinePanel } from "./_components/quarantine-panel"
+import { PageHeader } from "@/app/(admin)/_components/page-header"
 
 export default async function ImportPage() {
   const [presets, committees, quarantine] = await Promise.all([
@@ -16,13 +17,11 @@ export default async function ImportPage() {
 
   return (
     <div className="mx-auto max-w-4xl space-y-6">
-      <div>
-        <h1 className="text-xl font-semibold text-foreground">Cross-delegation import</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Upload a partner sheet, map their columns to our fields, review, and import.
-          Google Form intake lands here automatically — only broken rows need you.
-        </p>
-      </div>
+      <PageHeader
+        eyebrow="Conference"
+        title="Cross-delegation import"
+        description="Upload a partner sheet, map their columns to our fields, review, and import. Google Form intake lands here automatically — only broken rows need you."
+      />
       <QuarantinePanel rows={quarantine} />
       <ImportWizard presets={presets} committeeNames={committees.map((c) => c.name)} />
     </div>

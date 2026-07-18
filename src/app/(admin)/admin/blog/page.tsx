@@ -3,6 +3,7 @@ import { Clock, ChevronRight } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { prisma } from "@/lib/prisma"
+import { PageHeader } from "@/app/(admin)/_components/page-header"
 
 const STATUS_BADGE: Record<string, string> = {
   PENDING:           "bg-amber-100 text-amber-700 border-amber-200",
@@ -45,11 +46,7 @@ export default async function AdminBlogPage() {
 
   return (
     <div className="space-y-8">
-      {/* Page title */}
-      <div>
-        <h1 className="text-xl font-semibold">Blog</h1>
-        <p className="text-sm text-muted-foreground">Review and moderate submitted posts</p>
-      </div>
+      <PageHeader eyebrow="Content" title="Blog" description="Review and moderate submitted posts" />
 
       {/* Needs review */}
       <section className="space-y-3">

@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma"
 import { requireStaff } from "@/lib/authz"
 import { Badge } from "@/components/ui/badge"
+import { PageHeader } from "@/app/(admin)/_components/page-header"
 
 export default async function LogsPage(props: {
   searchParams: Promise<{ actor?: string; entity?: string; action?: string }>
@@ -20,12 +21,11 @@ export default async function LogsPage(props: {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Activity log</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Every change, approval, and send by admins and maintainers. Latest 100 shown.
-        </p>
-      </div>
+      <PageHeader
+        eyebrow="System"
+        title="Activity log"
+        description="Every change, approval, and send by admins and maintainers. Latest 100 shown."
+      />
 
       {/* GET-form filters — no client state needed */}
       <form className="flex flex-wrap gap-2" method="get">
@@ -60,10 +60,10 @@ export default async function LogsPage(props: {
           No log entries match.
         </div>
       ) : (
-        <div className="overflow-x-auto rounded-xl border border-border bg-card">
+        <div className="editorial-card overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-border text-left text-xs uppercase tracking-wider text-muted-foreground">
+              <tr className="border-b border-border text-left text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
                 <th className="px-4 py-3">When</th>
                 <th className="px-4 py-3">Actor</th>
                 <th className="px-4 py-3">Action</th>
@@ -73,7 +73,7 @@ export default async function LogsPage(props: {
             </thead>
             <tbody>
               {logs.map((log) => (
-                <tr key={log.id} className="border-b border-border/60 last:border-0 hover:bg-muted/40">
+                <tr key={log.id} className="border-b border-border/60 last:border-0 hover:bg-accent/40">
                   <td className="whitespace-nowrap px-4 py-2.5 text-xs text-muted-foreground">
                     {log.at.toLocaleString("en-IN", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}
                   </td>

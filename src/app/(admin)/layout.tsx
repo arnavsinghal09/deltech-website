@@ -1,34 +1,42 @@
 import { requireStaff } from "@/lib/authz"
-import { t } from "@/content/strings"
-import { AdminSidebar } from "./_components/admin-sidebar"
-import { SignOutButton } from "./_components/sign-out-button"
+import { AdminSidebar, type SidebarUser } from "./_components/admin-sidebar"
+import { AdminMobileNav } from "./_components/admin-mobile-nav"
+import { AdminBreadcrumb } from "./_components/admin-breadcrumb"
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const session = await requireStaff()
-  const isAdmin = (session.user as { role?: string }).role === "ADMIN"
+  const user: SidebarUser = {
+    name: session.user?.name ?? null,
+    email: session.user?.email ?? null,
+    role: (session.user as { role?: string }).role ?? "MAINTAINER",
+  }
+  const isPreview = !!process.env.VERCEL_ENV && process.env.VERCEL_ENV !== "production"
 
   return (
     <div className="flex min-h-svh">
-      <AdminSidebar isAdmin={isAdmin} />
+      <AdminSidebar user={user} />
 
       <div className="flex flex-1 flex-col overflow-hidden">
         {/* Top bar */}
-        <header className="flex h-14 shrink-0 items-center justify-between border-b border-border/60 bg-background px-4 sm:px-6">
-          <span className="text-sm font-medium text-muted-foreground">
-            {t("brand.name")} <span className="text-border">—</span> Admin
-          </span>
-          <div className="flex items-center gap-3">
-            {session.user.email && (
-              <span className="hidden text-xs text-muted-foreground sm:block">
-                {session.user.email}
+        <header className="flex h-14 shrink-0 items-center justify-between gap-3 border-b border-border/70 bg-background px-4 sm:px-6">
+          <div className="flex min-w-0 items-center gap-2">
+            <AdminMobileNav user={user} />
+            <AdminBreadcrumb />
+          </div>
+          <div className="flex shrink-0 items-center gap-3">
+            {isPreview && (
+              <span className="rounded-sm border border-gold-500/50 bg-accent px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-accent-foreground">
+                Preview
               </span>
             )}
-            <SignOutButton />
+            {user.email && (
+              <span className="hidden text-xs text-muted-foreground sm:block">{user.email}</span>
+            )}
           </div>
         </header>
 
         {/* Page content */}
-        <main className="flex-1 overflow-auto bg-muted/30 p-6">{children}</main>
+        <main className="flex-1 overflow-auto bg-background p-6 lg:p-8">{children}</main>
       </div>
     </div>
   )

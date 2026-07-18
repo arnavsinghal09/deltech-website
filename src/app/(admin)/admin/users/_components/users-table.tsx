@@ -44,10 +44,10 @@ export function UsersTable({ users, selfEmail }: { users: UserRow[]; selfEmail: 
   }
 
   return (
-    <div className="overflow-x-auto rounded-xl border border-border bg-card">
+    <div className="editorial-card overflow-x-auto">
       <table className="w-full text-sm">
         <thead>
-          <tr className="border-b border-border text-left text-xs uppercase tracking-wider text-muted-foreground">
+          <tr className="border-b border-border text-left text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
             <th className="px-4 py-3">User</th>
             <th className="px-4 py-3">Role</th>
             <th className="px-4 py-3 text-right">Change</th>

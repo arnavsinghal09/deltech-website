@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { prisma } from "@/lib/prisma"
 import { t } from "@/content/strings"
+import { PageHeader } from "@/app/(admin)/_components/page-header"
 
 export default async function AdminQuizPage() {
   const presentations = await prisma.presentation.findMany({
@@ -19,11 +20,7 @@ export default async function AdminQuizPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-semibold">{t("admin.nav.quiz")}</h1>
-          <p className="text-sm text-muted-foreground">Build interactive polls and quizzes</p>
-        </div>
+      <PageHeader eyebrow="Content" title={t("admin.nav.quiz")} description="Build interactive polls and quizzes">
         <Link
           href="/admin/quiz/new"
           className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
@@ -31,7 +28,7 @@ export default async function AdminQuizPage() {
           <Plus className="size-4" />
           {t("quiz.builder.newPresentation")}
         </Link>
-      </div>
+      </PageHeader>
 
       {presentations.length === 0 ? (
         <div className="flex flex-col items-center gap-3 rounded-xl border bg-card py-20 text-center">
