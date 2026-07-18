@@ -13,7 +13,7 @@ import { ThemeToggle } from "./theme-toggle";
 const NAV_LINKS = [
   { href: "/", label: () => t("nav.home") },
   { href: "/availability", label: () => t("nav.availability") },
-  { href: "/team", label: () => "Team" },
+  { href: "/team", label: () => t("marketing.teamLabel") },
   { href: "/blog", label: () => t("nav.blog") },
   { href: "/quiz/join", label: () => t("nav.quizJoin") },
 ] as const;
@@ -32,6 +32,7 @@ export function Header() {
   }, [open]);
 
   return (
+    <>
     <header className="sticky top-0 z-50 w-full border-b border-border/70 bg-background/90 backdrop-blur-xl">
       <div className="section-shell flex h-20 items-center justify-between gap-5">
         <Link href="/" className="group flex items-center gap-3 text-foreground">
@@ -87,6 +88,8 @@ export function Header() {
         </div>
       </div>
 
+    </header>
+
       <AnimatePresence>
         {open && (
           <motion.nav
@@ -96,7 +99,7 @@ export function Header() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.18 }}
-            className="fixed inset-x-0 bottom-0 top-20 overflow-y-auto border-t border-border bg-background lg:hidden"
+            className="fixed inset-x-0 bottom-0 top-20 z-40 overflow-y-auto border-t border-border bg-background lg:hidden"
           >
             <div className="paper-grid flex min-h-full flex-col px-4 py-8">
               <p className="eyebrow mb-5">{t("marketing.liveBriefing")}</p>
@@ -133,6 +136,6 @@ export function Header() {
           </motion.nav>
         )}
       </AnimatePresence>
-    </header>
+    </>
   );
 }

@@ -111,6 +111,10 @@ export const STRINGS = {
     registrationEyebrow: "Delegate application · secure intake",
     registrationBriefLabel: "Before you begin",
     registrationBrief: "Keep your committee preferences, portfolio choices, contact details, and MUN experience ready. Your progress moves through five short briefs.",
+    allDispatches: "All dispatches",
+    registrationClosedEyebrow: "Delegate intake paused",
+    registrationClosedTitle: "The application desk is closed.",
+    registrationSuccessEyebrow: "Transmission received",
   },
 
   common: {
@@ -221,6 +225,8 @@ export const STRINGS = {
       title: "Application received!",
       message:
         "Thank you for registering. You will receive an email with your allotment and payment link once the secretariat processes your application.",
+      trackTitle: "Your private tracking route",
+      trackNote: "Bookmark this link. It is private to your application.",
     },
     closed: {
       title: "Registrations closed",

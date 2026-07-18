@@ -25,7 +25,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           </div>
           <div className="flex shrink-0 items-center gap-3">
             {isPreview && (
-              <span className="rounded-sm border border-gold-500/50 bg-accent px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-accent-foreground">
+              <span className="rounded-sm border border-gold-500/50 bg-accent px-2 py-0.5 text-xs font-semibold uppercase tracking-[0.12em] text-accent-foreground">
                 Preview
               </span>
             )}

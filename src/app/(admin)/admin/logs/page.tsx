@@ -63,7 +63,7 @@ export default async function LogsPage(props: {
         <div className="editorial-card overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-border text-left text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+              <tr className="border-b border-border text-left text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
                 <th className="px-4 py-3">When</th>
                 <th className="px-4 py-3">Actor</th>
                 <th className="px-4 py-3">Action</th>
@@ -83,7 +83,7 @@ export default async function LogsPage(props: {
                       variant={
                         /delete|cancel|revoke|reject/.test(log.action) ? "destructive" : "secondary"
                       }
-                      className="font-mono text-[11px]"
+                      className="font-mono text-xs"
                     >
                       {log.action}
                     </Badge>
@@ -92,7 +92,7 @@ export default async function LogsPage(props: {
                     {log.entity}
                     {log.entityId && <span className="opacity-60"> · {log.entityId.slice(0, 8)}</span>}
                   </td>
-                  <td className="max-w-64 truncate px-4 py-2.5 font-mono text-[11px] text-muted-foreground">
+                  <td className="max-w-64 truncate px-4 py-2.5 font-mono text-xs text-muted-foreground">
                     {log.meta ? JSON.stringify(log.meta) : "—"}
                   </td>
                 </tr>

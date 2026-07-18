@@ -15,7 +15,7 @@ export function CommitteeFillTable({ data }: { data: Row[] }) {
     <div className="overflow-x-auto">
       <table className="w-full text-sm">
         <thead>
-          <tr className="border-b border-border/60 text-left text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+          <tr className="border-b border-border/60 text-left text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
             <th className="pb-3 pr-4">Committee</th>
             <th className="pb-3 pr-4 text-right">Allotted</th>
             <th className="pb-3 pr-4 text-right">Total</th>

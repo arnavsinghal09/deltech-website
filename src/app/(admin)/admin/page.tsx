@@ -137,19 +137,19 @@ export default async function AdminOverviewPage() {
       {/* Charts */}
       <div className="grid gap-6 lg:grid-cols-2">
         <div className="editorial-card p-5">
-          <h2 className="eyebrow mb-5 text-[10px]">{t("admin.overview.byStatus")}</h2>
+          <h2 className="eyebrow mb-5">{t("admin.overview.byStatus")}</h2>
           <StatusBarChart data={statusData} />
         </div>
 
         <div className="editorial-card p-5">
-          <h2 className="eyebrow mb-5 text-[10px]">{t("admin.overview.sourceBreakdown")}</h2>
+          <h2 className="eyebrow mb-5">{t("admin.overview.sourceBreakdown")}</h2>
           <SourcePieChart data={sourceData} />
         </div>
       </div>
 
       {/* Committee fill-rate table */}
       <div className="editorial-card p-5">
-        <h2 className="eyebrow mb-5 text-[10px]">{t("admin.overview.byCommittee")} — fill rate</h2>
+        <h2 className="eyebrow mb-5">{t("admin.overview.byCommittee")} — fill rate</h2>
         <CommitteeFillTable data={committeeData} />
       </div>
     </div>

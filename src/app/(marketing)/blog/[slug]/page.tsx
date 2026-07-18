@@ -5,7 +5,7 @@ import { Clock, ChevronLeft } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { prisma } from "@/lib/prisma"
 import { TiptapContent } from "@/lib/tiptap-renderer"
-import { STRINGS } from "@/content/strings"
+import { STRINGS, t } from "@/content/strings"
 
 type Props = { params: Promise<{ slug: string }> }
 
@@ -44,87 +44,51 @@ export default async function BlogArticlePage({ params }: Props) {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Back link */}
-      <div className="mx-auto max-w-[680px] px-6 pt-8">
+      <div className="section-shell pt-10">
         <Link
           href="/blog"
-          className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+          className="ink-link inline-flex items-center gap-2 text-sm font-semibold"
         >
           <ChevronLeft className="size-4" />
-          All articles
+          {t("marketing.allDispatches")}
         </Link>
       </div>
 
-      {/* Cover image (full-bleed within max-width) */}
+      <header className="section-shell grid gap-10 border-b border-foreground/20 py-14 lg:grid-cols-[1fr_0.38fr] lg:items-end lg:py-20">
+        <div>
+          {post.tags.length > 0 && <p className="eyebrow">{post.tags.slice(0, 3).join(" · ")}</p>}
+          <h1 className="display-section mt-5 max-w-[12ch]">{post.title}</h1>
+          {post.subtitle && <p className="body-large mt-7 max-w-3xl text-muted-foreground">{post.subtitle}</p>}
+        </div>
+        <div className="border-l border-foreground/20 pl-6 text-sm leading-relaxed text-muted-foreground">
+          <p className="font-semibold text-foreground">{post.author.name ?? t("marketing.anonymousAuthor")}</p>
+          {post.publishedAt && (
+            <time className="mt-2 block" dateTime={post.publishedAt.toISOString()}>
+              {new Date(post.publishedAt).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" })}
+            </time>
+          )}
+          {post.readMin && <p className="mt-2 flex items-center gap-2"><Clock className="size-4" /> {t("blog.readMin", { n: post.readMin })}</p>}
+        </div>
+      </header>
+
       {post.coverImage && (
-        <div className="mx-auto mt-8 max-w-[780px] px-6">
+        <div className="section-shell mt-10">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={post.coverImage}
             alt={post.title}
-            className="h-[420px] w-full rounded-xl object-cover"
+            className="max-h-[680px] w-full border border-foreground/15 object-cover"
           />
         </div>
       )}
 
-      {/* Article */}
-      <article className="mx-auto max-w-[680px] px-6 pb-24">
-        <div className={post.coverImage ? "pt-10" : "pt-12"}>
-          {/* Title */}
-          <h1 className="font-serif text-[2.25rem] font-bold leading-tight text-foreground">
-            {post.title}
-          </h1>
-
-          {/* Subtitle */}
-          {post.subtitle && (
-            <p className="mt-4 font-serif text-xl leading-relaxed text-muted-foreground">
-              {post.subtitle}
-            </p>
-          )}
-
-          {/* Byline */}
-          <div className="mt-6 flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
-            <span className="font-medium text-foreground">{post.author.name ?? "Anonymous"}</span>
-
-            {post.publishedAt && (
-              <>
-                <span className="text-border">·</span>
-                <time dateTime={post.publishedAt.toISOString()}>
-                  {new Date(post.publishedAt).toLocaleDateString("en-IN", {
-                    day: "numeric",
-                    month: "long",
-                    year: "numeric",
-                  })}
-                </time>
-              </>
-            )}
-
-            {post.readMin && (
-              <>
-                <span className="text-border">·</span>
-                <span className="flex items-center gap-1">
-                  <Clock className="size-3.5" />
-                  {post.readMin} min read
-                </span>
-              </>
-            )}
+      <article className="mx-auto max-w-[760px] px-6 py-14 sm:py-20">
+        <TiptapContent json={post.contentJson} className="blog-prose" />
+        {post.tags.length > 0 && (
+          <div className="mt-14 flex flex-wrap gap-2 border-t border-border pt-7">
+            {post.tags.map((tag) => <Badge key={tag} variant="secondary" className="text-xs">{tag}</Badge>)}
           </div>
-
-          {post.tags.length > 0 && (
-            <div className="mt-4 flex flex-wrap gap-2">
-              {post.tags.map((tag) => (
-                <Badge key={tag} variant="secondary" className="text-xs">
-                  {tag}
-                </Badge>
-              ))}
-            </div>
-          )}
-
-          <div className="my-8 border-t border-border/60" />
-
-          {/* Content */}
-          <TiptapContent json={post.contentJson} className="blog-prose" />
-        </div>
+        )}
       </article>
     </div>
   )

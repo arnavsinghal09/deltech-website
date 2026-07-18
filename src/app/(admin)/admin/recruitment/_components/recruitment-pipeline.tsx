@@ -133,7 +133,7 @@ function Stage({
     <section>
       <div className="mb-4 flex items-baseline justify-between gap-3 border-b border-border/70 pb-3">
         <div>
-          <p className="eyebrow text-[10px]">{eyebrow}</p>
+          <p className="eyebrow">{eyebrow}</p>
           <h2 className="font-heading text-2xl">{title}</h2>
         </div>
         <Badge variant="secondary" className="tabular-nums">{applicants.length}</Badge>
