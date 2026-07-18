@@ -31,8 +31,8 @@ interface Props {
 // Custom colour inputs for the theme editor
 function ColourRow({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
   return (
-    <div className="flex items-center justify-between gap-2 py-1">
-      <span className="text-xs text-muted-foreground">{label}</span>
+    <div className="flex items-center justify-between gap-2 py-1.5">
+      <span className="text-sm text-muted-foreground">{label}</span>
       <div className="flex items-center gap-1.5">
         <span className="text-xs font-mono text-foreground">{value}</span>
         <input
@@ -52,20 +52,20 @@ export function BuilderHeader({
   const [themeOpen, setThemeOpen] = useState(false)
 
   return (
-    <header className="flex h-14 shrink-0 items-center gap-4 border-b bg-background px-4">
+    <header className="flex h-20 shrink-0 items-center gap-5 border-b border-white/10 bg-foreground px-5 text-background">
       {/* Title */}
       <Input
         value={title}
         onChange={(e) => onTitleChange(e.target.value)}
         placeholder={t("quiz.builder.titlePlaceholder")}
-        className="h-8 w-52 text-sm font-medium border-0 shadow-none focus-visible:ring-0 px-1"
+        className="h-12 w-64 rounded-none border-0 border-b border-white/20 bg-transparent px-0 font-heading text-xl text-background shadow-none focus-visible:border-primary focus-visible:ring-0"
       />
 
-      <div className="h-5 w-px bg-border" />
+      <div className="h-8 w-px bg-white/15" />
 
       {/* Mode toggle */}
       <div className="flex items-center gap-2">
-        <Label htmlFor="mode-switch" className="text-xs text-muted-foreground cursor-pointer select-none">
+        <Label htmlFor="mode-switch" className="cursor-pointer select-none text-sm text-background/55">
           {t("quiz.modes.POLL")}
         </Label>
         <Switch
@@ -74,22 +74,22 @@ export function BuilderHeader({
           checked={mode === "QUIZ"}
           onCheckedChange={(v) => onModeChange(v ? "QUIZ" : "POLL")}
         />
-        <Label htmlFor="mode-switch" className="text-xs text-muted-foreground cursor-pointer select-none">
+        <Label htmlFor="mode-switch" className="cursor-pointer select-none text-sm text-background/55">
           {t("quiz.modes.QUIZ")}
         </Label>
       </div>
 
-      <div className="h-5 w-px bg-border" />
+      <div className="h-8 w-px bg-white/15" />
 
       {/* Theme picker */}
       <DropdownMenu open={themeOpen} onOpenChange={setThemeOpen}>
-        <DropdownMenuTrigger className="flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1.5 text-xs hover:bg-muted transition-colors">
+        <DropdownMenuTrigger className="flex h-10 items-center gap-2 border border-white/20 px-3 text-sm transition-colors hover:bg-white/10">
           <span
             className="inline-block size-3 rounded-sm border border-border/50"
             style={{ background: theme.accentColor }}
           />
           {t("quiz.builder.themes.classic")}
-          <ChevronDown className="size-3 text-muted-foreground" />
+          <ChevronDown className="size-4 text-background/55" />
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" className="w-52">
           <DropdownMenuLabel className="text-xs">{t("quiz.builder.themes.classic")} — presets</DropdownMenuLabel>
@@ -126,16 +126,16 @@ export function BuilderHeader({
       {/* Present button */}
       <Link
         href={`/admin/quiz/${presentationId}/present`}
-        className="flex items-center gap-1.5 rounded-md bg-teal-600 px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-teal-700"
+        className="flex h-11 items-center gap-2 bg-primary px-5 text-sm font-bold text-primary-foreground transition-opacity hover:opacity-90"
       >
-        <Play className="size-3" />
+        <Play className="size-4" />
         {t("quiz.presentButton")}
       </Link>
 
       {/* Save status */}
-      <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+      <div className="flex min-w-24 items-center gap-1.5 text-sm text-background/55">
         {saveStatus === "saving" && <><Loader2 className="size-3 animate-spin" />{t("quiz.builder.saving")}</>}
-        {saveStatus === "saved"  && <><Check className="size-3 text-teal-600" /><span className="text-teal-600">{t("quiz.builder.saved")}</span></>}
+        {saveStatus === "saved"  && <><Check className="size-3 text-teal-300" /><span className="text-teal-300">{t("quiz.builder.saved")}</span></>}
         {saveStatus === "dirty"  && <span className="text-muted-foreground/60">{t("quiz.builder.unsaved")}</span>}
       </div>
     </header>

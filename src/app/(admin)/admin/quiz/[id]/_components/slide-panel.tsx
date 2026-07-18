@@ -37,40 +37,43 @@ export function SlidePanel({
   slides, selectedId, onSelect, onAdd, onDelete, onDuplicate, onMoveUp, onMoveDown,
 }: Props) {
   return (
-    <aside className="flex w-[200px] shrink-0 flex-col border-r bg-background overflow-hidden">
+    <aside className="flex w-[260px] shrink-0 flex-col overflow-hidden border-r border-black/15 bg-[#f5f1e8]">
+      <div className="border-b border-black/10 px-4 py-4">
+        <p className="font-mono text-xs font-bold uppercase tracking-[0.18em] text-black/45">Run of show · {slides.length}</p>
+      </div>
       <div className="flex-1 overflow-y-auto">
         {slides.length === 0 ? (
-          <p className="p-4 text-center text-xs text-muted-foreground">
+          <p className="p-8 text-center text-base text-muted-foreground">
             {t("quiz.builder.noSlides")}
           </p>
         ) : (
-          <ul className="space-y-1 p-2">
+          <ul className="space-y-2 p-3">
             {slides.map((slide, idx) => (
               <li key={slide.id}>
                 <button
                   onClick={() => onSelect(slide.id)}
                   className={cn(
-                    "group w-full rounded-lg border px-2.5 py-2 text-left transition-colors",
+                    "group w-full border-l-4 px-3 py-3 text-left transition-colors",
                     selectedId === slide.id
-                      ? "border-primary bg-primary/5"
-                      : "border-transparent hover:border-border hover:bg-muted/40",
+                      ? "border-primary bg-white shadow-[5px_5px_0_rgba(15,118,110,0.2)]"
+                      : "border-transparent hover:border-black/20 hover:bg-white/60",
                   )}
                 >
                   <div className="flex items-center gap-2">
-                    <span className={cn("size-1.5 shrink-0 rounded-full", TYPE_COLOUR[slide.type])} />
-                    <span className="flex-1 truncate text-xs font-medium text-foreground">
+                    <span className={cn("size-2.5 shrink-0", TYPE_COLOUR[slide.type])} />
+                    <span className="flex-1 truncate text-sm font-semibold text-foreground">
                       {slide.prompt || t(`quiz.slideType.${slide.type}` as Parameters<typeof t>[0])}
                     </span>
-                    <span className="text-[10px] text-muted-foreground/60">{idx + 1}</span>
+                    <span className="font-mono text-xs text-muted-foreground/60">{String(idx + 1).padStart(2, "0")}</span>
                   </div>
-                  <p className="mt-0.5 text-[10px] text-muted-foreground truncate pl-3.5">
+                  <p className="mt-1 truncate pl-[18px] text-xs uppercase tracking-wider text-muted-foreground">
                     {t(`quiz.slideType.${slide.type}` as Parameters<typeof t>[0])}
                   </p>
                 </button>
 
                 {/* Actions shown only for the selected slide */}
                 {selectedId === slide.id && (
-                  <div className="flex items-center justify-end gap-0.5 px-1.5 pb-1">
+                  <div className="flex items-center justify-end gap-1 px-2 pb-1 pt-2">
                     <button
                       onClick={() => onMoveUp(slide.id)}
                       disabled={idx === 0}
@@ -110,10 +113,10 @@ export function SlidePanel({
       </div>
 
       {/* Add slide button */}
-      <div className="shrink-0 border-t p-2">
+      <div className="shrink-0 border-t border-black/10 p-3">
         <DropdownMenu>
-          <DropdownMenuTrigger className="inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-input bg-transparent px-3 h-8 text-xs font-medium hover:bg-muted transition-colors">
-            <Plus className="size-3.5" />
+          <DropdownMenuTrigger className="inline-flex h-12 w-full items-center justify-center gap-2 bg-foreground px-3 text-sm font-bold text-background transition-opacity hover:opacity-90">
+            <Plus className="size-4" />
             {t("quiz.addSlide")}
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start" className="w-44">

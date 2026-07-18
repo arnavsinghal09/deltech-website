@@ -20,10 +20,10 @@ export function SlidePreview({ slide, theme }: Props) {
 
   return (
     <div
-      className="w-full max-w-2xl rounded-2xl shadow-xl overflow-hidden"
+      className="w-full max-w-3xl overflow-hidden shadow-[18px_18px_0_rgba(17,22,20,0.2)]"
       style={{ aspectRatio: "16/9", ...style }}
     >
-      <div className="flex h-full flex-col p-10">
+      <div className="flex h-full flex-col p-12">
         <PreviewContent slide={slide} theme={theme} />
       </div>
     </div>
@@ -170,7 +170,7 @@ function PreviewContent({ slide, theme }: Props) {
 
 function Prompt({ text }: { text: string }) {
   return (
-    <p className="text-2xl font-bold leading-tight">
+    <p className="text-3xl font-bold leading-tight">
       {text || <span style={{ opacity: 0.25 }}>Your question…</span>}
     </p>
   )

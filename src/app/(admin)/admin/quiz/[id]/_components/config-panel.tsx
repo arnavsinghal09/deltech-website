@@ -60,7 +60,7 @@ function TimerField({
 function FieldRow({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="space-y-1.5">
-      <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{label}</Label>
+      <Label className="text-sm font-bold uppercase tracking-[0.12em] text-muted-foreground">{label}</Label>
       {children}
     </div>
   )
@@ -454,8 +454,8 @@ interface Props {
 export function ConfigPanel({ slide, mode, onChange }: Props) {
   if (!slide) {
     return (
-      <aside className="w-[300px] shrink-0 border-l bg-background flex items-center justify-center">
-        <p className="text-xs text-muted-foreground">Select a slide to configure</p>
+      <aside className="flex w-[360px] shrink-0 items-center justify-center border-l bg-background">
+        <p className="text-base text-muted-foreground">Select a slide to configure</p>
       </aside>
     )
   }
@@ -464,22 +464,22 @@ export function ConfigPanel({ slide, mode, onChange }: Props) {
     onChange(slide.id, patch)
 
   return (
-    <aside className="flex w-[300px] shrink-0 flex-col border-l bg-background overflow-hidden">
-      <div className="flex items-center gap-2 border-b px-4 py-3">
-        <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+    <aside className="flex w-[360px] shrink-0 flex-col overflow-hidden border-l border-black/15 bg-background">
+      <div className="flex items-center gap-2 border-b px-5 py-5">
+        <span className="font-mono text-xs font-bold uppercase tracking-[0.18em] text-primary">
           {t(`quiz.slideType.${slide.type}` as Parameters<typeof t>[0])}
         </span>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4 space-y-5">
+      <div className="flex-1 space-y-6 overflow-y-auto p-5">
         {/* Prompt — common to all non-content slides */}
         <FieldRow label="Question / heading">
           <Textarea
             value={slide.prompt}
             onChange={(e) => handleChange({ prompt: e.target.value })}
             placeholder={t("quiz.builder.promptPlaceholder")}
-            rows={2}
-            className="resize-none text-sm"
+            rows={3}
+            className="resize-none text-base leading-relaxed"
           />
         </FieldRow>
 

@@ -202,9 +202,10 @@ export function ParticipantApp({ sessionId, roomCode, initialStatus, presentatio
   if (appState === "ended") {
     return (
       <Screen k={appState}>
-        <div className="flex flex-col items-center gap-4 text-center">
-          <span className="text-5xl">🎉</span>
-          <h1 className="text-2xl font-bold">{t("quiz.sessionEnded")}</h1>
+        <div className="flex flex-col items-center gap-5 py-6 text-center">
+          <span className="text-7xl">🎉</span>
+          <p className="font-mono text-xs font-bold uppercase tracking-[0.2em] text-teal-700">Transmission complete</p>
+          <h1 className="font-heading text-5xl">{t("quiz.sessionEnded")}</h1>
           {myEntry && (
             <p className="text-lg text-muted-foreground">
               {t("quiz.yourRankLabel", { rank: myEntry.rank })}
@@ -218,18 +219,20 @@ export function ParticipantApp({ sessionId, roomCode, initialStatus, presentatio
   if (appState === "nickname") {
     return (
       <Screen k={appState}>
-        <form onSubmit={handleNicknameSubmit} className="flex w-full max-w-sm flex-col gap-4">
-          <h1 className="text-2xl font-bold text-center">{presentationTitle || t("quiz.joinTitle")}</h1>
-          <p className="text-center text-muted-foreground">{t("quiz.enterNickname")}</p>
+        <form onSubmit={handleNicknameSubmit} className="flex w-full max-w-lg flex-col gap-5 py-4">
+          <p className="font-mono text-xs font-bold uppercase tracking-[0.2em] text-teal-700">Identify yourself</p>
+          <h1 className="font-heading text-4xl leading-tight sm:text-5xl">{presentationTitle || t("quiz.joinTitle")}</h1>
+          <p className="text-lg text-muted-foreground">{t("quiz.enterNickname")}</p>
           <Input
             value={nicknameInput}
             onChange={(e) => setNicknameInput(e.target.value)}
             placeholder={t("quiz.nicknamePlaceholder")}
             maxLength={24}
             autoFocus
+            className="h-14 rounded-none border-0 border-b-4 border-foreground bg-transparent px-0 text-xl shadow-none focus-visible:ring-0"
           />
           {nicknameError && <p className="text-sm text-destructive">{nicknameError}</p>}
-          <Button type="submit">{t("common.next")}</Button>
+          <Button type="submit" size="lg" className="h-14 rounded-none text-base">{t("common.next")} →</Button>
         </form>
       </Screen>
     )
@@ -238,14 +241,15 @@ export function ParticipantApp({ sessionId, roomCode, initialStatus, presentatio
   if (appState === "avatar") {
     return (
       <Screen k={appState}>
-        <div className="flex w-full max-w-sm flex-col gap-4">
-          <h1 className="text-2xl font-bold text-center">{t("quiz.pickAvatar")}</h1>
-          <div className="grid grid-cols-5 gap-3">
+        <div className="flex w-full max-w-lg flex-col gap-6 py-4">
+          <p className="font-mono text-xs font-bold uppercase tracking-[0.2em] text-teal-700">Choose your signal</p>
+          <h1 className="font-heading text-5xl">{t("quiz.pickAvatar")}</h1>
+          <div className="grid grid-cols-4 gap-2 sm:grid-cols-5">
             {AVATARS.map((ava) => (
               <button
                 key={ava}
                 onClick={() => handleAvatarSelect(ava)}
-                className={`flex items-center justify-center rounded-xl p-2 text-3xl transition-colors hover:bg-muted ${avatar === ava ? "ring-2 ring-teal-600 bg-teal-50" : ""}`}
+                className={`flex aspect-square items-center justify-center border border-black/15 bg-white/40 p-2 text-4xl transition-all hover:-translate-y-1 hover:bg-white ${avatar === ava ? "border-teal-700 bg-teal-50 shadow-[5px_5px_0_#0f766e]" : ""}`}
               >
                 {ava}
               </button>
@@ -259,15 +263,15 @@ export function ParticipantApp({ sessionId, roomCode, initialStatus, presentatio
   if (appState === "lobby") {
     return (
       <Screen k={appState}>
-        <div className="flex flex-col items-center gap-4 text-center">
-          <span className="text-5xl">{avatar || "👤"}</span>
-          <p className="text-lg font-semibold">{nickname}</p>
-          <p className="text-muted-foreground">{t("quiz.waitingToStart")}</p>
+        <div className="flex flex-col items-center gap-5 py-8 text-center">
+          <span className="text-7xl">{avatar || "👤"}</span>
+          <p className="font-heading text-4xl">{nickname}</p>
+          <p className="font-mono text-xs font-bold uppercase tracking-[0.2em] text-teal-700">{t("quiz.waitingToStart")}</p>
           <div className="mt-4 flex gap-1">
             {[0, 1, 2].map((i) => (
               <span
                 key={i}
-                className="size-2 rounded-full bg-teal-600 animate-bounce"
+                className="size-3 bg-teal-600 animate-bounce"
                 style={{ animationDelay: `${i * 0.15}s` }}
               />
             ))}
@@ -288,15 +292,16 @@ export function ParticipantApp({ sessionId, roomCode, initialStatus, presentatio
   if (appState === "leaderboard") {
     return (
       <Screen k={appState}>
-        <div className="w-full max-w-sm space-y-4">
-          <h2 className="text-2xl font-bold text-center">
+        <div className="w-full max-w-lg space-y-5">
+          <p className="text-center font-mono text-xs font-bold uppercase tracking-[0.2em] text-teal-700">Live standings</p>
+          <h2 className="text-center font-heading text-5xl">
             {lbFinal ? t("quiz.finalResults") : t("quiz.leaderboard")}
           </h2>
           <div className="space-y-2">
             {lbEntries.slice(0, 10).map((entry) => (
               <div
                 key={entry.nickname}
-                className={`flex items-center gap-3 rounded-xl px-4 py-3 ${entry.nickname === nickname ? "bg-teal-50 ring-1 ring-teal-200" : "bg-muted/50"}`}
+                className={`flex items-center gap-3 border-l-4 px-4 py-4 ${entry.nickname === nickname ? "border-teal-700 bg-teal-50" : "border-transparent bg-black/5"}`}
               >
                 <span className="w-6 text-center text-sm font-bold text-teal-600">
                   {t("quiz.rankN", { n: entry.rank })}
@@ -328,18 +333,18 @@ export function ParticipantApp({ sessionId, roomCode, initialStatus, presentatio
   if (appState === "result" && result) {
     return (
       <Screen k={appState}>
-        <div className="flex flex-col items-center gap-4 text-center">
+        <div className="flex flex-col items-center gap-5 py-8 text-center">
           {result.correct === true && (
             <>
-              <span className="text-5xl">✅</span>
-              <p className="text-2xl font-bold text-green-600">{t("quiz.correct")}</p>
+              <span className="text-7xl">✅</span>
+              <p className="font-heading text-5xl text-green-700">{t("quiz.correct")}</p>
               <p className="text-teal-600 text-xl font-semibold">{t("quiz.pointsEarned", { points: result.points })}</p>
             </>
           )}
           {result.correct === false && (
             <>
-              <span className="text-5xl">❌</span>
-              <p className="text-2xl font-bold text-destructive">{t("quiz.incorrect")}</p>
+              <span className="text-7xl">❌</span>
+              <p className="font-heading text-5xl text-destructive">{t("quiz.incorrect")}</p>
             </>
           )}
           {result.correct === null && (
@@ -362,9 +367,9 @@ export function ParticipantApp({ sessionId, roomCode, initialStatus, presentatio
   if (appState === "submitted") {
     return (
       <Screen k={appState}>
-        <div className="flex flex-col items-center gap-3 text-center">
-          <span className="text-4xl">✓</span>
-          <p className="text-xl font-semibold">{t("quiz.answerReceived")}</p>
+        <div className="flex flex-col items-center gap-4 py-8 text-center">
+          <span className="flex size-20 items-center justify-center bg-teal-700 text-4xl text-white">✓</span>
+          <p className="font-heading text-4xl">{t("quiz.answerReceived")}</p>
           <p className="text-sm text-muted-foreground">{t("quiz.waitingToStart")}</p>
         </div>
       </Screen>
@@ -376,12 +381,12 @@ export function ParticipantApp({ sessionId, roomCode, initialStatus, presentatio
 
   return (
     <Screen padding k={`${appState}-${currentSlide?.id ?? ""}`}>
-      <div className="w-full max-w-lg space-y-6">
+      <div className="w-full max-w-2xl space-y-7">
         <div className="space-y-1">
-          <p className="text-xs text-muted-foreground">
+          <p className="font-mono text-xs font-bold uppercase tracking-[0.18em] text-teal-700">
             {t("quiz.slideProgress", { n: slideIndex + 1, total: slideCount })}
           </p>
-          <h2 className="text-xl font-bold leading-snug">{currentSlide.prompt}</h2>
+          <h2 className="font-heading text-3xl leading-tight sm:text-4xl">{currentSlide.prompt}</h2>
         </div>
 
         {currentSlide.type === "MCQ" && (() => {
@@ -393,7 +398,7 @@ export function ParticipantApp({ sessionId, roomCode, initialStatus, presentatio
                   key={i}
                   onClick={() => handleMCQToggle(i)}
                   disabled={isLocked}
-                  className={`w-full rounded-xl border px-4 py-3 text-left text-sm font-medium transition-colors ${selectedIndices.includes(i) ? "border-teal-600 bg-teal-50 text-teal-800" : "border-border bg-background hover:bg-muted"} disabled:cursor-not-allowed disabled:opacity-50`}
+                  className={`min-h-16 w-full border-l-4 px-5 py-4 text-left text-base font-semibold transition-all ${selectedIndices.includes(i) ? "border-teal-700 bg-teal-50 text-teal-900 shadow-[5px_5px_0_#0f766e]" : "border-black/20 bg-white/55 hover:border-teal-700 hover:bg-white"} disabled:cursor-not-allowed disabled:opacity-50`}
                 >
                   {opt}
                 </button>
@@ -537,13 +542,25 @@ export function ParticipantApp({ sessionId, roomCode, initialStatus, presentatio
 function Screen({ children, padding, k }: { children: React.ReactNode; padding?: boolean; k?: string }) {
   const reduce = useReducedMotion()
   return (
-    <div className={`flex min-h-screen flex-col items-center justify-center bg-background ${padding ? "px-4 py-12" : "px-4 py-8"}`}>
+    <div className={`relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-[#07100d] ${padding ? "px-4 py-10" : "px-4 py-8"}`}>
+      <div className="paper-grid absolute inset-0 opacity-[0.1]" aria-hidden />
+      <motion.div
+        aria-hidden
+        className="absolute -right-36 -top-36 size-[28rem] rounded-full border border-teal-300/25"
+        animate={reduce ? undefined : { rotate: 360 }}
+        transition={{ duration: 28, repeat: Infinity, ease: "linear" }}
+      >
+        <div className="absolute inset-16 rounded-full border border-dashed border-teal-300/20" />
+      </motion.div>
+      <div className="absolute left-5 top-5 flex items-center gap-2 font-mono text-xs font-bold uppercase tracking-[0.2em] text-white/45">
+        <span className="size-2 animate-pulse bg-teal-300" /> Audience live
+      </div>
       <motion.div
         key={k}
         initial={reduce || k === undefined ? false : { opacity: 0, y: 18, scale: 0.98 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
         transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
-        className="flex w-full flex-col items-center"
+        className="relative z-10 flex w-full max-w-3xl flex-col items-center bg-[#f3eee2] p-6 text-[#111614] shadow-[14px_14px_0_#14b8a6] sm:p-10"
       >
         {children}
       </motion.div>
