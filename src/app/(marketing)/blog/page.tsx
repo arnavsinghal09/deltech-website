@@ -1,38 +1,30 @@
 import type { Metadata } from "next"
 import Link from "next/link"
+import { ArrowRight } from "lucide-react"
 import { prisma } from "@/lib/prisma"
-import { STRINGS } from "@/content/strings"
+import { STRINGS, t } from "@/content/strings"
 
 export const metadata: Metadata = {
   title: `Blog — ${STRINGS.brand.name}`,
   description: `Stories, insights, and updates from the ${STRINGS.brand.name} community.`,
 }
 
-function metaLine(post: {
-  author: { name: string | null }
-  publishedAt: Date | null
-  readMin: number | null
-}) {
+function metaLine(post: { author: { name: string | null }; publishedAt: Date | null; readMin: number | null }) {
   const parts = [
-    post.author.name ?? "Anonymous",
+    post.author.name ?? t("marketing.anonymousAuthor"),
     post.publishedAt
-      ? new Date(post.publishedAt).toLocaleDateString("en-IN", {
-          day: "numeric",
-          month: "short",
-          year: "numeric",
-        })
+      ? new Date(post.publishedAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })
       : null,
-    post.readMin ? `${post.readMin} min` : null,
+    post.readMin ? t("blog.readMin", { n: post.readMin }) : null,
   ].filter(Boolean)
   return parts.join(" · ")
 }
 
 function PlaceholderCover({ className }: { className?: string }) {
   return (
-    <div className={`flex items-center justify-center bg-secondary ${className ?? ""}`}>
-      <span aria-hidden className="display text-4xl text-gold-500">
-        ◆
-      </span>
+    <div className={`noise-wash relative overflow-hidden border border-foreground/15 ${className ?? ""}`}>
+      <span className="absolute -bottom-8 right-4 display text-[9rem] leading-none text-gold-700/35" aria-hidden>D</span>
+      <span className="data-label absolute left-5 top-5 text-muted-foreground">{t("marketing.dispatchMark")}</span>
     </div>
   )
 }
@@ -57,85 +49,64 @@ export default async function BlogIndexPage() {
   const [featured, ...rest] = posts
 
   return (
-    <div className="mx-auto max-w-4xl px-4 py-16 sm:px-6">
-      <div className="mb-12">
-        <p className="eyebrow">{STRINGS.brand.name}</p>
-        <h1 className="display mt-3 text-4xl md:text-5xl">The Dispatch</h1>
-        <p className="mt-3 text-muted-foreground">
-          Stories and insights from the {STRINGS.brand.name} community
-        </p>
-        <div className="rule mt-8" />
-      </div>
-
-      {posts.length === 0 ? (
-        <p className="py-20 text-center text-muted-foreground">
-          No articles published yet. Check back soon.
-        </p>
-      ) : (
-        <div className="space-y-2">
-          {/* Featured — most recent post */}
-          <Link href={`/blog/${featured.slug}`} className="group grid gap-6 pb-10 md:grid-cols-5">
-            {featured.coverImage ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={featured.coverImage}
-                alt={featured.title}
-                className="aspect-[3/2] w-full rounded-sm border border-foreground/15 object-cover md:col-span-2"
-              />
-            ) : (
-              <PlaceholderCover className="aspect-[3/2] w-full rounded-sm border border-foreground/15 md:col-span-2" />
-            )}
-            <div className="flex flex-col justify-center md:col-span-3">
-              <p className="eyebrow">Latest</p>
-              <h2 className="display mt-3 text-3xl leading-tight transition-colors group-hover:text-primary">
-                {featured.title}
-              </h2>
-              {featured.subtitle && (
-                <p className="mt-3 line-clamp-3 leading-relaxed text-muted-foreground">
-                  {featured.subtitle}
-                </p>
-              )}
-              <p className="mt-4 text-xs uppercase tracking-[0.12em] text-muted-foreground">
-                {metaLine(featured)}
-              </p>
-            </div>
-          </Link>
-
-          {/* The rest — hairline-divided editorial rows */}
-          {rest.map((post) => (
-            <Link
-              key={post.id}
-              href={`/blog/${post.slug}`}
-              className="group flex items-center gap-6 border-t border-border/70 py-7"
-            >
-              <div className="min-w-0 flex-1">
-                <h2 className="font-heading text-xl leading-snug transition-colors group-hover:text-primary">
-                  {post.title}
-                </h2>
-                {post.subtitle && (
-                  <p className="mt-1.5 line-clamp-2 text-sm leading-relaxed text-muted-foreground">
-                    {post.subtitle}
-                  </p>
-                )}
-                <p className="mt-2.5 text-xs uppercase tracking-[0.12em] text-muted-foreground">
-                  {metaLine(post)}
-                  {post.tags.length > 0 && <> · {post.tags.slice(0, 2).join(", ")}</>}
-                </p>
-              </div>
-              {post.coverImage ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={post.coverImage}
-                  alt=""
-                  className="hidden size-24 shrink-0 rounded-sm border border-foreground/15 object-cover sm:block"
-                />
-              ) : (
-                <PlaceholderCover className="hidden size-24 shrink-0 rounded-sm border border-foreground/15 sm:block" />
-              )}
-            </Link>
-          ))}
+    <div>
+      <section className="border-b border-border/70 py-20 sm:py-28">
+        <div className="section-shell grid gap-10 lg:grid-cols-[1fr_0.55fr] lg:items-end">
+          <div>
+            <p className="eyebrow">{t("marketing.dispatchEyebrow")}</p>
+            <h1 className="display-section mt-6">{t("marketing.dispatchTitle")}</h1>
+          </div>
+          <p className="body-large text-muted-foreground">{t("marketing.dispatchBody")}</p>
         </div>
-      )}
+      </section>
+
+      <section className="py-20 sm:py-28">
+        <div className="section-shell">
+          {posts.length === 0 ? (
+            <div className="noise-wash grid min-h-80 place-items-center border-y border-border px-6 text-center">
+              <div>
+                <p className="display text-7xl text-gold-700/45" aria-hidden>D</p>
+                <p className="mt-5 font-heading text-3xl">{t("marketing.dispatchEmpty")}</p>
+                <p className="mt-3 text-base text-muted-foreground">{t("marketing.dispatchEmptyBody")}</p>
+              </div>
+            </div>
+          ) : (
+            <div>
+              <Link href={`/blog/${featured.slug}`} className="group grid gap-8 border-b border-foreground/20 pb-16 lg:grid-cols-[1.08fr_0.92fr] lg:items-center">
+                {featured.coverImage ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={featured.coverImage} alt={featured.title} className="aspect-[4/3] w-full border border-foreground/15 object-cover grayscale transition duration-500 group-hover:grayscale-0" />
+                ) : (
+                  <PlaceholderCover className="aspect-[4/3] w-full" />
+                )}
+                <div className="lg:pl-6">
+                  <p className="eyebrow">{t("marketing.latestDispatch")}</p>
+                  <h2 className="mt-5 font-heading text-5xl leading-[0.98] transition-colors group-hover:text-primary sm:text-6xl">{featured.title}</h2>
+                  {featured.subtitle && <p className="body-large mt-6 line-clamp-3 text-muted-foreground">{featured.subtitle}</p>}
+                  <p className="data-label mt-7 text-muted-foreground">{metaLine(featured)}</p>
+                  <span className="mt-8 inline-flex items-center gap-2 font-semibold text-primary">
+                    {t("marketing.readDispatch")} <ArrowRight className="size-4" />
+                  </span>
+                </div>
+              </Link>
+
+              <div>
+                {rest.map((post, index) => (
+                  <Link key={post.id} href={`/blog/${post.slug}`} className="group grid gap-5 border-b border-foreground/20 py-9 sm:grid-cols-[4rem_1fr_auto] sm:items-center">
+                    <span className="font-mono text-sm font-semibold text-primary">{String(index + 2).padStart(2, "0")}</span>
+                    <div>
+                      <h2 className="font-heading text-3xl leading-tight transition-colors group-hover:text-primary md:text-4xl">{post.title}</h2>
+                      {post.subtitle && <p className="mt-3 max-w-2xl text-base leading-relaxed text-muted-foreground">{post.subtitle}</p>}
+                      <p className="data-label mt-4 text-muted-foreground">{metaLine(post)}</p>
+                    </div>
+                    <ArrowRight className="size-6 transition-transform group-hover:translate-x-1" />
+                  </Link>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </section>
     </div>
   )
 }

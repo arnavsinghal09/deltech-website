@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import { AnimatePresence, motion } from "framer-motion"
 import { supabase } from "@/lib/supabase"
+import { t } from "@/content/strings"
 
 export interface CommitteeAvailability {
   id: string
@@ -17,9 +18,9 @@ interface Props {
 }
 
 const TYPE_LABEL: Record<string, string> = {
-  STANDARD: "General Assembly",
-  CRISIS: "Crisis",
-  PRESS: "Press",
+  STANDARD: t("marketing.committeeTypes.standard"),
+  CRISIS: t("marketing.committeeTypes.crisis"),
+  PRESS: t("marketing.committeeTypes.press"),
 }
 
 function CountBadge({ count }: { count: number }) {
@@ -32,7 +33,7 @@ function CountBadge({ count }: { count: number }) {
 
   return (
     <div
-      className={`flex h-12 w-16 flex-col items-center justify-center rounded-lg font-mono text-sm font-semibold ${color} overflow-hidden`}
+      className={`flex h-20 w-24 flex-col items-center justify-center overflow-hidden font-mono font-semibold ${color}`}
     >
       <AnimatePresence mode="wait" initial={false}>
         <motion.span
@@ -45,7 +46,7 @@ function CountBadge({ count }: { count: number }) {
           {count}
         </motion.span>
       </AnimatePresence>
-      <span className="text-[10px] font-normal opacity-70">open</span>
+      <span className="data-label mt-1 font-normal opacity-70">{t("marketing.openLabel")}</span>
     </div>
   )
 }
@@ -87,19 +88,20 @@ export function AvailabilityBoard({ initial }: Props) {
   }, [])
 
   return (
-    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-      {committees.map((committee) => (
+    <div className="border-t border-foreground/20">
+      {committees.map((committee, index) => (
         <motion.div
           key={committee.id}
           layout
-          className="editorial-card flex items-center justify-between gap-4 px-5 py-4"
+          className="grid items-center gap-5 border-b border-foreground/20 py-7 sm:grid-cols-[4rem_1fr_auto]"
         >
+          <span className="font-mono text-sm font-semibold text-primary">{String(index + 1).padStart(2, "0")}</span>
           <div className="min-w-0 flex-1">
-            <p className="truncate font-heading text-lg text-card-foreground">{committee.name}</p>
+            <p className="font-heading text-3xl leading-tight text-card-foreground">{committee.name}</p>
             <div className="mt-1 flex flex-wrap items-center gap-2">
-              <span className="text-xs uppercase tracking-[0.1em] text-muted-foreground">
+              <span className="data-label mt-2 text-muted-foreground">
                 {TYPE_LABEL[committee.type]}
-                {committee.doubleDelegation && " · double del"}
+                {committee.doubleDelegation && " · " + t("marketing.doubleDelegation")}
               </span>
             </div>
           </div>

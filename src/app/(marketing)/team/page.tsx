@@ -1,5 +1,6 @@
+import { ArrowUpRight } from "lucide-react"
 import { prisma } from "@/lib/prisma"
-import { FadeUp, StaggerList, StaggerItem } from "../_components/motion"
+import { FadeUp } from "../_components/motion"
 import { t } from "@/content/strings"
 
 export const metadata = {
@@ -7,7 +8,6 @@ export const metadata = {
   description: "The people behind DelTech MUN.",
 }
 
-// Member edits in /admin/team must show up without a redeploy.
 export const revalidate = 0
 
 export default async function TeamPage() {
@@ -17,82 +17,70 @@ export default async function TeamPage() {
   })
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-16 sm:px-6">
-      <FadeUp className="mb-14 text-center">
-        <p className="eyebrow">{t("brand.name")}</p>
-        <h1 className="display mt-3 text-4xl md:text-5xl">The Team</h1>
-        <p className="mx-auto mt-3 max-w-xl text-muted-foreground">
-          The heart and soul of the society — the people who make the conference happen.
-        </p>
-        <div className="mx-auto mt-8 flex w-40 items-center gap-3">
-          <div className="rule-gold flex-1" />
-          <span aria-hidden className="text-[10px] text-gold-500">◆</span>
-          <div className="rule-gold flex-1" />
+    <div>
+      <section className="relative overflow-hidden border-b border-border/70 py-20 sm:py-28">
+        <div className="paper-grid absolute inset-0 opacity-70" aria-hidden />
+        <div className="section-shell relative grid gap-12 lg:grid-cols-[1fr_0.42fr] lg:items-end">
+          <FadeUp>
+            <p className="eyebrow">{t("marketing.teamEyebrow")}</p>
+            <h1 className="display-section mt-6 max-w-[10ch]">{t("marketing.teamTitle")}</h1>
+            <p className="body-large mt-8 max-w-2xl text-muted-foreground">{t("marketing.teamBody")}</p>
+          </FadeUp>
+          <div className="border-l border-foreground/20 pl-7">
+            <p className="font-mono text-[5rem] font-semibold leading-none tabular-nums text-primary sm:text-[7rem]">
+              {String(members.length).padStart(2, "0")}
+            </p>
+            <p className="data-label mt-4 text-muted-foreground">{t("marketing.activeTeam")}</p>
+          </div>
         </div>
-      </FadeUp>
+      </section>
 
-      {members.length === 0 ? (
-        <p className="text-center text-muted-foreground">Team roster coming soon.</p>
-      ) : (
-        <StaggerList className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-          {members.map((m) => {
-            const socials = (m.socials as { instagram?: string; linkedin?: string } | null) ?? {}
-            return (
-              <StaggerItem key={m.id}>
-                <div className="editorial-card group flex h-full flex-col items-center p-6 text-center transition-colors hover:border-primary/50">
-                  {m.imageUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={m.imageUrl}
-                      alt={m.name}
-                      className="aspect-square w-full max-w-40 rounded-sm border border-foreground/15 object-cover"
-                      loading="lazy"
-                    />
-                  ) : (
-                    <div className="flex aspect-square w-full max-w-40 items-center justify-center rounded-sm border border-foreground/15 bg-secondary">
-                      <span className="display text-3xl text-gold-500">
-                        {m.name
-                          .split(" ")
-                          .slice(0, 2)
-                          .map((w) => w[0])
-                          .join("")}
-                      </span>
+      <section className="py-20 sm:py-28">
+        <div className="section-shell">
+          {members.length === 0 ? (
+            <p className="border-y border-border py-16 text-lg text-muted-foreground">{t("marketing.teamEmpty")}</p>
+          ) : (
+            <div className="border-t border-foreground/20">
+              {members.map((member, index) => {
+                const socials = (member.socials as { instagram?: string; linkedin?: string } | null) ?? {}
+                const initials = member.name.split(" ").slice(0, 2).map((word) => word[0]).join("")
+
+                return (
+                  <article key={member.id} className="group grid gap-7 border-b border-foreground/20 py-9 sm:grid-cols-[4rem_11rem_1fr_auto] sm:items-center sm:py-12">
+                    <span className="font-mono text-sm font-semibold text-primary">{String(index + 1).padStart(2, "0")}</span>
+                    {member.imageUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={member.imageUrl} alt={member.name} className="aspect-[4/5] w-36 border border-foreground/15 object-cover grayscale transition duration-500 group-hover:grayscale-0 sm:w-44" loading="lazy" />
+                    ) : (
+                      <div className="noise-wash flex aspect-[4/5] w-36 items-end border border-foreground/15 p-4 sm:w-44">
+                        <span className="display text-5xl text-gold-700">{initials}</span>
+                      </div>
+                    )}
+                    <div>
+                      <p className="data-label text-muted-foreground">{member.designation}</p>
+                      <h2 className="mt-3 font-heading text-4xl leading-none md:text-5xl">{member.name}</h2>
                     </div>
-                  )}
-                  <p className="mt-5 font-heading text-lg leading-tight">{m.name}</p>
-                  <p className="eyebrow mt-1.5 text-[10px]">{m.designation}</p>
-                  {(socials.instagram || socials.linkedin) && (
-                    <div className="mt-3 flex gap-2">
-                      {socials.instagram && (
-                        <a
-                          href={socials.instagram}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          aria-label={`${m.name} on Instagram`}
-                          className="rounded-full border border-border px-2 py-0.5 text-[10px] font-semibold text-muted-foreground transition-colors hover:border-primary/50 hover:text-primary"
-                        >
-                          IG
-                        </a>
-                      )}
-                      {socials.linkedin && (
-                        <a
-                          href={socials.linkedin}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          aria-label={`${m.name} on LinkedIn`}
-                          className="rounded-full border border-border px-2 py-0.5 text-[10px] font-semibold text-muted-foreground transition-colors hover:border-primary/50 hover:text-primary"
-                        >
-                          in
-                        </a>
-                      )}
-                    </div>
-                  )}
-                </div>
-              </StaggerItem>
-            )
-          })}
-        </StaggerList>
-      )}
+                    {(socials.instagram || socials.linkedin) && (
+                      <div className="flex flex-col items-start gap-2 sm:items-end">
+                        {socials.instagram && (
+                          <a href={socials.instagram} target="_blank" rel="noopener noreferrer" aria-label={t("marketing.instagramLabel", { name: member.name })} className="ink-link inline-flex items-center gap-2 text-sm font-semibold">
+                            Instagram <ArrowUpRight className="size-4" />
+                          </a>
+                        )}
+                        {socials.linkedin && (
+                          <a href={socials.linkedin} target="_blank" rel="noopener noreferrer" aria-label={t("marketing.linkedinLabel", { name: member.name })} className="ink-link inline-flex items-center gap-2 text-sm font-semibold">
+                            LinkedIn <ArrowUpRight className="size-4" />
+                          </a>
+                        )}
+                      </div>
+                    )}
+                  </article>
+                )
+              })}
+            </div>
+          )}
+        </div>
+      </section>
     </div>
   )
 }

@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { motion, useReducedMotion } from "framer-motion"
 import { supabase } from "@/lib/supabase"
+import { t } from "@/content/strings"
 
 export type PortfolioState = "available" | "allotted" | "paid" | "blocked"
 
@@ -17,9 +18,9 @@ export interface MatrixCommittee {
 }
 
 const TYPE_LABEL: Record<string, string> = {
-  STANDARD: "General Assembly",
-  CRISIS: "Crisis",
-  PRESS: "Press",
+  STANDARD: t("marketing.committeeTypes.standard"),
+  CRISIS: t("marketing.committeeTypes.crisis"),
+  PRESS: t("marketing.committeeTypes.press"),
 }
 
 const STATE_STYLE: Record<PortfolioState, string> = {
@@ -34,9 +35,9 @@ const STATE_STYLE: Record<PortfolioState, string> = {
 }
 
 const LEGEND: { state: PortfolioState; label: string; square: string }[] = [
-  { state: "available", label: "Available", square: "bg-card border border-foreground/25" },
-  { state: "allotted", label: "Allotted — payment pending", square: "bg-accent border border-gold-500/50" },
-  { state: "paid", label: "Confirmed (paid)", square: "bg-primary/15 border border-primary/50" },
+  { state: "available", label: t("marketing.statusAvailable"), square: "bg-card border border-foreground/25" },
+  { state: "allotted", label: t("marketing.statusAllotted"), square: "bg-accent border border-gold-500/50" },
+  { state: "paid", label: t("marketing.statusConfirmed"), square: "bg-primary/15 border border-primary/50" },
 ]
 
 export function MatrixBoard({ committees }: { committees: MatrixCommittee[] }) {
@@ -65,13 +66,12 @@ export function MatrixBoard({ committees }: { committees: MatrixCommittee[] }) {
   }, [router])
 
   return (
-    <div className="space-y-10">
-      {/* Legend */}
-      <div className="flex flex-wrap items-center justify-center gap-x-7 gap-y-2">
+    <div>
+      <div className="mb-14 flex flex-wrap items-center gap-x-8 gap-y-4 border-y border-foreground/20 py-5">
         {LEGEND.map((l) => (
           <span
             key={l.state}
-            className="flex items-center gap-2 text-xs uppercase tracking-[0.1em] text-muted-foreground"
+            className="data-label flex items-center gap-2 text-muted-foreground"
           >
             <span className={`size-3 rounded-[2px] ${l.square}`} />
             {l.label}
@@ -88,48 +88,56 @@ export function MatrixBoard({ committees }: { committees: MatrixCommittee[] }) {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "-40px" }}
             transition={{ duration: 0.4, delay: Math.min(ci * 0.05, 0.3), ease: "easeOut" }}
+            className="grid border-b border-foreground/20 py-10 lg:grid-cols-[5rem_0.72fr_1.28fr] lg:gap-10 lg:py-14"
           >
-            <div className="mb-4 flex flex-wrap items-baseline justify-between gap-2 border-b border-border/70 pb-3">
+            <p className="mb-5 font-mono text-sm font-semibold text-primary lg:mb-0">{String(ci + 1).padStart(2, "0")}</p>
+            <div>
               <div>
-                <h2 className="font-heading text-2xl">{committee.name}</h2>
-                <p className="mt-1 text-xs uppercase tracking-[0.12em] text-muted-foreground">
+                <h2 className="font-heading text-4xl leading-none md:text-5xl">{committee.name}</h2>
+                <p className="data-label mt-4 text-muted-foreground">
                   {TYPE_LABEL[committee.type]}
-                  {committee.doubleDelegation && " · double delegation"}
-                  {committee.agenda && <> · {committee.agenda}</>}
+                  {committee.doubleDelegation && " · " + t("marketing.doubleDelegation")}
                 </p>
+                {committee.agenda && (
+                  <p className="mt-5 max-w-md text-base leading-relaxed text-muted-foreground">{committee.agenda}</p>
+                )}
               </div>
               <span
-                className={`font-mono text-sm tabular-nums ${openCount === 0 ? "text-destructive" : "text-primary"}`}
+                className={`mt-6 inline-flex items-center gap-2 font-mono text-sm font-semibold tabular-nums ${openCount === 0 ? "text-destructive" : "text-primary"}`}
               >
-                {openCount === 0 ? "Full" : `${openCount} open`}
+                <span className={openCount === 0 ? "size-2 rounded-full bg-destructive" : "signal-dot"} />
+                {openCount === 0 ? t("marketing.statusFull") : openCount + " " + t("marketing.openLabel")}
               </span>
             </div>
 
-            {committee.portfolios.length === 0 ? (
-              <p className="rounded-lg border border-dashed border-border px-4 py-6 text-center text-xs text-muted-foreground">
-                Portfolio matrix coming soon.
-              </p>
-            ) : (
-              <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+            <div className="mt-9 lg:mt-0">
+              {committee.portfolios.length === 0 ? (
+                <div className="border-y border-dashed border-border py-8">
+                  <p className="font-heading text-2xl">{t("marketing.matrixComingSoon")}</p>
+                  <p className="mt-2 text-base text-muted-foreground">{t("marketing.matrixComingSoonBody")}</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                 {committee.portfolios.map((p) => (
                   <div
                     key={p.id}
                     title={
                       p.state === "allotted"
-                        ? "Allotted — payment pending"
+                        ? t("marketing.statusAllotted")
                         : p.state === "paid"
-                          ? "Confirmed"
+                          ? t("marketing.statusConfirmed")
                           : p.state === "blocked"
-                            ? "Not open"
-                            : "Available"
+                            ? t("marketing.statusBlocked")
+                            : t("marketing.statusAvailable")
                     }
-                    className={`truncate rounded-lg border px-2.5 py-2 text-xs font-medium transition-colors ${STATE_STYLE[p.state]}`}
+                    className={`flex min-h-14 items-center border px-3 py-3 text-sm font-semibold leading-snug transition-colors ${STATE_STYLE[p.state]}`}
                   >
                     {p.name}
                   </div>
                 ))}
               </div>
-            )}
+              )}
+            </div>
           </motion.section>
         )
       })}

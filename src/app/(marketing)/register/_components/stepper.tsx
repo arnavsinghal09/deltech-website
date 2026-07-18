@@ -8,17 +8,18 @@ interface Props {
 
 export function Stepper({ steps, currentStep }: Props) {
   return (
-    <nav aria-label="Registration progress">
-      <ol className="flex items-center">
+    <nav aria-label="Registration progress" className="border-b border-foreground/20 pb-7">
+      <p className="mb-5 font-heading text-2xl sm:hidden">{steps[currentStep]}</p>
+      <ol className="flex items-start">
         {steps.map((label, i) => {
           const done = i < currentStep
           const active = i === currentStep
           return (
             <li key={label} className="flex flex-1 items-center">
-              <div className="flex flex-col items-center gap-1.5">
+              <div className="flex flex-col items-center gap-2">
                 <div
                   className={cn(
-                    "flex size-8 items-center justify-center rounded-full border-2 text-xs font-semibold transition-colors",
+                    "flex size-10 items-center justify-center rounded-full border-2 text-sm font-semibold transition-colors",
                     done && "border-primary bg-primary text-primary-foreground",
                     active && "border-primary bg-background text-primary",
                     !done && !active && "border-muted-foreground/40 bg-background text-muted-foreground",
@@ -29,7 +30,7 @@ export function Stepper({ steps, currentStep }: Props) {
                 </div>
                 <span
                   className={cn(
-                    "hidden text-[10px] font-medium sm:block",
+                    "hidden max-w-20 text-center text-xs font-semibold leading-tight sm:block",
                     active ? "text-foreground" : "text-muted-foreground",
                   )}
                 >
@@ -39,7 +40,7 @@ export function Stepper({ steps, currentStep }: Props) {
               {i < steps.length - 1 && (
                 <div
                   className={cn(
-                    "mx-1 h-0.5 flex-1 transition-colors",
+                    "mx-2 mt-5 h-px flex-1 transition-colors",
                     i < currentStep ? "bg-primary" : "bg-muted-foreground/20",
                   )}
                 />
