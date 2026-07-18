@@ -8,9 +8,11 @@ interface Props {
 }
 
 const brand = "#0f766e"
-const bg = "#f4f4f5"
-const card = "#ffffff"
+const bg = "#f4f0e6"
+const card = "#fffdf8"
 const muted = "#71717a"
+const gold = "#8a6a2f"
+const serif = "Georgia, 'Times New Roman', serif"
 
 export function StaffInviteEmail({ role, signInUrl }: Props) {
   const roleLabel = role === "ADMIN" ? "an administrator" : role === "MAINTAINER" ? "a maintainer" : `a ${role.toLowerCase()}`
@@ -20,11 +22,11 @@ export function StaffInviteEmail({ role, signInUrl }: Props) {
       <Preview>You&apos;ve been added to the DelTech MUN secretariat.</Preview>
       <Body style={{ fontFamily: "Inter, ui-sans-serif, sans-serif", backgroundColor: bg, margin: 0 }}>
         <Container style={{ maxWidth: 560, margin: "40px auto", padding: "0 16px" }}>
-          <Section style={{ backgroundColor: card, borderRadius: 12, padding: "40px 40px 32px", border: "1px solid #e4e4e7" }}>
-            <Text style={{ color: brand, fontWeight: 700, fontSize: 12, letterSpacing: "0.08em", textTransform: "uppercase", margin: "0 0 16px" }}>
+          <Section style={{ backgroundColor: card, borderRadius: 12, padding: "40px 40px 32px", border: "1px solid #e6ded0" }}>
+            <Text style={{ color: gold, fontWeight: 700, fontSize: 12, letterSpacing: "0.08em", textTransform: "uppercase", margin: "0 0 16px" }}>
               DelTech MUN — Secretariat
             </Text>
-            <Heading style={{ color: "#18181b", fontSize: 22, fontWeight: 700, margin: "0 0 20px" }}>
+            <Heading style={{ color: "#18181b", fontFamily: serif, fontSize: 26, fontWeight: 700, margin: "0 0 20px" }}>
               You&apos;re on the team
             </Heading>
             <Text style={{ color: "#3f3f46", fontSize: 15, lineHeight: "1.6", margin: "0 0 12px" }}>

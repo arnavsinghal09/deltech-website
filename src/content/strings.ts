@@ -413,9 +413,9 @@ export const STRINGS = {
       unsaved: "Unsaved",
       themes: {
         classic: "Classic",
-        dark: "Dark",
+        ink: "Ink",
+        gold: "Gold",
         ocean: "Ocean",
-        warm: "Warm",
         forest: "Forest",
         custom: "Custom",
       },
