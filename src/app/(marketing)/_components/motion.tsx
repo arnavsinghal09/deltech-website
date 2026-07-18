@@ -18,7 +18,7 @@ export function FadeUp({
   const reduced = useReducedMotion();
   return (
     <motion.div
-      initial={reduced ? { opacity: 1 } : { opacity: 0, y: 24 }}
+      initial={false}
       whileInView={reduced ? {} : { opacity: 1, y: 0 }}
       viewport={{ once: true, margin: "-64px" }}
       transition={{ duration: 0.5, ease: EASE, delay }}
@@ -45,7 +45,7 @@ export function StaggerList({
   return (
     <motion.ul
       variants={variants}
-      initial="hidden"
+      initial={false}
       whileInView="visible"
       viewport={{ once: true, margin: "-48px" }}
       className={cn("list-none p-0 m-0", className)}

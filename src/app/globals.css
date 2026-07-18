@@ -85,9 +85,14 @@
   --gold-500: oklch(0.68 0.115 85);
   --gold-700: oklch(0.5 0.09 75);
 
+  /* Diplomatic utility hues */
+  --signal: oklch(0.66 0.19 36);
+  --signal-soft: oklch(0.92 0.035 70);
+  --ink-soft: oklch(0.35 0.018 65);
+
   /* Semantic tokens — light mode: paper & ink */
-  --background: oklch(0.972 0.007 85);
-  --foreground: oklch(0.235 0.015 65);
+  --background: oklch(0.975 0.008 84);
+  --foreground: oklch(0.205 0.018 63);
   --card: oklch(0.988 0.005 90);
   --card-foreground: oklch(0.235 0.015 65);
   --popover: oklch(0.988 0.005 90);
@@ -100,7 +105,7 @@
   --secondary-foreground: oklch(0.32 0.03 70);
 
   --muted: oklch(0.94 0.01 85);
-  --muted-foreground: oklch(0.47 0.02 70);
+  --muted-foreground: oklch(0.405 0.021 70);
 
   --accent: oklch(0.92 0.035 90);
   --accent-foreground: oklch(0.46 0.085 75);
@@ -168,6 +173,9 @@
   --sidebar-accent-foreground: oklch(0.8 0.095 90);
   --sidebar-border: oklch(0.92 0.012 85 / 10%);
   --sidebar-ring: oklch(0.73 0.08 190);
+  --signal: oklch(0.72 0.17 42);
+  --signal-soft: oklch(0.29 0.045 48);
+  --ink-soft: oklch(0.76 0.012 82);
 }
 
 @layer base {
@@ -176,9 +184,14 @@
   }
   body {
     @apply bg-background text-foreground;
+    min-width: 320px;
+    font-size: 1rem;
+    line-height: 1.6;
+    text-rendering: optimizeLegibility;
   }
   html {
     @apply font-sans;
+    scroll-behavior: smooth;
   }
   h1,
   h2,
@@ -189,6 +202,12 @@
   }
   table {
     font-variant-numeric: tabular-nums;
+  }
+  ::selection {
+    background: color-mix(in oklch, var(--primary) 28%, transparent);
+  }
+  :focus-visible {
+    scroll-margin-block: 7rem;
   }
 }
 
@@ -204,9 +223,10 @@
   /* small-caps kicker above headlines */
   .eyebrow {
     font-family: var(--font-sans);
-    font-size: 0.75rem;
-    font-weight: 600;
-    letter-spacing: 0.16em;
+    font-size: 0.8125rem;
+    font-weight: 680;
+    line-height: 1.35;
+    letter-spacing: 0.14em;
     text-transform: uppercase;
     color: var(--accent-foreground);
   }
@@ -231,6 +251,106 @@
       linear-gradient(color-mix(in oklch, var(--foreground) 4%, transparent) 1px, transparent 1px),
       linear-gradient(90deg, color-mix(in oklch, var(--foreground) 4%, transparent) 1px, transparent 1px);
     background-size: 96px 96px;
+  }
+  .section-shell {
+    width: min(100% - 2rem, 76rem);
+    margin-inline: auto;
+  }
+  .display-hero {
+    font-family: var(--font-display);
+    font-size: clamp(4rem, 10vw, 9.5rem);
+    font-weight: 570;
+    font-variation-settings: "opsz" 96;
+    letter-spacing: -0.055em;
+    line-height: 0.84;
+  }
+  .display-section {
+    font-family: var(--font-display);
+    font-size: clamp(2.5rem, 6vw, 5.75rem);
+    font-weight: 560;
+    font-variation-settings: "opsz" 72;
+    letter-spacing: -0.04em;
+    line-height: 0.94;
+  }
+  .body-large {
+    font-size: clamp(1.125rem, 1.45vw, 1.375rem);
+    line-height: 1.6;
+  }
+  .data-label {
+    font-family: var(--font-mono);
+    font-size: 0.8125rem;
+    font-weight: 650;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+  .diplomatic-surface {
+    background:
+      linear-gradient(135deg, color-mix(in oklch, var(--primary) 11%, transparent), transparent 42%),
+      linear-gradient(315deg, color-mix(in oklch, var(--gold-500) 10%, transparent), transparent 38%),
+      var(--card);
+    border: 1px solid color-mix(in oklch, var(--foreground) 16%, transparent);
+  }
+  .signal-dot {
+    display: inline-block;
+    width: 0.55rem;
+    height: 0.55rem;
+    border-radius: 999px;
+    background: var(--signal);
+    box-shadow: 0 0 0 0.28rem color-mix(in oklch, var(--signal) 16%, transparent);
+  }
+  .ink-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
+    font-weight: 650;
+    text-decoration: none;
+  }
+  .ink-link::after {
+    content: "↗";
+    transition: transform 180ms ease;
+  }
+  .ink-link:hover::after {
+    transform: translate(0.16rem, -0.16rem);
+  }
+  .noise-wash {
+    background-image:
+      radial-gradient(circle at 16% 22%, color-mix(in oklch, var(--gold-500) 15%, transparent) 0 1px, transparent 1.5px),
+      radial-gradient(circle at 78% 68%, color-mix(in oklch, var(--primary) 14%, transparent) 0 1px, transparent 1.5px);
+    background-size: 19px 19px, 23px 23px;
+  }
+}
+
+@keyframes orbit-spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes orbit-spin-reverse {
+  to { transform: rotate(-360deg); }
+}
+
+@keyframes signal-pulse {
+  0%, 100% { opacity: 0.45; transform: scale(0.92); }
+  50% { opacity: 1; transform: scale(1.08); }
+}
+
+.orbit-spin {
+  animation: orbit-spin 32s linear infinite;
+}
+
+.orbit-spin-reverse {
+  animation: orbit-spin-reverse 44s linear infinite;
+}
+
+.signal-pulse {
+  animation: signal-pulse 2.8s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .orbit-spin,
+  .orbit-spin-reverse,
+  .signal-pulse {
+    animation: none;
   }
 }
 

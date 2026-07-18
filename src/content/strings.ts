@@ -47,6 +47,7 @@ export const STRINGS = {
     required: "Required",
     optional: "Optional",
     notAvailable: "N/A",
+    toggleTheme: "Toggle colour theme",
   },
 
   nav: {
@@ -59,6 +60,8 @@ export const STRINGS = {
     signIn: "Sign in",
     signOut: "Sign out",
     myApplication: "My Application",
+    openMenu: "Open navigation",
+    closeMenu: "Close navigation",
   },
 
   register: {
