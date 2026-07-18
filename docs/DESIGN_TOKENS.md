@@ -1,3 +1,13 @@
 # Design Tokens
 
-All design tokens — colors, spacing, typography scale, border radii, box shadows, font families, and motion values — are defined in a single file: `src/styles/tokens.ts`. This file is the only place where design values are written as literals. `tailwind.config.ts` imports from `tokens.ts` and maps each token group to the corresponding Tailwind theme key (e.g., `colors.primary` → Tailwind `colors.primary`, `typography` → Tailwind `fontSize` with paired `lineHeight`/`fontWeight`). Every other file in the codebase — components, pages, email templates — must reference values only through Tailwind utility classes or the exported `designTokens` object; hardcoding hex values, pixel sizes, or font stacks outside `tokens.ts` is a violation of this contract.
+The global token source is `src/app/globals.css`. It defines the light and dark semantic color variables, font aliases, radii, chart colors, sidebar colors, and reusable editorial utilities consumed by Tailwind v4. Component-level sizes and variants live with their components, such as `src/components/ui/button.tsx` and `src/components/ui/input.tsx`.
+
+Use semantic utilities such as `bg-background`, `text-foreground`, `text-muted-foreground`, `border-border`, `bg-primary`, and `font-heading` instead of embedding raw colors or font stacks in page components. Add a shared visual pattern to `globals.css` only when it is used across multiple routes; otherwise keep the styling beside the component that owns it.
+
+The main shared layout and type utilities are:
+
+- `section-shell` for the responsive page width;
+- `display-hero` and `display-section` for editorial display type;
+- `body-large` for prominent readable supporting copy;
+- `data-label` and `eyebrow` for operational labels;
+- `diplomatic-surface`, `paper-grid`, and `noise-wash` for the visual system.

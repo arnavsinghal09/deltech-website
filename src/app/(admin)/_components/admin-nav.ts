@@ -10,6 +10,7 @@ import {
   Contact,
   ScrollText,
   ShieldCheck,
+  BookOpenText,
   type LucideIcon,
 } from "lucide-react"
 
@@ -51,6 +52,7 @@ export const NAV_GROUPS: NavGroup[] = [
   {
     label: "System",
     items: [
+      { href: "/admin/guide", icon: BookOpenText, label: "Operator guide" },
       { href: "/admin/logs", icon: ScrollText, label: "Logs" },
       { href: "/admin/config", icon: Settings2, label: "Settings" },
       { href: "/admin/users", icon: ShieldCheck, label: "Users", adminOnly: true },

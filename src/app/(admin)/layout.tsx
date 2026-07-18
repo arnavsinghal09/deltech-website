@@ -18,7 +18,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
       <div className="flex flex-1 flex-col overflow-hidden">
         {/* Top bar */}
-        <header className="flex h-14 shrink-0 items-center justify-between gap-3 border-b border-border/70 bg-background px-4 sm:px-6">
+        <header className="flex h-16 shrink-0 items-center justify-between gap-3 border-b border-border/70 bg-background px-4 sm:px-6">
           <div className="flex min-w-0 items-center gap-2">
             <AdminMobileNav user={user} />
             <AdminBreadcrumb />
@@ -30,13 +30,13 @@ export default async function AdminLayout({ children }: { children: React.ReactN
               </span>
             )}
             {user.email && (
-              <span className="hidden text-xs text-muted-foreground sm:block">{user.email}</span>
+              <span className="hidden text-sm text-muted-foreground sm:block">{user.email}</span>
             )}
           </div>
         </header>
 
         {/* Page content */}
-        <main className="flex-1 overflow-auto bg-background p-6 lg:p-8">{children}</main>
+        <main className="flex-1 overflow-auto bg-background p-5 sm:p-7 lg:p-10">{children}</main>
       </div>
     </div>
   )

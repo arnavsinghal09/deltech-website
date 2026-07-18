@@ -1,8 +1,5 @@
-"use client"
-
-import { useEffect, useState } from "react"
 import Link from "next/link"
-import { Check, Circle, X } from "lucide-react"
+import { Check, Circle, ArrowRight } from "lucide-react"
 
 export interface ChecklistItem {
   done: boolean
@@ -10,65 +7,41 @@ export interface ChecklistItem {
   href: string
 }
 
-const KEY = "admin.checklist.dismissed"
-
-// First-run setup guide, computed from live data on the server. Hides itself
-// once everything's done, or when dismissed (persisted in localStorage).
 export function SetupChecklist({ items }: { items: ChecklistItem[] }) {
-  const [dismissed, setDismissed] = useState(true)
+  const allDone = items.every((item) => item.done)
+  if (allDone) return null
 
-  useEffect(() => {
-    setDismissed(localStorage.getItem(KEY) === "1")
-  }, [])
-
-  const allDone = items.every((i) => i.done)
-  if (dismissed || allDone) return null
-
-  const doneCount = items.filter((i) => i.done).length
+  const doneCount = items.filter((item) => item.done).length
+  const progress = Math.round((doneCount / items.length) * 100)
 
   return (
-    <div className="editorial-card border-l-2 border-l-gold-500 p-6">
-      <div className="flex items-start justify-between gap-4">
+    <section className="border border-border/80 bg-card p-6 sm:p-8">
+      <div className="grid gap-6 sm:grid-cols-[1fr_auto] sm:items-end">
         <div>
-          <p className="eyebrow text-[10px]">Getting started</p>
-          <h2 className="mt-1 font-heading text-lg">
-            Finish setting up your conference
-          </h2>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {doneCount} of {items.length} done
-          </p>
+          <p className="data-label text-gold-700">Conference launch track</p>
+          <h2 className="mt-3 font-heading text-3xl">Finish the operating setup</h2>
+          <p className="mt-2 text-base text-muted-foreground">{doneCount} of {items.length} checks complete. This stays visible until the conference is ready.</p>
         </div>
-        <button
-          onClick={() => {
-            localStorage.setItem(KEY, "1")
-            setDismissed(true)
-          }}
-          className="text-muted-foreground hover:text-foreground"
-          aria-label="Dismiss"
-        >
-          <X className="size-4" />
-        </button>
+        <p className="font-mono text-4xl font-semibold tabular-nums text-primary">{progress}%</p>
       </div>
 
-      <ul className="mt-4 space-y-1">
-        {items.map((item) => (
+      <div className="mt-6 h-1.5 overflow-hidden bg-muted" aria-hidden>
+        <div className="h-full bg-primary transition-[width]" style={{ width: progress + "%" }} />
+      </div>
+
+      <ol className="mt-7 border-t border-border/70">
+        {items.map((item, index) => (
           <li key={item.label}>
-            <Link
-              href={item.href}
-              className="flex items-center gap-2.5 rounded-md px-2 py-1.5 text-sm transition-colors hover:bg-accent/50"
-            >
-              {item.done ? (
-                <Check className="size-4 text-primary" />
-              ) : (
-                <Circle className="size-4 text-muted-foreground/50" />
-              )}
-              <span className={item.done ? "text-muted-foreground line-through" : "text-foreground"}>
-                {item.label}
+            <Link href={item.href} className="group grid grid-cols-[2rem_1fr_auto] items-center gap-3 border-b border-border/70 py-4 text-base transition-colors hover:text-primary">
+              {item.done ? <Check className="size-5 text-primary" /> : <Circle className="size-5 text-muted-foreground/45" />}
+              <span className={item.done ? "text-muted-foreground line-through" : "font-medium"}>
+                {String(index + 1).padStart(2, "0")} · {item.label}
               </span>
+              <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" />
             </Link>
           </li>
         ))}
-      </ul>
-    </div>
+      </ol>
+    </section>
   )
 }

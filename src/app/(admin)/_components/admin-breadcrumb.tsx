@@ -13,6 +13,7 @@ const LABELS: Record<string, string> = {
   logs: "Logs",
   config: "Settings",
   users: "Users",
+  guide: "Operator guide",
   conference: "Conference",
   committees: "Committees & Matrix",
   money: "Money",
@@ -26,7 +27,7 @@ export function AdminBreadcrumb() {
   const crumbs = ["Admin", ...segments.map((s) => LABELS[s] ?? null).filter((s): s is string => !!s)]
 
   return (
-    <p className="truncate text-sm text-muted-foreground">
+    <p className="truncate text-[0.9375rem] text-muted-foreground">
       {crumbs.map((c, i) => (
         <span key={i}>
           {i > 0 && <span className="mx-1.5 text-border">/</span>}

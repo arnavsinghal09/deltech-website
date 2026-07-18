@@ -24,6 +24,8 @@ export default async function AdminOverviewPage() {
     committees,
     portfolioCount,
     feeCount,
+    memberCount,
+    publishedPostCount,
     content,
   ] = await Promise.all([
     prisma.delegate.count(),
@@ -46,10 +48,17 @@ export default async function AdminOverviewPage() {
     }),
     prisma.portfolio.count(),
     prisma.fee.count(),
+    prisma.member.count({ where: { isActive: true } }),
+    prisma.post.count({ where: { status: "PUBLISHED" } }),
     getContent(),
   ])
 
   const checklist: ChecklistItem[] = [
+    {
+      done: !!content.conferenceDates && !!content.venue,
+      label: "Set conference dates and venue",
+      href: "/admin/config/conference",
+    },
     { done: committees.length > 0, label: "Add committees", href: "/admin/config/committees" },
     { done: portfolioCount > 0, label: "Generate the portfolio matrix", href: "/admin/config/committees" },
     { done: feeCount > 0, label: "Set registration fees", href: "/admin/config/money" },
@@ -59,6 +68,8 @@ export default async function AdminOverviewPage() {
       href: "/admin/config/money",
     },
     { done: content.registrationOpen, label: "Open registration", href: "/admin/config/registration" },
+    { done: memberCount > 0, label: "Publish the team roster", href: "/admin/team" },
+    { done: publishedPostCount > 0, label: "Publish the first dispatch", href: "/admin/blog" },
   ]
 
   const revenue = revenueResult._sum.amountInr ?? 0
@@ -92,7 +103,7 @@ export default async function AdminOverviewPage() {
       />
 
       {isMaintainer && <MaintainerWelcome />}
-      <SetupChecklist items={checklist} />
+      {isMaintainer && <SetupChecklist items={checklist} />}
 
       {/* KPI cards */}
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">

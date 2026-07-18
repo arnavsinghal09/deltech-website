@@ -19,23 +19,23 @@ export function AdminSidebar({ user }: { user: SidebarUser }) {
   const isAdmin = user.role === "ADMIN"
 
   return (
-    <aside className="hidden w-60 shrink-0 flex-col border-r border-sidebar-border bg-sidebar lg:flex">
+    <aside className="hidden w-72 shrink-0 flex-col border-r border-sidebar-border bg-sidebar lg:flex">
       {/* Brand */}
-      <div className="border-b border-sidebar-border px-5 py-5">
-        <Link href="/admin" className="display block text-lg text-sidebar-foreground">
+      <div className="border-b border-sidebar-border px-6 py-6">
+        <Link href="/admin" className="display block text-2xl text-sidebar-foreground">
           {t("brand.name")}
         </Link>
-        <p className="eyebrow mt-1 text-[10px]">Secretariat</p>
+        <p className="data-label mt-2 text-muted-foreground">Secretariat console</p>
       </div>
 
       {/* Nav */}
-      <nav className="flex-1 overflow-y-auto px-3 py-4">
+      <nav className="flex-1 overflow-y-auto px-4 py-5">
         {NAV_GROUPS.map((group) => {
           const items = group.items.filter((i) => !i.adminOnly || isAdmin)
           if (items.length === 0) return null
           return (
-            <div key={group.label} className="mb-5">
-              <p className="eyebrow mb-1.5 px-3 text-[10px]">{group.label}</p>
+            <div key={group.label} className="mb-6">
+              <p className="data-label mb-2 px-3 text-muted-foreground">{group.label}</p>
               {items.map(({ href, icon: Icon, label }) => {
                 const active = isNavActive(pathname, href)
                 return (
@@ -43,13 +43,13 @@ export function AdminSidebar({ user }: { user: SidebarUser }) {
                     key={href}
                     href={href}
                     className={cn(
-                      "flex items-center gap-2.5 border-l-2 px-3 py-2 text-sm transition-colors",
+                      "flex items-center gap-3 border-l-2 px-3 py-2.5 text-[0.9375rem] transition-colors",
                       active
                         ? "border-primary font-medium text-sidebar-foreground"
                         : "border-transparent text-sidebar-foreground/65 hover:border-sidebar-border hover:text-sidebar-foreground",
                     )}
                   >
-                    <Icon className="size-4 shrink-0" />
+                    <Icon className="size-[1.125rem] shrink-0" />
                     {label}
                   </Link>
                 )
@@ -60,16 +60,16 @@ export function AdminSidebar({ user }: { user: SidebarUser }) {
       </nav>
 
       {/* User card */}
-      <div className="border-t border-sidebar-border p-4">
+      <div className="border-t border-sidebar-border p-5">
         <div className="flex items-center gap-3">
           <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary/10 font-heading text-sm text-primary">
             {(user.name ?? user.email ?? "?").charAt(0).toUpperCase()}
           </div>
           <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-medium text-sidebar-foreground">
+            <p className="truncate text-[0.9375rem] font-medium text-sidebar-foreground">
               {user.name ?? user.email}
             </p>
-            <Badge variant={isAdmin ? "default" : "outline"} className="mt-0.5 text-[10px]">
+            <Badge variant={isAdmin ? "default" : "outline"} className="mt-1 text-[0.6875rem]">
               {user.role}
             </Badge>
           </div>

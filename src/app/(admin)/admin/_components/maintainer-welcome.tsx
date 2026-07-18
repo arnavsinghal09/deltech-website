@@ -1,44 +1,24 @@
-"use client"
+import Link from "next/link"
+import { ArrowRight, ShieldCheck } from "lucide-react"
 
-import { useEffect, useState } from "react"
-import { X } from "lucide-react"
-
-const KEY = "admin.maintainerIntroSeen"
-
-// One-time orientation card for maintainers explaining their powers and limits.
 export function MaintainerWelcome() {
-  const [show, setShow] = useState(false)
-
-  useEffect(() => {
-    setShow(localStorage.getItem(KEY) !== "1")
-  }, [])
-
-  if (!show) return null
-
   return (
-    <div className="editorial-card border-l-2 border-l-primary p-6">
-      <div className="flex items-start justify-between gap-4">
+    <section className="relative overflow-hidden bg-primary p-7 text-primary-foreground sm:p-9">
+      <div className="paper-grid absolute inset-0 opacity-10" aria-hidden />
+      <div className="relative grid gap-8 lg:grid-cols-[1fr_0.7fr] lg:items-end">
         <div>
-          <p className="eyebrow text-[10px]">Welcome, maintainer</p>
-          <h2 className="mt-1 font-heading text-lg">What you can do here</h2>
-          <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-            You can manage registrations, allotments, cross-del imports, recruitment,
-            content, committees, and portfolios. A few things are reserved for admins:
-            deleting records, changing payment settings, revoking allotments, comping,
-            and changing roles. Everything you do is recorded in the activity log.
+          <p className="data-label flex items-center gap-2 text-gold-300">
+            <ShieldCheck className="size-4" /> Maintainer operating brief
+          </p>
+          <h2 className="mt-4 font-heading text-4xl leading-tight">You can run the conference. Destructive actions stay guarded.</h2>
+          <p className="mt-4 max-w-3xl text-base leading-relaxed text-primary-foreground/72">
+            You can manage delegates, allot portfolios, run imports and recruitment, publish content, and configure the conference. Deletions, payment overrides, allotment revocation, and user roles require an admin. Every material action is written to the activity log.
           </p>
         </div>
-        <button
-          onClick={() => {
-            localStorage.setItem(KEY, "1")
-            setShow(false)
-          }}
-          className="text-muted-foreground hover:text-foreground"
-          aria-label="Dismiss"
-        >
-          <X className="size-4" />
-        </button>
+        <Link href="/admin/guide" className="inline-flex min-h-12 items-center justify-between gap-4 border border-primary-foreground/30 px-5 py-3 font-semibold transition-colors hover:bg-primary-foreground hover:text-primary">
+          Open the operator guide <ArrowRight className="size-5" />
+        </Link>
       </div>
-    </div>
+    </section>
   )
 }
