@@ -25,33 +25,39 @@ export default async function CommitteesSettingsPage() {
     isActive: c.isActive,
     sortOrder: c.sortOrder,
     aliases: c.aliases,
+    portfolioTagLabel: c.portfolioTagLabel,
+    matrixBrief: c.matrixBrief,
     portfolios: c.portfolios.map((p) => ({
       id: p.id,
       committeeId: p.committeeId,
       name: p.name,
       status: p.status,
+      tag: p.tag,
+      priority: p.priority,
     })),
   }))
 
   return (
-    <div className="space-y-6">
-      <div className="editorial-card p-6">
-        <h2 className="font-heading text-lg">Committees</h2>
+    <div className="space-y-12">
+      <section className="border-t-4 border-foreground pt-6">
+        <p className="eyebrow">01 / Structure</p>
+        <h2 className="mt-3 font-heading text-3xl">Committees</h2>
         <p className="mt-1 text-sm text-muted-foreground">
           The bodies of the conference — with import aliases for partner sheets.
         </p>
-        <div className="rule my-5" />
+        <div className="rule my-6" />
         <TabCommittees committees={serialized} />
-      </div>
+      </section>
 
-      <div className="editorial-card p-6">
-        <h2 className="font-heading text-lg">Portfolio matrix</h2>
+      <section className="border-t-4 border-foreground pt-6">
+        <p className="eyebrow">02 / Matrix studio</p>
+        <h2 className="mt-3 font-heading text-3xl">Build the room</h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          Generate countries, MPs, or characters with one click, review, then bulk add.
+          Give the generator the scenario, inspect its reasoning, correct the draft, then publish it.
         </p>
         <div className="rule my-5" />
         <TabPortfolios committees={serialized} />
-      </div>
+      </section>
 
       <MatrixVisibilityCard matrixPublic={content.matrixPublic} />
     </div>

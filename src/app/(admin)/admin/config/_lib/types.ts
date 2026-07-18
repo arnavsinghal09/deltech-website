@@ -3,6 +3,8 @@ export interface ClientPortfolio {
   committeeId: string
   name: string
   status: string
+  tag: string | null
+  priority: number
 }
 
 export interface ClientCommittee {
@@ -15,6 +17,8 @@ export interface ClientCommittee {
   isActive: boolean
   sortOrder: number
   aliases: string[]
+  portfolioTagLabel: string | null
+  matrixBrief: string | null
   portfolios: ClientPortfolio[]
 }
 

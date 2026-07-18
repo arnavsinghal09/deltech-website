@@ -9,6 +9,7 @@ import { toast } from "sonner"
 import { Plus, Pencil, Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -41,6 +42,8 @@ const schema = z.object({
   isActive: z.boolean(),
   sortOrder: z.coerce.number().int().min(0),
   aliasesText: z.string(),
+  portfolioTagLabel: z.string(),
+  matrixBrief: z.string(),
 })
 
 type FormValues = z.infer<typeof schema>
@@ -73,6 +76,8 @@ export function TabCommittees({ committees }: Props) {
       isActive: true,
       sortOrder: 0,
       aliasesText: "",
+      portfolioTagLabel: "",
+      matrixBrief: "",
     },
     resolver: zodResolver(schema) as never,
   })
@@ -97,6 +102,8 @@ export function TabCommittees({ committees }: Props) {
       isActive: true,
       sortOrder: committees.length,
       aliasesText: "",
+      portfolioTagLabel: "",
+      matrixBrief: "",
     })
     setDialogOpen(true)
   }
@@ -112,6 +119,8 @@ export function TabCommittees({ committees }: Props) {
       isActive: c.isActive,
       sortOrder: c.sortOrder,
       aliasesText: c.aliases.join(", "),
+      portfolioTagLabel: c.portfolioTagLabel ?? "",
+      matrixBrief: c.matrixBrief ?? "",
     })
     setDialogOpen(true)
   }
@@ -130,6 +139,8 @@ export function TabCommittees({ committees }: Props) {
           .split(",")
           .map((s) => s.trim())
           .filter(Boolean),
+        portfolioTagLabel: data.portfolioTagLabel || undefined,
+        matrixBrief: data.matrixBrief || undefined,
       }
 
       const result = editTarget
@@ -169,11 +180,11 @@ export function TabCommittees({ committees }: Props) {
         </Button>
       </div>
 
-      <div className="overflow-x-auto rounded-xl border border-border/60 bg-card shadow-sm">
+      <div className="overflow-x-auto border-y border-border bg-card">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-border/60">
-              {["Name", "Slug", "Type", "DD", "Active", "Order", ""].map((h) => (
+              {["Name", "Matrix classification", "Type", "DD", "Active", "Order", ""].map((h) => (
                 <th
                   key={h}
                   className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground"
@@ -194,7 +205,7 @@ export function TabCommittees({ committees }: Props) {
               committees.map((c) => (
                 <tr key={c.id} className="transition-colors hover:bg-muted/30">
                   <td className="px-4 py-3 font-medium">{c.name}</td>
-                  <td className="px-4 py-3 font-mono text-xs text-muted-foreground">{c.slug}</td>
+                  <td className="px-4 py-3 text-sm text-muted-foreground">{c.portfolioTagLabel || "Not set"}</td>
                   <td className="px-4 py-3">
                     <Badge variant="secondary" className="text-xs">
                       {c.type}
@@ -241,13 +252,13 @@ export function TabCommittees({ committees }: Props) {
 
       {/* Add / Edit dialog */}
       <Dialog open={dialogOpen} onOpenChange={(o) => { if (!o) setDialogOpen(false) }}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="max-h-[90svh] overflow-y-auto sm:max-w-2xl">
           <DialogHeader>
             <DialogTitle>{editTarget ? "Edit committee" : "Add committee"}</DialogTitle>
           </DialogHeader>
 
           <form onSubmit={onSubmit} className="space-y-4">
-            <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-1.5">
                 <Label className="text-xs">Name</Label>
                 <Input {...form.register("name")} />
@@ -289,24 +300,47 @@ export function TabCommittees({ committees }: Props) {
 
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-1.5">
-                <Label className="text-xs">Type</Label>
+                <Label className="text-xs">Classification label</Label>
+                <Input
+                  {...form.register("portfolioTagLabel")}
+                  placeholder="Participation, Party, Region, Faction…"
+                />
+                <p className="text-xs text-muted-foreground">
+                  UNHRC: Participation · AIPPM: Party · UNSC: Membership
+                </p>
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs">Matrix type</Label>
                 <Controller
                   control={form.control}
                   name="type"
                   render={({ field }) => (
                     <Select value={field.value} onValueChange={(v) => field.onChange(v)}>
-                      <SelectTrigger className="w-full">
-                        <SelectValue />
-                      </SelectTrigger>
+                      <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="STANDARD">Standard</SelectItem>
-                        <SelectItem value="CRISIS">Crisis</SelectItem>
-                        <SelectItem value="PRESS">Press</SelectItem>
+                        <SelectItem value="STANDARD">Country matrix</SelectItem>
+                        <SelectItem value="CRISIS">People / specialized</SelectItem>
+                        <SelectItem value="PRESS">Press corps</SelectItem>
                       </SelectContent>
                     </Select>
                   )}
                 />
               </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-xs">Default scenario brief</Label>
+              <Textarea
+                {...form.register("matrixBrief")}
+                rows={3}
+                placeholder="What is happening now? Which actors, blocs, parties, or offices matter to this agenda?"
+              />
+              <p className="text-xs text-muted-foreground">
+                This grounds every generated draft. Update it whenever the real-world scenario changes.
+              </p>
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-1.5">
                 <Label className="text-xs">Sort order</Label>
                 <Input {...form.register("sortOrder")} type="number" min={0} />

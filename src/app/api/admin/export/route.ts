@@ -53,6 +53,30 @@ async function exportApplicants(format: "csv" | "xlsx") {
   return sheetResponse(rows, format, "applicants")
 }
 
+async function exportMatrix(format: "csv" | "xlsx", committeeId?: string | null) {
+  const portfolios = await prisma.portfolio.findMany({
+    where: committeeId ? { committeeId } : undefined,
+    orderBy: [{ committee: { sortOrder: "asc" } }, { priority: "asc" }, { name: "asc" }],
+    include: {
+      committee: true,
+      allotment: { include: { delegate: { include: { payment: true } } } },
+    },
+  })
+  const rows = portfolios.map((portfolio) => ({
+    Committee: portfolio.committee.name,
+    Agenda: portfolio.committee.agenda ?? "",
+    Portfolio: portfolio.name,
+    [portfolio.committee.portfolioTagLabel || "Classification"]: portfolio.tag ?? "",
+    Rank: portfolio.priority || "",
+    Status: portfolio.status,
+    Delegate: portfolio.allotment?.delegate.fullName ?? "",
+    Email: portfolio.allotment?.delegate.email ?? "",
+    "Registration status": portfolio.allotment?.delegate.status ?? "",
+    "Payment status": portfolio.allotment?.delegate.payment?.status ?? "Not required / not created",
+  }))
+  return sheetResponse(rows, format, "portfolio-matrix")
+}
+
 export async function GET(request: NextRequest) {
   const session = await auth()
   const role = (session?.user as { role?: string } | undefined)?.role
@@ -65,6 +89,9 @@ export async function GET(request: NextRequest) {
 
   if (sp.get("entity") === "applicants") {
     return exportApplicants(format)
+  }
+  if (sp.get("entity") === "matrix") {
+    return exportMatrix(format, sp.get("committeeId"))
   }
 
   const delegates = await prisma.delegate.findMany({

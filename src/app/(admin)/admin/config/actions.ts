@@ -6,7 +6,6 @@ import { setContent } from "@/lib/settings"
 import { requireStaff, requireAdmin } from "@/lib/authz"
 import { audit } from "@/lib/audit"
 import { callAI, AIRateLimitError } from "@/lib/ai"
-import { UN_MEMBERS } from "@/lib/un-countries"
 
 // Money/sync config only an ADMIN may touch — kept out of saveContent entirely.
 const PAYMENT_KEYS = new Set(["paymentProvider", "staticPaymentLink", "sheetSyncUrl"])
@@ -31,6 +30,7 @@ export async function saveContent(
 }
 
 export async function savePaymentConfig(partial: {
+  paymentsEnabled?: boolean
   paymentProvider?: "upi_qr" | "razorpay" | "static_link"
   staticPaymentLink?: string
   sheetSyncUrl?: string
@@ -66,6 +66,8 @@ export async function createCommittee(data: {
   doubleDelegation: boolean
   sortOrder: number
   aliases?: string[]
+  portfolioTagLabel?: string
+  matrixBrief?: string
 }): Promise<{ success: boolean; error?: string }> {
   const session = await requireStaff()
   try {
@@ -90,6 +92,8 @@ export async function updateCommittee(
     isActive: boolean
     sortOrder: number
     aliases?: string[]
+    portfolioTagLabel?: string
+    matrixBrief?: string
   },
 ): Promise<{ success: boolean; error?: string }> {
   const session = await requireStaff()
@@ -119,12 +123,13 @@ export async function deleteCommittee(
 export async function addPortfolio(
   committeeId: string,
   name: string,
+  tag?: string,
 ): Promise<{ success: boolean; error?: string }> {
   const session = await requireStaff()
   const trimmed = name.trim()
   if (!trimmed) return { success: false, error: "Name is required." }
   try {
-    await prisma.portfolio.create({ data: { committeeId, name: trimmed } })
+    await prisma.portfolio.create({ data: { committeeId, name: trimmed, tag: tag?.trim() || null } })
     await audit(session.user?.email ?? "unknown", "portfolio.add", "Portfolio", undefined, {
       committeeId,
       name: trimmed,
@@ -137,16 +142,23 @@ export async function addPortfolio(
 
 export async function bulkAddPortfolios(
   committeeId: string,
-  names: string[],
+  entries: Array<{ name: string; tag?: string; priority?: number }>,
 ): Promise<{ success: boolean; added: number; skipped: number }> {
   const session = await requireStaff()
   let added = 0
   let skipped = 0
-  for (const n of names) {
-    const name = n.trim()
+  for (const entry of entries) {
+    const name = entry.name.trim()
     if (!name) continue
     try {
-      await prisma.portfolio.create({ data: { committeeId, name } })
+      await prisma.portfolio.create({
+        data: {
+          committeeId,
+          name,
+          tag: entry.tag?.trim() || null,
+          priority: Math.max(0, Math.min(entry.priority ?? 0, 999)),
+        },
+      })
       added++
     } catch {
       skipped++
@@ -158,6 +170,29 @@ export async function bulkAddPortfolios(
     skipped,
   })
   return { success: true, added, skipped }
+}
+
+export async function updatePortfolio(
+  id: string,
+  data: { name: string; tag?: string; priority?: number },
+): Promise<{ success: boolean; error?: string }> {
+  const session = await requireStaff()
+  const name = data.name.trim()
+  if (!name) return { success: false, error: "Name is required." }
+  try {
+    await prisma.portfolio.update({
+      where: { id },
+      data: {
+        name,
+        tag: data.tag?.trim() || null,
+        priority: Math.max(0, Math.min(data.priority ?? 0, 999)),
+      },
+    })
+    await audit(session.user?.email ?? "unknown", "portfolio.update", "Portfolio", id)
+    return { success: true }
+  } catch {
+    return { success: false, error: "Could not update this portfolio." }
+  }
 }
 
 export async function deletePortfolio(
@@ -174,42 +209,70 @@ export async function deletePortfolio(
 }
 
 // ── AI matrix generation ───────────────────────────────────────────────────────
-// STANDARD committees never need AI — the UN member list is deterministic.
-// CRISIS/PRESS (cabinets, parliaments, press corps) get a Groq call, validated.
+// Every committee is agenda-sensitive. Even a GA matrix should be ranked by
+// relevance, not sliced alphabetically from a static country list.
 const portfolioListSchema = z.object({
-  portfolios: z.array(z.string().min(2).max(80)).min(1).max(300),
+  tagLabel: z.string().max(40).optional(),
+  sourceNote: z.string().max(240).optional(),
+  portfolios: z.array(z.object({
+    name: z.string().min(2).max(100),
+    tag: z.string().max(50).optional().default(""),
+    priority: z.number().int().min(1).max(300),
+  })).min(1).max(300),
 })
 
 export async function generatePortfolios(
   committeeId: string,
   size: number,
-): Promise<{ success: boolean; portfolios?: string[]; error?: string; rateLimited?: boolean }> {
+  brief?: string,
+): Promise<{
+  success: boolean
+  portfolios?: Array<{ name: string; tag: string; priority: number }>
+  tagLabel?: string
+  sourceNote?: string
+  error?: string
+  rateLimited?: boolean
+}> {
   await requireStaff()
   const committee = await prisma.committee.findUnique({
     where: { id: committeeId },
-    select: { name: true, agenda: true, type: true },
+    select: { name: true, agenda: true, type: true, aliases: true, matrixBrief: true },
   })
   if (!committee) return { success: false, error: "Committee not found." }
   const count = Math.min(Math.max(size, 1), 300)
 
-  if (committee.type === "STANDARD") {
-    return { success: true, portfolios: UN_MEMBERS.slice(0, count) }
-  }
+  const today = new Date().toISOString().slice(0, 10)
+  const normalizedName = `${committee.name} ${committee.aliases.join(" ")}`.toLowerCase()
+  const isIndianParliament = /aippm|all india political parties|lok sabha|rajya sabha|parliament/.test(normalizedName)
+  const isHrc = /unhrc|human rights council/.test(normalizedName)
+  const isSc = /unsc|security council/.test(normalizedName)
+  const explicitBrief = brief?.trim() || committee.matrixBrief?.trim() || "No additional scenario brief supplied."
 
-  const prompt = `You are preparing the portfolio matrix for a Model United Nations committee.
+  const committeeRules = isIndianParliament
+    ? `This is an Indian political committee. Return CURRENT politicians or office-holders only. Never return reporters, journalists, news outlets, generic positions, or fictional people. Tag every person with their current political party (or Independent). Prioritize decision-makers and actors relevant to the agenda across government and opposition.`
+    : isHrc
+      ? `Tag every country exactly as Member, Non-member, or Observer. Prioritize current Human Rights Council members, then agenda-critical non-members and observers. Membership changes over time, so use the date and scenario brief and do not claim certainty in sourceNote.`
+      : isSc
+        ? `Tag countries as Permanent, Elected, or Invited/Observer. Include the current P5 and current elected members first, then only agenda-critical invited parties.`
+        : committee.type === "PRESS"
+          ? `This is the ONLY type where press roles are valid. Return specific roles such as Reporter — Reuters or Photojournalist — AP and tag each with Desk or Outlet.`
+          : committee.type === "CRISIS"
+            ? `Return real characters or offices that belong in this cabinet/crisis. Tag each by faction, institution, or side.`
+            : `Return countries ordered by agenda relevance and diplomatic importance, not alphabetically. Include central parties, major powers, regional stakeholders, affected states, and useful coalition voices. Tag by region or role.`
+
+  const prompt = `You are a senior MUN academic director preparing a portfolio matrix.
 
 Committee: ${committee.name}
-Type: ${committee.type === "CRISIS" ? "Crisis / specialized (cabinet, parliament, or historical body)" : "International Press"}
+Type: ${committee.type}
 Agenda: ${committee.agenda ?? "(not set)"}
+Current date: ${today}
+Scenario / research brief: ${explicitBrief}
 
-Generate exactly ${count} portfolio names appropriate for this committee:
-- For an Indian parliamentary committee (e.g. Lok Sabha, AIPPM): real, currently relevant Indian politicians / Members of Parliament, correctly spelled, across parties.
-- For a crisis cabinet or historical committee: the characters/positions that belong to that body.
-- For International Press: roles like "Reporter — <outlet>" or "Photojournalist — <outlet>" using real news outlets.
+Committee-specific rule: ${committeeRules}
 
-Rules: real names/roles only, no duplicates, no numbering, each under 60 characters.
+Generate exactly ${count} entries. Rank the most important/relevant first. Use real countries, people, or roles only; no duplicates; no alphabetical padding. Current facts can change, so include a short sourceNote telling the director what must be verified before publishing.
 
-Respond with a JSON object: {"portfolios": ["...", "..."]} with exactly ${count} entries.`
+Respond only with JSON: {"tagLabel":"Party, Participation, Region, Faction, or Desk","sourceNote":"...","portfolios":[{"name":"...","tag":"...","priority":1}]}. Priority 1 is most important and must increase sequentially.`
 
   try {
     const raw = await callAI<unknown>(prompt)
@@ -217,8 +280,23 @@ Respond with a JSON object: {"portfolios": ["...", "..."]} with exactly ${count}
     if (!parsed.success) {
       return { success: false, error: "AI returned an invalid list — try again." }
     }
-    const unique = [...new Set(parsed.data.portfolios.map((p) => p.trim()).filter(Boolean))]
-    return { success: true, portfolios: unique.slice(0, count) }
+    const seen = new Set<string>()
+    const unique = parsed.data.portfolios.filter((entry) => {
+      const key = entry.name.trim().toLowerCase()
+      if (!key || seen.has(key)) return false
+      seen.add(key)
+      return true
+    })
+    return {
+      success: true,
+      portfolios: unique.slice(0, count).map((entry, index) => ({
+        name: entry.name.trim(),
+        tag: entry.tag.trim(),
+        priority: index + 1,
+      })),
+      tagLabel: parsed.data.tagLabel,
+      sourceNote: parsed.data.sourceNote,
+    }
   } catch (err) {
     if (err instanceof AIRateLimitError) {
       return { success: false, error: err.message, rateLimited: true }
