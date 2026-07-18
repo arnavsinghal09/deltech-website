@@ -102,7 +102,7 @@ export function Header({ sections, registrationOpen }: { sections: Content["publ
             className="fixed inset-x-0 bottom-0 top-20 z-40 overflow-y-auto border-t border-border bg-background lg:hidden"
           >
             <div className="paper-grid flex min-h-full flex-col px-4 py-8">
-              <p className="eyebrow mb-5">{t("marketing.liveBriefing")}</p>
+              <p className="eyebrow mb-5">Society index</p>
               <ul className="divide-y divide-border/70 border-y border-border/70">
                 {navLinks.map(({ href, label }, index) => (
                   <li key={href}>
