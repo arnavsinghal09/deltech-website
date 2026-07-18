@@ -166,6 +166,9 @@ export function TabContent({ content }: Props) {
 
       {/* Query contacts */}
       <Section title="Query Contacts">
+        <p className="text-sm leading-relaxed text-muted-foreground">
+          These people appear on the public site and sign automated allotment and payment-confirmation emails. Update them at the start of every Secretariat term.
+        </p>
         <div className="space-y-3">
           {fields.map((field, i) => (
             <div key={field.id} className="flex items-start gap-2">

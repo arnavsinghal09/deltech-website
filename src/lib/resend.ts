@@ -123,6 +123,7 @@ export async function sendAllotmentEmail(delegateId: string): Promise<void> {
     toEmail: delegate.email,
     subject,
     reactElement: AllotmentEmail({
+      eventName: content.activeEventName || content.landingHero.title,
       fullName: delegate.fullName,
       committeeName: committee.name,
       portfolioName: portfolio.name,
@@ -132,6 +133,13 @@ export async function sendAllotmentEmail(delegateId: string): Promise<void> {
       paymentsEnabled,
       needsAccommodation: delegate.needsAccommodation,
       accommodationNote: content.accommodationNote,
+      conferenceDates: content.conferenceDates,
+      venue: content.venue,
+      paymentDeadline: content.paymentDeadline,
+      paymentProofUrl: content.paymentProofUrl,
+      refundPolicy: content.refundPolicy,
+      contactEmail: content.secretariatEmail,
+      contacts: content.queryContacts,
     }),
   })
 
@@ -190,6 +198,7 @@ export async function sendPaymentConfirmed(delegateId: string): Promise<void> {
 
   const committee = delegate.allotment.portfolio.committee
   const portfolio = delegate.allotment.portfolio
+  const content = await getContent()
 
   await loggedSend({
     delegateId,
@@ -197,11 +206,15 @@ export async function sendPaymentConfirmed(delegateId: string): Promise<void> {
     toEmail: delegate.email,
     subject: STRINGS.email.subjects.paymentConfirmed,
     reactElement: PaymentConfirmedEmail({
+      eventName: content.activeEventName || content.landingHero.title,
       fullName: delegate.fullName,
       committeeName: committee.name,
       portfolioName: portfolio.name,
       amountInr: delegate.payment.amountInr,
       confirmedAt: delegate.payment.confirmedAt ?? new Date(),
+      whatsappCommunityUrl: content.whatsappCommunityUrl,
+      contactEmail: content.secretariatEmail,
+      contacts: content.queryContacts,
     }),
   })
 }

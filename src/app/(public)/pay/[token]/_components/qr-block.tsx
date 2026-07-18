@@ -7,29 +7,33 @@ import { buttonVariants } from "@/components/ui/button"
 interface Props {
   upiString: string
   amountInr: number
+  payeeName: string
+  upiVpa: string
 }
 
-export function QRBlock({ upiString, amountInr }: Props) {
+export function QRBlock({ upiString, amountInr, payeeName, upiVpa }: Props) {
   return (
     <div className="flex flex-col items-center gap-6">
-      <div className="rounded-xl border border-border bg-white p-4 shadow-sm">
-        <QRCodeSVG value={upiString} size={220} level="M" />
+      <div className="relative bg-white p-5 shadow-[10px_10px_0_#0f766e]">
+        <QRCodeSVG value={upiString} size={236} level="H" />
       </div>
 
-      <p className="text-sm text-muted-foreground">
-        Scan with any UPI app (GPay, PhonePe, Paytm, BHIM…)
-      </p>
+      <div className="w-full border-y border-border py-4 text-center">
+        <p className="text-xs font-bold uppercase tracking-[0.18em] text-muted-foreground">This QR pays</p>
+        <p className="mt-2 text-xl font-bold">{payeeName}</p>
+        <p className="mt-1 font-mono text-sm text-primary">{upiVpa}</p>
+      </div>
 
       <a
         href={upiString}
-        className={cn(buttonVariants({ size: "lg" }), "w-full max-w-xs")}
+        className={cn(buttonVariants({ size: "lg" }), "h-12 w-full max-w-xs text-base")}
       >
         Open in UPI App
       </a>
 
-      <p className="text-xs text-muted-foreground">
-        Amount to pay:{" "}
-        <strong className="text-foreground">₹{amountInr.toLocaleString("en-IN")}</strong>
+      <p className="text-sm text-muted-foreground">
+        Exact amount · <strong className="text-foreground">₹{amountInr.toLocaleString("en-IN")}</strong>
+        {" "}· GPay · PhonePe · Paytm · BHIM
       </p>
     </div>
   )

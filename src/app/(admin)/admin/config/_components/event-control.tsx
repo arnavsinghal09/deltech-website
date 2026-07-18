@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
-import { Building2, CalendarRange, Check, School, WalletCards } from "lucide-react"
+import { Building2, CalendarRange, Check, EyeOff, Megaphone, Rocket, School, WalletCards } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -43,6 +43,23 @@ export function EventControl({ content }: { content: Content }) {
     if (next === "INTRA_MUN") setPaymentsEnabled(false)
   }
 
+  const applyPreset = (preset: "QUIET" | "PR" | "LIVE") => {
+    if (preset === "QUIET") {
+      setRegistrationOpen(false)
+      setPaymentsEnabled(false)
+      setSections((current) => ({ ...current, activeEvent: false, registration: false, committees: false, matrix: false }))
+      return
+    }
+    if (preset === "PR") {
+      setRegistrationOpen(false)
+      setSections((current) => ({ ...current, activeEvent: true, registration: false, committees: true, matrix: false }))
+      return
+    }
+    setRegistrationOpen(true)
+    setPaymentsEnabled(mode !== "INTRA_MUN")
+    setSections((current) => ({ ...current, activeEvent: true, registration: true, committees: true, matrix: true }))
+  }
+
   const save = () => startTransition(async () => {
     const result = await saveContent({
       eventMode: mode,
@@ -59,6 +76,34 @@ export function EventControl({ content }: { content: Content }) {
   })
 
   return <div className="space-y-12">
+    <section className="bg-foreground p-6 text-background sm:p-8">
+      <p className="font-mono text-xs uppercase tracking-[0.2em] text-background/55">Visitor-facing status</p>
+      <div className="mt-5 flex flex-col justify-between gap-6 lg:flex-row lg:items-end">
+        <p className="max-w-3xl font-heading text-3xl leading-tight sm:text-4xl">
+          {sections.activeEvent ? eventName || "An unnamed event" : "Society website"} is visible.
+          {" "}Registration is {registrationOpen ? "open" : "closed"}.
+          {" "}Payment is {mode === "INTRA_MUN" || !paymentsEnabled ? "off" : "on"}.
+        </p>
+        <p className="shrink-0 font-mono text-sm uppercase tracking-wider text-primary-foreground/70">Nothing changes until Apply</p>
+      </div>
+    </section>
+
+    <section>
+      <p className="eyebrow">Fast presets</p>
+      <h2 className="mt-3 font-heading text-3xl">Start from the state you mean</h2>
+      <p className="mt-2 text-base text-muted-foreground">A preset changes the switches below. Review them, then apply once.</p>
+      <div className="mt-5 grid gap-px overflow-hidden border border-border bg-border md:grid-cols-3">
+        <button type="button" onClick={() => applyPreset("QUIET")} className="bg-background p-5 text-left transition-colors hover:bg-muted">
+          <EyeOff className="size-6" /><p className="mt-7 text-lg font-bold">Society only</p><p className="mt-1 text-sm text-muted-foreground">Hide event, registration, committees, and matrix.</p>
+        </button>
+        <button type="button" onClick={() => applyPreset("PR")} className="bg-background p-5 text-left transition-colors hover:bg-muted">
+          <Megaphone className="size-6" /><p className="mt-7 text-lg font-bold">PR has started</p><p className="mt-1 text-sm text-muted-foreground">Show event and committees; keep forms closed.</p>
+        </button>
+        <button type="button" onClick={() => applyPreset("LIVE")} className="bg-primary p-5 text-left text-primary-foreground transition-opacity hover:opacity-90">
+          <Rocket className="size-6" /><p className="mt-7 text-lg font-bold">Registration live</p><p className="mt-1 text-sm text-primary-foreground/75">Publish event, registration, committees, and matrix.</p>
+        </button>
+      </div>
+    </section>
     <section className="border-t-4 border-foreground pt-6">
       <p className="eyebrow">01 / Operating mode</p>
       <div className="mt-3 flex flex-col justify-between gap-3 lg:flex-row lg:items-end">
@@ -108,6 +153,6 @@ export function EventControl({ content }: { content: Content }) {
       <div className="flex items-center justify-between gap-5 bg-background p-6"><div className="flex gap-3"><WalletCards className="mt-0.5 size-5" /><div><p className="font-semibold">Collect payment after allotment</p><p className="mt-1 text-sm text-muted-foreground">Locked off for free Intra MUNs.</p></div></div><Switch checked={mode === "INTRA_MUN" ? false : paymentsEnabled} onCheckedChange={setPaymentsEnabled} disabled={mode === "INTRA_MUN"} className="scale-125" /></div>
     </section>
 
-    <div className="sticky bottom-5 z-20 flex items-center justify-between border border-border bg-background/95 p-4 shadow-xl backdrop-blur"><p className="hidden text-sm text-muted-foreground sm:block">One save updates the public site and allotment behavior.</p><Button size="lg" onClick={save} disabled={isPending} className="ml-auto min-w-44">{isPending ? "Applying…" : "Apply event state"}</Button></div>
+    <div className="sticky bottom-5 z-20 flex items-center justify-between border border-border bg-background/95 p-4 shadow-xl backdrop-blur"><p className="hidden text-sm text-muted-foreground sm:block">Apply publishes the new state immediately and clears the public-page cache.</p><Button size="lg" onClick={save} disabled={isPending} className="ml-auto min-w-44">{isPending ? "Publishing…" : "Apply and publish"}</Button></div>
   </div>
 }

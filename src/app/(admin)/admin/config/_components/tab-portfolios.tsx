@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select"
 import { addPortfolio, bulkAddPortfolios, deletePortfolio, generatePortfolios, updatePortfolio } from "../actions"
 import type { ClientCommittee, ClientPortfolio } from "../_lib/types"
 
@@ -101,7 +101,9 @@ export function TabPortfolios({ committees }: { committees: ClientCommittee[] })
         <div className="space-y-2">
           <Label>Working committee</Label>
           <Select value={selectedId} onValueChange={(value) => switchCommittee(value ?? "")}>
-            <SelectTrigger className="h-12 w-full text-base md:w-96"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="h-12 w-full text-base md:w-96">
+              <span className="truncate">{selected?.name ?? "Choose a committee"}</span>
+            </SelectTrigger>
             <SelectContent>{committees.map((c) => <SelectItem key={c.id} value={c.id}>{c.name} · {c.portfolios.length}</SelectItem>)}</SelectContent>
           </Select>
         </div>

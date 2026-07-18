@@ -52,6 +52,13 @@ export const ContentSchema = z.object({
     .default([]),
   paymentProvider: z.enum(["upi_qr", "razorpay", "static_link"]).default("upi_qr"),
   staticPaymentLink: z.string().default(""),
+  upiVpa: z.string().default(""),
+  upiPayeeName: z.string().default("DelTech MUN"),
+  paymentDeadline: z.string().default(""),
+  paymentProofUrl: z.string().default(""),
+  refundPolicy: z.string().default("Payments are non-refundable once an allotment is accepted."),
+  whatsappCommunityUrl: z.string().default(""),
+  secretariatEmail: z.string().default("secretariat.deltechmun@gmail.com"),
   sheetSyncUrl: z.string().default(""),
   sheetPullSources: z
     .array(

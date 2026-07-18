@@ -7,10 +7,10 @@ export default async function ConferenceSettingsPage() {
   const content = await getContent()
 
   return (
-    <div className="editorial-card p-6">
-      <h2 className="font-heading text-lg">Conference & content</h2>
-      <p className="mt-1 text-sm text-muted-foreground">
-        Hero, dates, venue, public copy, awards, and contacts.
+    <div className="editorial-card p-7">
+      <h2 className="font-heading text-2xl">Public identity and automated signatories</h2>
+      <p className="mt-2 text-base text-muted-foreground">
+        Society copy, active-event details, venue, awards, and the people who sign delegate emails.
       </p>
       <div className="rule my-5" />
       <TabContent content={content} />

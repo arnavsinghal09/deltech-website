@@ -23,9 +23,9 @@ export default async function MoneySettingsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="editorial-card p-6">
-        <h2 className="font-heading text-lg">Fees</h2>
-        <p className="mt-1 text-sm text-muted-foreground">
+      <div className="editorial-card p-7">
+        <h2 className="font-heading text-2xl">Fees</h2>
+        <p className="mt-2 text-base text-muted-foreground">
           Amounts by committee type — allotments always read from this table.
         </p>
         <div className="rule my-5" />
@@ -33,15 +33,22 @@ export default async function MoneySettingsPage() {
       </div>
 
       {isAdmin ? (
-        <div className="editorial-card p-6">
-          <h2 className="font-heading text-lg">Payments</h2>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Provider, static link, and the Google Sheet mirror. Admin only.
+        <div className="editorial-card p-7">
+          <h2 className="font-heading text-2xl">Payment and email control</h2>
+          <p className="mt-2 text-base text-muted-foreground">
+            Configure exactly who the QR pays, what delegates are told, and where confirmed delegates go next. Admin only.
           </p>
           <div className="rule my-5" />
           <TabPayments
             paymentProvider={content.paymentProvider}
             staticPaymentLink={content.staticPaymentLink}
+            upiVpa={content.upiVpa}
+            upiPayeeName={content.upiPayeeName}
+            paymentDeadline={content.paymentDeadline}
+            paymentProofUrl={content.paymentProofUrl}
+            refundPolicy={content.refundPolicy}
+            whatsappCommunityUrl={content.whatsappCommunityUrl}
+            secretariatEmail={content.secretariatEmail}
             sheetSyncUrl={content.sheetSyncUrl}
           />
         </div>

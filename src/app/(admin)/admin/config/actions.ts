@@ -6,9 +6,22 @@ import { setContent } from "@/lib/settings"
 import { requireStaff, requireAdmin } from "@/lib/authz"
 import { audit } from "@/lib/audit"
 import { callAI, AIRateLimitError } from "@/lib/ai"
+import { revalidatePath } from "next/cache"
 
 // Money/sync config only an ADMIN may touch — kept out of saveContent entirely.
-const PAYMENT_KEYS = new Set(["paymentProvider", "staticPaymentLink", "sheetSyncUrl"])
+const PAYMENT_KEYS = new Set([
+  "paymentProvider", "staticPaymentLink", "upiVpa", "upiPayeeName", "paymentDeadline",
+  "paymentProofUrl", "refundPolicy", "whatsappCommunityUrl", "secretariatEmail", "sheetSyncUrl",
+])
+
+function publishContentChanges() {
+  revalidatePath("/", "layout")
+  revalidatePath("/")
+  revalidatePath("/availability")
+  revalidatePath("/register")
+  revalidatePath("/team")
+  revalidatePath("/blog")
+}
 
 // ── Content ────────────────────────────────────────────────────────────────────
 export async function saveContent(
@@ -23,6 +36,7 @@ export async function saveContent(
     await audit(session.user?.email ?? "unknown", "content.save", "Setting", undefined, {
       keys: Object.keys(partial),
     })
+    publishContentChanges()
     return { success: true }
   } catch {
     return { success: false, error: "Failed to save." }
@@ -33,6 +47,13 @@ export async function savePaymentConfig(partial: {
   paymentsEnabled?: boolean
   paymentProvider?: "upi_qr" | "razorpay" | "static_link"
   staticPaymentLink?: string
+  upiVpa?: string
+  upiPayeeName?: string
+  paymentDeadline?: string
+  paymentProofUrl?: string
+  refundPolicy?: string
+  whatsappCommunityUrl?: string
+  secretariatEmail?: string
   sheetSyncUrl?: string
 }): Promise<{ success: boolean; error?: string }> {
   const session = await requireAdmin()
@@ -41,6 +62,7 @@ export async function savePaymentConfig(partial: {
     await audit(session.user?.email ?? "unknown", "content.savePaymentConfig", "Setting", undefined, {
       keys: Object.keys(partial),
     })
+    publishContentChanges()
     return { success: true }
   } catch {
     return { success: false, error: "Failed to save." }
@@ -54,6 +76,7 @@ export async function setRegistrationOpen(
   const session = await requireStaff()
   await setContent({ registrationOpen: open })
   await audit(session.user?.email ?? "unknown", open ? "registration.open" : "registration.close", "Setting")
+  publishContentChanges()
   return { success: true }
 }
 
