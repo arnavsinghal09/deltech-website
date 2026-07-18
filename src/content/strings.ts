@@ -484,7 +484,6 @@ export const STRINGS = {
       paymentReminder: "Complete your payment — DelTech MUN",
       blogApproved: 'Your article “{title}” has been published',
       blogChangesRequested: 'Changes requested on “{title}”',
-      interviewSlot: "Your DelTech MUN {round} is scheduled",
     },
     preview: {
       registrationReceived: "We have your application. Allotments will be sent soon.",

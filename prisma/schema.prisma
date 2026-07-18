@@ -264,6 +264,10 @@ model Applicant {
   createdAt DateTime        @default(now())
 }
 
+// ponytail: recruitment is now offline single-page scoring — InterviewSlot,
+// the gd/piSlot columns on Applicant, and the *_SCHEDULED ApplicantStatus
+// values are unused by the app. Left in place to avoid a destructive migration
+// for no gain; drop them together in the next real migration.
 model InterviewSlot {
   id           String         @id @default(cuid())
   round        InterviewRound

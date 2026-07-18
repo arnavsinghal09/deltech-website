@@ -10,7 +10,6 @@ import { PaymentConfirmedEmail } from "@/emails/payment-confirmed"
 import { PaymentReminderEmail } from "@/emails/payment-reminder"
 import { BlogApprovedEmail } from "@/emails/blog-approved"
 import { BlogChangesRequestedEmail } from "@/emails/blog-changes-requested"
-import { InterviewSlotEmail } from "@/emails/interview-slot"
 import { StaffInviteEmail } from "@/emails/staff-invite"
 
 const resend = new Resend(process.env.AUTH_RESEND_KEY)
@@ -283,29 +282,6 @@ export async function sendBlogChangesRequested(postId: string): Promise<void> {
       postTitle: post.title,
       reviewNote: post.reviewNote ?? "",
       editUrl,
-    }),
-  })
-}
-
-export async function sendInterviewSlot(applicantId: string, round: "GD" | "PI"): Promise<void> {
-  const applicant = await prisma.applicant.findUniqueOrThrow({
-    where: { id: applicantId },
-    include: { gdSlot: true, piSlot: true },
-  })
-  const slot = round === "GD" ? applicant.gdSlot : applicant.piSlot
-  if (!slot) return
-
-  const roundLabel = round === "GD" ? "Group Discussion" : "Personal Interview"
-
-  await loggedSend({
-    template: "interview-slot",
-    toEmail: applicant.email,
-    subject: STRINGS.email.subjects.interviewSlot.replace("{round}", roundLabel),
-    reactElement: InterviewSlotEmail({
-      fullName: applicant.fullName,
-      roundLabel,
-      startsAt: slot.startsAt,
-      venue: slot.venue,
     }),
   })
 }

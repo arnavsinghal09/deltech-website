@@ -34,13 +34,7 @@ function sheetResponse(
 }
 
 async function exportApplicants(format: "csv" | "xlsx") {
-  const applicants = await prisma.applicant.findMany({
-    orderBy: { createdAt: "asc" },
-    include: {
-      gdSlot: { select: { startsAt: true } },
-      piSlot: { select: { startsAt: true } },
-    },
-  })
+  const applicants = await prisma.applicant.findMany({ orderBy: { createdAt: "asc" } })
 
   const rows = applicants.map((a) => ({
     "Full Name": a.fullName,
@@ -49,10 +43,8 @@ async function exportApplicants(format: "csv" | "xlsx") {
     Year: a.year ?? "",
     Branch: a.branch ?? "",
     Status: a.status,
-    "GD Slot": a.gdSlot?.startsAt.toISOString() ?? "",
     "GD Score": a.gdScore ?? "",
     "GD Verdict": a.gdVerdict ?? "",
-    "PI Slot": a.piSlot?.startsAt.toISOString() ?? "",
     "PI Score": a.piScore ?? "",
     "PI Verdict": a.piVerdict ?? "",
     "Applied At": a.createdAt.toISOString(),
