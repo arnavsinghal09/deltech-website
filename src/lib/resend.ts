@@ -11,6 +11,7 @@ import { PaymentReminderEmail } from "@/emails/payment-reminder"
 import { BlogApprovedEmail } from "@/emails/blog-approved"
 import { BlogChangesRequestedEmail } from "@/emails/blog-changes-requested"
 import { InterviewSlotEmail } from "@/emails/interview-slot"
+import { StaffInviteEmail } from "@/emails/staff-invite"
 
 const resend = new Resend(process.env.AUTH_RESEND_KEY)
 const FROM = process.env.EMAIL_FROM ?? "noreply@deltechmun.in"
@@ -306,6 +307,15 @@ export async function sendInterviewSlot(applicantId: string, round: "GD" | "PI")
       startsAt: slot.startsAt,
       venue: slot.venue,
     }),
+  })
+}
+
+export async function sendStaffInvite(email: string, role: string): Promise<void> {
+  await loggedSend({
+    template: "staff-invite",
+    toEmail: email,
+    subject: "You've been added to the DelTech MUN secretariat",
+    reactElement: StaffInviteEmail({ role, signInUrl: `${APP_URL}/signin/staff` }),
   })
 }
 

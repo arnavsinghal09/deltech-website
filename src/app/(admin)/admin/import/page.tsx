@@ -1,11 +1,13 @@
 import { prisma } from "@/lib/prisma"
+import { getContent } from "@/lib/settings"
 import { getImportPresets, getQuarantine } from "./actions"
 import { ImportWizard } from "./_components/import-wizard"
 import { QuarantinePanel } from "./_components/quarantine-panel"
+import { PartnerSheetsCard } from "./_components/partner-sheets-card"
 import { PageHeader } from "@/app/(admin)/_components/page-header"
 
 export default async function ImportPage() {
-  const [presets, committees, quarantine] = await Promise.all([
+  const [presets, committees, quarantine, content] = await Promise.all([
     getImportPresets(),
     prisma.committee.findMany({
       where:   { isActive: true },
@@ -13,6 +15,7 @@ export default async function ImportPage() {
       orderBy: { name: "asc" },
     }),
     getQuarantine(),
+    getContent(),
   ])
 
   return (
@@ -24,6 +27,10 @@ export default async function ImportPage() {
       />
       <QuarantinePanel rows={quarantine} />
       <ImportWizard presets={presets} committeeNames={committees.map((c) => c.name)} />
+      <PartnerSheetsCard
+        sources={content.sheetPullSources}
+        presetNames={presets.map((p) => p.name)}
+      />
     </div>
   )
 }

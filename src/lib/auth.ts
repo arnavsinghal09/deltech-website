@@ -10,12 +10,12 @@ declare module "next-auth" {
   interface Session {
     user: {
       id: string;
-      role: "ADMIN" | "AUTHOR" | "REGISTERER";
+      role: "ADMIN" | "MAINTAINER" | "AUTHOR" | "REGISTERER";
     } & DefaultSession["user"];
   }
 
   interface JWT {
-    role?: "ADMIN" | "AUTHOR" | "REGISTERER";
+    role?: "ADMIN" | "MAINTAINER" | "AUTHOR" | "REGISTERER";
   }
 }
 

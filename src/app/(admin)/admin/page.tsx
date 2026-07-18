@@ -1,13 +1,20 @@
 import { Users, IndianRupee, BedDouble, CheckCircle2 } from "lucide-react"
 import { prisma } from "@/lib/prisma"
+import { getContent } from "@/lib/settings"
+import { requireStaff } from "@/lib/authz"
 import { t, type StringKey } from "@/content/strings"
 import { PageHeader } from "../_components/page-header"
 import { StatCard } from "./_components/stat-card"
 import { StatusBarChart } from "./_components/status-bar-chart"
 import { SourcePieChart } from "./_components/source-pie-chart"
 import { CommitteeFillTable } from "./_components/committee-fill-table"
+import { SetupChecklist, type ChecklistItem } from "./_components/setup-checklist"
+import { MaintainerWelcome } from "./_components/maintainer-welcome"
 
 export default async function AdminOverviewPage() {
+  const session = await requireStaff()
+  const isMaintainer = (session.user as { role?: string }).role === "MAINTAINER"
+
   const [
     total,
     byStatus,
@@ -15,6 +22,9 @@ export default async function AdminOverviewPage() {
     accommodationCount,
     revenueResult,
     committees,
+    portfolioCount,
+    feeCount,
+    content,
   ] = await Promise.all([
     prisma.delegate.count(),
     prisma.delegate.groupBy({ by: ["status"], _count: { _all: true } }),
@@ -34,7 +44,22 @@ export default async function AdminOverviewPage() {
         portfolios: { select: { status: true } },
       },
     }),
+    prisma.portfolio.count(),
+    prisma.fee.count(),
+    getContent(),
   ])
+
+  const checklist: ChecklistItem[] = [
+    { done: committees.length > 0, label: "Add committees", href: "/admin/config/committees" },
+    { done: portfolioCount > 0, label: "Generate the portfolio matrix", href: "/admin/config/committees" },
+    { done: feeCount > 0, label: "Set registration fees", href: "/admin/config/money" },
+    {
+      done: content.paymentProvider !== "static_link" || !!content.staticPaymentLink,
+      label: "Configure the payment provider",
+      href: "/admin/config/money",
+    },
+    { done: content.registrationOpen, label: "Open registration", href: "/admin/config/registration" },
+  ]
 
   const revenue = revenueResult._sum.amountInr ?? 0
   const confirmedCount =
@@ -65,6 +90,9 @@ export default async function AdminOverviewPage() {
         title={t("admin.nav.overview")}
         description="Live numbers from the database."
       />
+
+      {isMaintainer && <MaintainerWelcome />}
+      <SetupChecklist items={checklist} />
 
       {/* KPI cards */}
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">

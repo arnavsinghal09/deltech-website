@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma"
 import { requireAdmin } from "@/lib/authz"
 import { UsersTable } from "./_components/users-table"
+import { InviteDialog } from "./_components/invite-dialog"
 import { PageHeader } from "@/app/(admin)/_components/page-header"
 
 export default async function UsersPage() {
@@ -17,7 +18,9 @@ export default async function UsersPage() {
         eyebrow="System"
         title="Users & roles"
         description="Maintainers can do everything here except deletions, payment config, revokes, and role changes. Role changes apply on the user's next sign-in."
-      />
+      >
+        <InviteDialog />
+      </PageHeader>
       <UsersTable users={users} selfEmail={session.user?.email ?? ""} />
     </div>
   )
