@@ -8,13 +8,13 @@ export default async function ConfigLayout({ children }: { children: React.React
   return (
     <div className="space-y-8">
       <PageHeader
-        eyebrow="System"
-        title="Settings"
-        description="Conference configuration. Changes apply immediately."
+        eyebrow="Control room"
+        title="Event & site control"
+        description="Run the society year-round, bring events online only when they are ready."
       />
       <div className="flex flex-col gap-8 lg:flex-row">
         <SettingsNav />
-        <div className="min-w-0 max-w-3xl flex-1">{children}</div>
+        <div className="min-w-0 max-w-6xl flex-1">{children}</div>
       </div>
     </div>
   )

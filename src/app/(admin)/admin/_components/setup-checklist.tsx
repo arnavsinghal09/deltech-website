@@ -18,9 +18,9 @@ export function SetupChecklist({ items }: { items: ChecklistItem[] }) {
     <section className="border border-border/80 bg-card p-6 sm:p-8">
       <div className="grid gap-6 sm:grid-cols-[1fr_auto] sm:items-end">
         <div>
-          <p className="data-label text-gold-700">Conference launch track</p>
+          <p className="data-label text-gold-700">Operating readiness</p>
           <h2 className="mt-3 font-heading text-3xl">Finish the operating setup</h2>
-          <p className="mt-2 text-base text-muted-foreground">{doneCount} of {items.length} checks complete. This stays visible until the conference is ready.</p>
+          <p className="mt-2 text-base text-muted-foreground">{doneCount} of {items.length} checks complete. The list adapts to society, flagship, and free Intra modes.</p>
         </div>
         <p className="font-mono text-4xl font-semibold tabular-nums text-primary">{progress}%</p>
       </div>

@@ -10,9 +10,9 @@ export function MaintainerWelcome() {
           <p className="data-label flex items-center gap-2 text-gold-300">
             <ShieldCheck className="size-4" /> Maintainer operating brief
           </p>
-          <h2 className="mt-4 font-heading text-4xl leading-tight">You can run the conference. Destructive actions stay guarded.</h2>
+          <h2 className="mt-4 font-heading text-4xl leading-tight">You can run the society and its events. Destructive actions stay guarded.</h2>
           <p className="mt-4 max-w-3xl text-base leading-relaxed text-primary-foreground/72">
-            You can manage delegates, allot portfolios, run imports and recruitment, publish content, and configure the conference. Deletions, payment overrides, allotment revocation, and user roles require an admin. Every material action is written to the activity log.
+            Start in Event control: choose Society, Flagship, or free Intra mode, then publish only the sections that are ready. You can manage delegates, allot portfolios, run imports and recruitment, and publish content. Deletions, payment overrides, revocation, and roles require an admin.
           </p>
         </div>
         <Link href="/admin/guide" className="inline-flex min-h-12 items-center justify-between gap-4 border border-primary-foreground/30 px-5 py-3 font-semibold transition-colors hover:bg-primary-foreground hover:text-primary">

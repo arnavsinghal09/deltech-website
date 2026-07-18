@@ -6,12 +6,14 @@ export default async function MarketingLayout({ children }: { children: React.Re
   const content = await getContent();
   return (
     <div className="flex min-h-svh flex-col">
-      <Header />
+      <Header sections={content.publicSections} registrationOpen={content.registrationOpen} />
       <main className="flex-1">{children}</main>
       <Footer
         contacts={content.queryContacts}
         conferenceDates={content.conferenceDates}
         venue={content.venue}
+        sections={content.publicSections}
+        activeEventName={content.activeEventName}
       />
     </div>
   );

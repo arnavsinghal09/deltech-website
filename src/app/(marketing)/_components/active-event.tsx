@@ -1,0 +1,23 @@
+import Link from "next/link"
+import { Asterisk, ArrowRight } from "lucide-react"
+import type { Content } from "@/content/contentSchema"
+import { buttonVariants } from "@/components/ui/button"
+import { cn } from "@/lib/utils"
+
+export function ActiveEvent({ content }: { content: Content }) {
+  if (!content.publicSections.activeEvent || !content.activeEventName) return null
+  const kind = content.eventMode === "INTRA_MUN" ? "Free campus simulation" : content.eventMode === "CONFERENCE" ? "Flagship conference" : "Society programme"
+  return <section className="relative overflow-hidden bg-foreground text-background">
+    <Asterisk className="absolute -right-16 -top-20 size-[30rem] text-background/[0.035]" strokeWidth={0.6} aria-hidden />
+    <div className="section-shell relative grid gap-12 py-24 lg:grid-cols-[1fr_0.62fr] lg:items-end sm:py-32">
+      <div><p className="font-mono text-sm font-bold uppercase tracking-[0.18em] text-gold-300">Now briefing / {kind}</p><h2 className="mt-7 max-w-[10ch] font-heading text-6xl leading-[0.88] sm:text-8xl">{content.activeEventName}</h2><p className="mt-7 max-w-xl text-xl leading-relaxed text-background/65">{content.landingHero.subtitle || "This simulation is live because the secretariat has marked it ready."}</p></div>
+      <div className="border-t border-background/25 pt-7">
+        <dl className="grid grid-cols-2 gap-px bg-background/20"><div className="bg-foreground p-5"><dt className="font-mono text-xs uppercase tracking-wider text-background/50">Date</dt><dd className="mt-3 text-lg font-semibold">{content.conferenceDates || "To be announced"}</dd></div><div className="bg-foreground p-5"><dt className="font-mono text-xs uppercase tracking-wider text-background/50">Venue</dt><dd className="mt-3 text-lg font-semibold">{content.venue || "DTU campus"}</dd></div></dl>
+        <div className="mt-7 flex flex-wrap gap-3">
+          {content.publicSections.registration && <Link href={content.registrationOpen ? "/register" : "/register/closed"} className={cn(buttonVariants({ size: "lg" }), "bg-gold-400 text-stone-950 hover:bg-gold-300")}>{content.registrationOpen ? content.landingHero.ctaLabel : "Registration status"}<ArrowRight /></Link>}
+          {content.publicSections.matrix && <Link href="/availability" className={cn(buttonVariants({ variant: "outline", size: "lg" }), "border-background/30 text-background hover:bg-background hover:text-foreground")}>View matrix</Link>}
+        </div>
+      </div>
+    </div>
+  </section>
+}

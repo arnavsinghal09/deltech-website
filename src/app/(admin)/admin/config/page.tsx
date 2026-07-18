@@ -1,5 +1,8 @@
-import { redirect } from "next/navigation"
+import { getContent } from "@/lib/settings"
+import { requireStaff } from "@/lib/authz"
+import { EventControl } from "./_components/event-control"
 
-export default function ConfigIndexPage() {
-  redirect("/admin/config/conference")
+export default async function EventControlPage() {
+  await requireStaff()
+  return <EventControl content={await getContent()} />
 }

@@ -29,32 +29,30 @@ export interface NavGroup {
 // Shared by the desktop sidebar and the mobile drawer.
 export const NAV_GROUPS: NavGroup[] = [
   {
-    label: "Conference",
+    label: "Run event",
     items: [
       { href: "/admin", icon: LayoutDashboard, label: "Overview" },
+      { href: "/admin/config", icon: Settings2, label: "Event control" },
       { href: "/admin/registrations", icon: Users, label: "Registrations" },
-      { href: "/admin/allotment", icon: Kanban, label: "Allotment" },
-      { href: "/admin/import", icon: Upload, label: "Cross-dels" },
+      { href: "/admin/allotment", icon: Kanban, label: "Allotments" },
+      { href: "/admin/config/committees", icon: Contact, label: "Matrix & committees" },
+      { href: "/admin/import", icon: Upload, label: "Imports" },
     ],
   },
   {
-    label: "Recruitment",
-    items: [{ href: "/admin/recruitment", icon: UserPlus, label: "Recruitment" }],
-  },
-  {
-    label: "Content",
+    label: "Society",
     items: [
-      { href: "/admin/blog", icon: FileText, label: "Blog" },
+      { href: "/admin/recruitment", icon: UserPlus, label: "Recruitment" },
+      { href: "/admin/blog", icon: FileText, label: "Dispatch" },
       { href: "/admin/quiz", icon: Presentation, label: "Quiz" },
       { href: "/admin/team", icon: Contact, label: "Team" },
     ],
   },
   {
-    label: "System",
+    label: "Admin",
     items: [
       { href: "/admin/guide", icon: BookOpenText, label: "Operator guide" },
       { href: "/admin/logs", icon: ScrollText, label: "Logs" },
-      { href: "/admin/config", icon: Settings2, label: "Settings" },
       { href: "/admin/users", icon: ShieldCheck, label: "Users", adminOnly: true },
     ],
   },

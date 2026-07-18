@@ -6,9 +6,11 @@ type Props = {
   contacts: Content["queryContacts"];
   conferenceDates: string;
   venue: string;
+  sections: Content["publicSections"];
+  activeEventName: string;
 };
 
-export function Footer({ contacts, conferenceDates, venue }: Props) {
+export function Footer({ contacts, conferenceDates, venue, sections, activeEventName }: Props) {
   return (
     <footer className="mt-auto border-t border-border/70 bg-foreground text-background">
       <div className="section-shell py-16 sm:py-20">
@@ -34,37 +36,37 @@ export function Footer({ contacts, conferenceDates, venue }: Props) {
                   {t("nav.home")}
                 </Link>
               </li>
-              <li>
+              {sections.matrix && <li>
                 <Link href="/availability" className="text-background/68 transition-colors hover:text-background">
                   {t("nav.availability")}
                 </Link>
-              </li>
-              <li>
+              </li>}
+              {sections.team && <li>
                 <Link href="/team" className="text-background/68 transition-colors hover:text-background">
                   {t("marketing.teamLabel")}
                 </Link>
-              </li>
-              <li>
+              </li>}
+              {sections.dispatch && <li>
                 <Link href="/blog" className="text-background/68 transition-colors hover:text-background">
                   {t("nav.blog")}
                 </Link>
-              </li>
+              </li>}
             </ul>
           </nav>
 
           <div>
             <p className="data-label mb-5 text-gold-300">{t("marketing.footerOperations")}</p>
             <ul className="space-y-3 text-[0.9375rem]">
-              <li>
+              {sections.registration && <li>
                 <Link href="/register" className="text-background/68 transition-colors hover:text-background">
                   {t("nav.register")}
                 </Link>
-              </li>
-              <li>
+              </li>}
+              {sections.quiz && <li>
                 <Link href="/quiz/join" className="text-background/68 transition-colors hover:text-background">
                   {t("nav.quizJoin")}
                 </Link>
-              </li>
+              </li>}
               <li>
                 <Link href="/signin/staff" className="text-background/68 transition-colors hover:text-background">
                   {t("marketing.organiserSignIn")}
@@ -74,13 +76,15 @@ export function Footer({ contacts, conferenceDates, venue }: Props) {
           </div>
 
           <div>
-            <p className="data-label mb-5 text-gold-300">{t("marketing.footerBrief")}</p>
+            <p className="data-label mb-5 text-gold-300">{sections.activeEvent ? activeEventName || t("marketing.footerBrief") : "Society contact"}</p>
+            {sections.activeEvent && <>
             <p className="text-[0.9375rem] text-background/68">
               {conferenceDates || t("marketing.datesPending")}
             </p>
             <p className="mt-1 text-[0.9375rem] text-background/68">
               {venue || t("marketing.venuePending")}
             </p>
+            </>}
             {contacts.length > 0 && (
               <ul className="mt-5 space-y-4 text-[0.9375rem]">
                 {contacts.map((contact) => (

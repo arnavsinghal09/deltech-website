@@ -1,0 +1,113 @@
+"use client"
+
+import { useState, useTransition } from "react"
+import { useRouter } from "next/navigation"
+import { toast } from "sonner"
+import { Building2, CalendarRange, Check, School, WalletCards } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Switch } from "@/components/ui/switch"
+import type { Content } from "@/content/contentSchema"
+import { saveContent } from "../actions"
+
+const MODES = [
+  { value: "SOCIETY", icon: Building2, title: "Society season", body: "Year-round identity. Events stay quiet until PR starts." },
+  { value: "CONFERENCE", icon: CalendarRange, title: "Flagship conference", body: "Bring dates, committees, registration, and payments online." },
+  { value: "INTRA_MUN", icon: School, title: "Free Intra MUN", body: "Registration and allotments with no fee or payment email." },
+] as const
+
+const SECTION_ROWS = [
+  ["activeEvent", "Active event block", "Show the current event on the society homepage."],
+  ["registration", "Registration links", "Expose registration buttons and navigation."],
+  ["committees", "Committees", "Show active committees and agendas."],
+  ["matrix", "Public matrix", "Expose portfolio availability."],
+  ["dispatch", "Dispatch / blog", "Keep society writing visible year-round."],
+  ["team", "Society team", "Show the current council and team page."],
+  ["quiz", "Live quiz", "Expose the public quiz join link."],
+  ["recruitment", "Recruitment", "Show recruitment when the society is hiring."],
+] as const
+
+export function EventControl({ content }: { content: Content }) {
+  const router = useRouter()
+  const [mode, setMode] = useState<Content["eventMode"]>(content.eventMode)
+  const [eventName, setEventName] = useState(content.activeEventName)
+  const [eventLabel, setEventLabel] = useState(content.activeEventLabel)
+  const [registrationOpen, setRegistrationOpen] = useState(content.registrationOpen)
+  const [paymentsEnabled, setPaymentsEnabled] = useState(content.paymentsEnabled)
+  const [sections, setSections] = useState(content.publicSections)
+  const [isPending, startTransition] = useTransition()
+
+  const chooseMode = (next: Content["eventMode"]) => {
+    setMode(next)
+    if (next === "INTRA_MUN") setPaymentsEnabled(false)
+  }
+
+  const save = () => startTransition(async () => {
+    const result = await saveContent({
+      eventMode: mode,
+      activeEventName: eventName,
+      activeEventLabel: eventLabel,
+      registrationOpen,
+      paymentsEnabled: mode === "INTRA_MUN" ? false : paymentsEnabled,
+      publicSections: sections,
+      matrixPublic: sections.matrix,
+    })
+    if (!result.success) { toast.error(result.error ?? "Could not save event state."); return }
+    toast.success("Public site and event workflow updated.")
+    router.refresh()
+  })
+
+  return <div className="space-y-12">
+    <section className="border-t-4 border-foreground pt-6">
+      <p className="eyebrow">01 / Operating mode</p>
+      <div className="mt-3 flex flex-col justify-between gap-3 lg:flex-row lg:items-end">
+        <div><h2 className="font-heading text-3xl">What are we running right now?</h2><p className="mt-2 max-w-2xl text-base text-muted-foreground">This controls the public emphasis and whether allotment creates a payment.</p></div>
+        <p className="font-mono text-sm uppercase tracking-wider text-primary">Current · {mode.replace("_", " ")}</p>
+      </div>
+      <div className="mt-6 grid gap-px overflow-hidden border border-border bg-border lg:grid-cols-3">
+        {MODES.map(({ value, icon: Icon, title, body }) => {
+          const selected = mode === value
+          return <button key={value} type="button" onClick={() => chooseMode(value)} className={`relative min-h-48 bg-background p-6 text-left transition-colors hover:bg-muted/60 ${selected ? "bg-primary text-primary-foreground hover:bg-primary" : ""}`}>
+            <div className="flex items-start justify-between"><Icon className="size-7" />{selected && <span className="flex size-7 items-center justify-center rounded-full bg-background text-foreground"><Check className="size-4" /></span>}</div>
+            <h3 className="mt-10 font-heading text-2xl">{title}</h3><p className={`mt-2 text-sm leading-relaxed ${selected ? "text-primary-foreground/75" : "text-muted-foreground"}`}>{body}</p>
+          </button>
+        })}
+      </div>
+    </section>
+
+    <section className="grid gap-10 border-t-4 border-foreground pt-6 xl:grid-cols-[0.9fr_1.1fr]">
+      <div>
+        <p className="eyebrow">02 / Active event</p><h2 className="mt-3 font-heading text-3xl">Public event signal</h2>
+        <p className="mt-2 max-w-lg text-base leading-relaxed text-muted-foreground">Name the event without turning the whole society website into a conference ad.</p>
+        <div className="mt-7 space-y-5">
+          <div className="space-y-2"><Label htmlFor="event-name">Event name</Label><Input id="event-name" value={eventName} onChange={(e) => setEventName(e.target.value)} className="h-12 text-base" placeholder="DelTech MUN 2027" /></div>
+          <div className="space-y-2"><Label htmlFor="event-label">Small label</Label><Input id="event-label" value={eventLabel} onChange={(e) => setEventLabel(e.target.value)} className="h-12 text-base" placeholder="Flagship conference · January 2027" /></div>
+        </div>
+      </div>
+      <div className="bg-foreground p-7 text-background">
+        <p className="font-mono text-xs uppercase tracking-[0.18em] text-background/60">Homepage preview</p>
+        <p className="mt-8 max-w-[12ch] font-heading text-4xl leading-tight">{eventName || "No active event named"}</p>
+        <p className="mt-4 text-base text-background/65">{eventLabel || "Event label will appear here"}</p>
+        <div className="mt-10 flex flex-wrap gap-5 border-t border-background/20 pt-5 font-mono text-xs uppercase tracking-wider"><span>{sections.activeEvent ? "Visible" : "Hidden"}</span><span>{registrationOpen ? "Registration open" : "Registration closed"}</span><span>{mode === "INTRA_MUN" ? "Free" : paymentsEnabled ? "Paid" : "No payment"}</span></div>
+      </div>
+    </section>
+
+    <section className="border-t-4 border-foreground pt-6">
+      <p className="eyebrow">03 / Public switches</p><h2 className="mt-3 font-heading text-3xl">Publish only what is ready</h2>
+      <div className="mt-6 divide-y divide-border border-y border-border">
+        {SECTION_ROWS.map(([key, title, body]) => <div key={key} className="grid gap-4 py-5 sm:grid-cols-[1fr_auto] sm:items-center">
+          <div><p className="text-base font-semibold">{title}</p><p className="mt-1 text-sm text-muted-foreground">{body}</p></div>
+          <Switch checked={sections[key]} onCheckedChange={(checked) => setSections((current) => ({ ...current, [key]: checked }))} className="scale-125" />
+        </div>)}
+      </div>
+    </section>
+
+    <section className="grid gap-px overflow-hidden border border-border bg-border lg:grid-cols-2">
+      <div className="flex items-center justify-between gap-5 bg-background p-6"><div><p className="font-semibold">Accept registrations</p><p className="mt-1 text-sm text-muted-foreground">Controls whether the form accepts submissions.</p></div><Switch checked={registrationOpen} onCheckedChange={setRegistrationOpen} className="scale-125" /></div>
+      <div className="flex items-center justify-between gap-5 bg-background p-6"><div className="flex gap-3"><WalletCards className="mt-0.5 size-5" /><div><p className="font-semibold">Collect payment after allotment</p><p className="mt-1 text-sm text-muted-foreground">Locked off for free Intra MUNs.</p></div></div><Switch checked={mode === "INTRA_MUN" ? false : paymentsEnabled} onCheckedChange={setPaymentsEnabled} disabled={mode === "INTRA_MUN"} className="scale-125" /></div>
+    </section>
+
+    <div className="sticky bottom-5 z-20 flex items-center justify-between border border-border bg-background/95 p-4 shadow-xl backdrop-blur"><p className="hidden text-sm text-muted-foreground sm:block">One save updates the public site and allotment behavior.</p><Button size="lg" onClick={save} disabled={isPending} className="ml-auto min-w-44">{isPending ? "Applying…" : "Apply event state"}</Button></div>
+  </div>
+}

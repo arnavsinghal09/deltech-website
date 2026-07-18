@@ -9,18 +9,18 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { t } from "@/content/strings";
 import { ThemeToggle } from "./theme-toggle";
+import type { Content } from "@/content/contentSchema";
 
-const NAV_LINKS = [
-  { href: "/", label: () => t("nav.home") },
-  { href: "/availability", label: () => t("nav.availability") },
-  { href: "/team", label: () => t("marketing.teamLabel") },
-  { href: "/blog", label: () => t("nav.blog") },
-  { href: "/quiz/join", label: () => t("nav.quizJoin") },
-] as const;
-
-export function Header() {
+export function Header({ sections, registrationOpen }: { sections: Content["publicSections"]; registrationOpen: boolean }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  const navLinks = [
+    { href: "/", label: t("nav.home"), visible: true },
+    { href: "/availability", label: t("nav.availability"), visible: sections.matrix },
+    { href: "/team", label: t("marketing.teamLabel"), visible: sections.team },
+    { href: "/blog", label: t("nav.blog"), visible: sections.dispatch },
+    { href: "/quiz/join", label: t("nav.quizJoin"), visible: sections.quiz },
+  ].filter((item) => item.visible);
 
   useEffect(() => {
     if (!open) return;
@@ -48,7 +48,7 @@ export function Header() {
         </Link>
 
         <nav aria-label={t("nav.home")} className="hidden items-center gap-7 lg:flex">
-          {NAV_LINKS.map(({ href, label }) => (
+          {navLinks.map(({ href, label }) => (
             <Link
               key={href}
               href={href}
@@ -59,19 +59,19 @@ export function Header() {
                   : "border-transparent text-muted-foreground hover:text-foreground",
               )}
             >
-              {label()}
+              {label}
             </Link>
           ))}
         </nav>
 
         <div className="flex items-center gap-2">
           <ThemeToggle />
-          <Link
-            href="/register"
+          {sections.registration && <Link
+            href={registrationOpen ? "/register" : "/register/closed"}
             className={cn(buttonVariants({ size: "sm" }), "hidden px-5 lg:inline-flex")}
           >
             {t("nav.register")}
-          </Link>
+          </Link>}
 
           {/* Mobile menu toggle */}
           <Button
@@ -104,7 +104,7 @@ export function Header() {
             <div className="paper-grid flex min-h-full flex-col px-4 py-8">
               <p className="eyebrow mb-5">{t("marketing.liveBriefing")}</p>
               <ul className="divide-y divide-border/70 border-y border-border/70">
-                {NAV_LINKS.map(({ href, label }, index) => (
+                {navLinks.map(({ href, label }, index) => (
                   <li key={href}>
                     <Link
                       href={href}
@@ -114,7 +114,7 @@ export function Header() {
                         pathname === href ? "text-primary" : "text-foreground",
                       )}
                     >
-                      <span>{label()}</span>
+                      <span>{label}</span>
                       <span className="font-mono text-xs text-muted-foreground">
                         0{index + 1}
                       </span>
@@ -122,13 +122,13 @@ export function Header() {
                   </li>
                 ))}
               </ul>
-              <Link
-                href="/register"
+              {sections.registration && <Link
+                href={registrationOpen ? "/register" : "/register/closed"}
                 onClick={() => setOpen(false)}
                 className={cn(buttonVariants({ size: "lg" }), "mt-8 w-full")}
               >
                 {t("nav.register")}
-              </Link>
+              </Link>}
               <p className="mt-auto pt-12 text-sm leading-relaxed text-muted-foreground">
                 {t("brand.tagline")}
               </p>

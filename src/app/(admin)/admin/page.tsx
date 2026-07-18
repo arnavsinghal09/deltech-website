@@ -1,4 +1,4 @@
-import { Users, IndianRupee, BedDouble, CheckCircle2 } from "lucide-react"
+import { Users, IndianRupee, BedDouble, CheckCircle2, Building2 } from "lucide-react"
 import { prisma } from "@/lib/prisma"
 import { getContent } from "@/lib/settings"
 import { requireStaff } from "@/lib/authz"
@@ -53,21 +53,23 @@ export default async function AdminOverviewPage() {
     getContent(),
   ])
 
+  const eventActive = content.publicSections.activeEvent
+  const paymentsActive = content.eventMode !== "INTRA_MUN" && content.paymentsEnabled
   const checklist: ChecklistItem[] = [
-    {
+    { done: true, label: `Operating mode: ${content.eventMode.replace("_", " ")}`, href: "/admin/config" },
+    ...(eventActive ? [{
       done: !!content.conferenceDates && !!content.venue,
-      label: "Set conference dates and venue",
+      label: "Set active event dates and venue",
       href: "/admin/config/conference",
-    },
+    }] : []),
     { done: committees.length > 0, label: "Add committees", href: "/admin/config/committees" },
     { done: portfolioCount > 0, label: "Generate the portfolio matrix", href: "/admin/config/committees" },
-    { done: feeCount > 0, label: "Set registration fees", href: "/admin/config/money" },
-    {
+    ...(paymentsActive ? [{ done: feeCount > 0, label: "Set registration fees", href: "/admin/config/money" }, {
       done: content.paymentProvider !== "static_link" || !!content.staticPaymentLink,
       label: "Configure the payment provider",
       href: "/admin/config/money",
-    },
-    { done: content.registrationOpen, label: "Open registration", href: "/admin/config/registration" },
+    }] : []),
+    { done: content.registrationOpen, label: "Open registration when ready", href: "/admin/config" },
     { done: memberCount > 0, label: "Publish the team roster", href: "/admin/team" },
     { done: publishedPostCount > 0, label: "Publish the first dispatch", href: "/admin/blog" },
   ]
@@ -97,9 +99,9 @@ export default async function AdminOverviewPage() {
   return (
     <div className="space-y-8">
       <PageHeader
-        eyebrow="Conference"
+        eyebrow="Society operations"
         title={t("admin.nav.overview")}
-        description="Live numbers from the database."
+        description={`Live society and event operations · ${content.eventMode.replace("_", " ").toLowerCase()} mode.`}
       />
 
       {isMaintainer && <MaintainerWelcome />}
@@ -107,12 +109,12 @@ export default async function AdminOverviewPage() {
 
       {/* KPI cards */}
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard
+        {paymentsActive ? <StatCard
           title={t("admin.overview.totalRegistrations")}
           value={total}
           icon={Users}
           description="all time"
-        />
+        /> : <StatCard title="Operating mode" value={content.eventMode === "INTRA_MUN" ? "Free Intra" : "Society"} icon={Building2} description="payments disabled" />}
         <StatCard
           title="Confirmed"
           value={confirmedCount}
