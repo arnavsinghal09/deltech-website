@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/select"
 import { Separator } from "@/components/ui/separator"
 import { createFee, updateFee, deleteFee } from "../actions"
-import type { ClientFee } from "./config-tabs"
+import type { ClientFee } from "../_lib/types"
 
 interface FeeRow extends ClientFee {
   dirty: boolean

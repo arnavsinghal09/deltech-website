@@ -27,7 +27,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog"
 import { createCommittee, updateCommittee, deleteCommittee } from "../actions"
-import type { ClientCommittee } from "./config-tabs"
+import type { ClientCommittee } from "../_lib/types"
 
 const schema = z.object({
   name: z.string().min(2, "Required"),

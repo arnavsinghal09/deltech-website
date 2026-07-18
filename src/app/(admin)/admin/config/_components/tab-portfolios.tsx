@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/select"
 import { Separator } from "@/components/ui/separator"
 import { addPortfolio, bulkAddPortfolios, deletePortfolio, generatePortfolios } from "../actions"
-import type { ClientCommittee } from "./config-tabs"
+import type { ClientCommittee } from "../_lib/types"
 
 const STATUS_VARIANT: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
   AVAILABLE: "secondary",

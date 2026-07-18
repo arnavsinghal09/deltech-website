@@ -24,7 +24,6 @@ const schema = z.object({
   agendasBlurb: z.string(),
   accommodationNote: z.string(),
   blogIntro: z.string(),
-  registrationClosedMessage: z.string(),
   awardsText: z.string(),
   contacts: z.array(
     z.object({ name: z.string(), role: z.string(), phone: z.string() }),
@@ -69,7 +68,6 @@ export function TabContent({ content }: Props) {
       agendasBlurb: content.agendasBlurb,
       accommodationNote: content.accommodationNote,
       blogIntro: content.blogIntro,
-      registrationClosedMessage: content.registrationClosedMessage,
       awardsText: content.awards.join("\n"),
       contacts: content.queryContacts,
     },
@@ -94,7 +92,6 @@ export function TabContent({ content }: Props) {
         agendasBlurb: data.agendasBlurb,
         accommodationNote: data.accommodationNote,
         blogIntro: data.blogIntro,
-        registrationClosedMessage: data.registrationClosedMessage,
         awards: data.awardsText
           .split("\n")
           .map((s) => s.trim())
@@ -153,9 +150,6 @@ export function TabContent({ content }: Props) {
         </Field>
         <Field label="Blog intro">
           <Textarea {...form.register("blogIntro")} />
-        </Field>
-        <Field label="Registration closed message">
-          <Textarea {...form.register("registrationClosedMessage")} />
         </Field>
       </Section>
 
