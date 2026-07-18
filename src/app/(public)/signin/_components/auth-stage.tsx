@@ -16,7 +16,7 @@ export function AuthStage({
   const accent = staff ? "#f4c86a" : "#2dd4bf"
 
   return (
-    <main className="relative min-h-svh overflow-hidden bg-[#060a09] text-white">
+    <main className="overscroll-dark relative min-h-svh overflow-hidden bg-[#060a09] text-white">
       <div className="paper-grid absolute inset-0 opacity-[0.08]" aria-hidden />
       <motion.div
         aria-hidden

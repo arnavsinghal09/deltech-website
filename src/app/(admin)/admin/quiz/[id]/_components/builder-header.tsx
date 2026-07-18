@@ -52,43 +52,44 @@ export function BuilderHeader({
   const [themeOpen, setThemeOpen] = useState(false)
 
   return (
-    <header className="flex h-20 shrink-0 items-center gap-5 border-b border-white/10 bg-foreground px-5 text-background">
+    <header className="flex h-16 shrink-0 items-center gap-2 overflow-hidden border-b border-white/10 bg-foreground px-3 text-background sm:h-20 sm:gap-4 sm:px-5">
       {/* Title */}
       <Input
         value={title}
         onChange={(e) => onTitleChange(e.target.value)}
         placeholder={t("quiz.builder.titlePlaceholder")}
-        className="h-12 w-64 rounded-none border-0 border-b border-white/20 bg-transparent px-0 font-heading text-xl text-background shadow-none focus-visible:border-primary focus-visible:ring-0"
+        className="h-11 min-w-0 flex-1 rounded-none border-0 border-b border-white/20 bg-transparent px-0 font-sans text-base font-semibold text-background shadow-none focus-visible:border-primary focus-visible:ring-0 sm:max-w-64 sm:text-lg"
       />
 
-      <div className="h-8 w-px bg-white/15" />
+      <div className="hidden h-8 w-px bg-white/15 sm:block" />
 
       {/* Mode toggle */}
-      <div className="flex items-center gap-2">
-        <Label htmlFor="mode-switch" className="cursor-pointer select-none text-sm text-background/55">
+      <div className="flex shrink-0 items-center gap-2">
+        <Label htmlFor="mode-switch" className="hidden cursor-pointer select-none text-sm text-background/55 md:block">
           {t("quiz.modes.POLL")}
         </Label>
         <Switch
           id="mode-switch"
+          aria-label="Toggle quiz mode"
           size="sm"
           checked={mode === "QUIZ"}
           onCheckedChange={(v) => onModeChange(v ? "QUIZ" : "POLL")}
         />
-        <Label htmlFor="mode-switch" className="cursor-pointer select-none text-sm text-background/55">
+        <Label htmlFor="mode-switch" className="hidden cursor-pointer select-none text-sm text-background/55 md:block">
           {t("quiz.modes.QUIZ")}
         </Label>
       </div>
 
-      <div className="h-8 w-px bg-white/15" />
+      <div className="hidden h-8 w-px bg-white/15 md:block" />
 
       {/* Theme picker */}
       <DropdownMenu open={themeOpen} onOpenChange={setThemeOpen}>
-        <DropdownMenuTrigger className="flex h-10 items-center gap-2 border border-white/20 px-3 text-sm transition-colors hover:bg-white/10">
+        <DropdownMenuTrigger aria-label="Choose presentation theme" className="flex h-11 shrink-0 items-center gap-2 border border-white/20 px-2.5 text-sm transition-colors hover:bg-white/10 sm:px-3">
           <span
             className="inline-block size-3 rounded-sm border border-border/50"
             style={{ background: theme.accentColor }}
           />
-          {t("quiz.builder.themes.classic")}
+          <span className="hidden lg:inline">{t("quiz.builder.themes.classic")}</span>
           <ChevronDown className="size-4 text-background/55" />
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" className="w-52">
@@ -121,19 +122,18 @@ export function BuilderHeader({
       </DropdownMenu>
 
       {/* Spacer */}
-      <div className="flex-1" />
-
       {/* Present button */}
       <Link
         href={`/admin/quiz/${presentationId}/present`}
-        className="flex h-11 items-center gap-2 bg-primary px-5 text-sm font-bold text-primary-foreground transition-opacity hover:opacity-90"
+        aria-label={t("quiz.presentButton")}
+        className="flex h-11 shrink-0 items-center gap-2 bg-primary px-3 text-sm font-bold text-primary-foreground transition-opacity hover:opacity-90 md:px-5"
       >
         <Play className="size-4" />
-        {t("quiz.presentButton")}
+        <span className="hidden md:inline">{t("quiz.presentButton")}</span>
       </Link>
 
       {/* Save status */}
-      <div className="flex min-w-24 items-center gap-1.5 text-sm text-background/55">
+      <div className="hidden min-w-24 items-center gap-1.5 text-sm text-background/55 xl:flex">
         {saveStatus === "saving" && <><Loader2 className="size-3 animate-spin" />{t("quiz.builder.saving")}</>}
         {saveStatus === "saved"  && <><Check className="size-3 text-teal-300" /><span className="text-teal-300">{t("quiz.builder.saved")}</span></>}
         {saveStatus === "dirty"  && <span className="text-muted-foreground/60">{t("quiz.builder.unsaved")}</span>}

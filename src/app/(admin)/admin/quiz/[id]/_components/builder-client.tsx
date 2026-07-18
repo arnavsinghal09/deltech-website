@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState } from "react"
 import { toast } from "sonner"
+import { List, Monitor, SlidersHorizontal } from "lucide-react"
+import { cn } from "@/lib/utils"
 import {
   type SlideData,
   type SlideType,
@@ -39,6 +41,9 @@ export function BuilderClient({ presentation, initialSlides }: Props) {
   const [mode, setMode] = useState<SlideMode>(presentation.mode)
   const [theme, setTheme] = useState<PresentationTheme>(presentation.theme ?? DEFAULT_THEME)
   const [saveStatus, setSaveStatus] = useState<"saved" | "saving" | "dirty">("saved")
+  const [mobilePane, setMobilePane] = useState<"slides" | "canvas" | "config">(
+    initialSlides.length ? "canvas" : "slides",
+  )
 
   const slideTimer  = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const metaTimer   = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
@@ -107,6 +112,7 @@ export function BuilderClient({ presentation, initialSlides }: Props) {
     if (!result.slide) return
     setSlides((prev) => [...prev, result.slide!])
     setSelectedId(result.slide.id)
+    setMobilePane("config")
     setSaveStatus("saved")
   }
 
@@ -164,7 +170,7 @@ export function BuilderClient({ presentation, initialSlides }: Props) {
   }, [flushSaves])
 
   return (
-    <div className="-m-6 flex h-svh flex-col overflow-hidden bg-[#d8d3c7]">
+    <div className="quiz-builder-shell -m-5 flex flex-col bg-[#d8d3c7] sm:-m-7 lg:-m-10">
       <BuilderHeader
         presentationId={presentation.id}
         title={title}
@@ -176,7 +182,7 @@ export function BuilderClient({ presentation, initialSlides }: Props) {
         onThemeChange={handleThemeChange}
       />
 
-      <div className="flex min-h-0 flex-1">
+      <div className="hidden min-h-0 flex-1 lg:flex">
         {/* Left — slide list */}
         <SlidePanel
           slides={slides}
@@ -208,6 +214,69 @@ export function BuilderClient({ presentation, initialSlides }: Props) {
           onChange={handleSlideChange}
         />
       </div>
+
+      <div className="flex min-h-0 flex-1 lg:hidden">
+        {mobilePane === "slides" && (
+          <SlidePanel
+            slides={slides}
+            selectedId={selectedId}
+            onSelect={(id) => {
+              setSelectedId(id)
+              setMobilePane("canvas")
+            }}
+            onAdd={handleAdd}
+            onDelete={handleDelete}
+            onDuplicate={handleDuplicate}
+            onMoveUp={handleMoveUp}
+            onMoveDown={handleMoveDown}
+            className="w-full border-0"
+          />
+        )}
+        {mobilePane === "canvas" && (
+          <div className="relative flex min-w-0 flex-1 flex-col items-center justify-center overflow-auto overscroll-contain bg-[#d8d3c7] p-5 sm:p-8">
+            <div className="pointer-events-none absolute left-5 top-4 flex items-center gap-2 font-mono text-xs font-bold uppercase tracking-[0.12em] text-black/45">
+              <span className="size-2 bg-primary" /> Live canvas
+            </div>
+            {selectedSlide ? (
+              <SlidePreview slide={selectedSlide} theme={theme} />
+            ) : (
+              <button type="button" onClick={() => setMobilePane("slides")} className="min-h-11 px-4 text-base font-semibold text-black/55">
+                Add the first slide
+              </button>
+            )}
+          </div>
+        )}
+        {mobilePane === "config" && (
+          <ConfigPanel
+            slide={selectedSlide}
+            mode={mode}
+            onChange={handleSlideChange}
+            className="w-full border-0"
+          />
+        )}
+      </div>
+
+      <nav className="grid h-16 shrink-0 grid-cols-3 border-t border-black/15 bg-background lg:hidden" aria-label="Quiz builder panes">
+        {[
+          { key: "slides" as const, label: "Slides", icon: List },
+          { key: "canvas" as const, label: "Canvas", icon: Monitor },
+          { key: "config" as const, label: "Edit", icon: SlidersHorizontal },
+        ].map(({ key, label, icon: Icon }) => (
+          <button
+            key={key}
+            type="button"
+            onClick={() => setMobilePane(key)}
+            disabled={key === "config" && !selectedSlide}
+            className={cn(
+              "flex min-h-11 items-center justify-center gap-2 text-sm font-semibold transition-colors",
+              mobilePane === key ? "bg-foreground text-background" : "text-muted-foreground hover:bg-muted",
+              "disabled:opacity-35",
+            )}
+          >
+            <Icon className="size-4" /> {label}
+          </button>
+        ))}
+      </nav>
     </div>
   )
 }

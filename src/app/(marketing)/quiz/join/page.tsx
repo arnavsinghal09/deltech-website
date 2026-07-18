@@ -39,7 +39,7 @@ export default function QuizJoinPage() {
   }
 
   return (
-    <main className="relative min-h-[calc(100svh-5rem)] overflow-hidden bg-[#070b0a] text-white">
+    <main className="overscroll-dark relative min-h-[calc(100svh-5rem)] overflow-hidden bg-[#070b0a] text-white">
       <div className="paper-grid absolute inset-0 opacity-[0.09]" aria-hidden />
       <motion.div
         aria-hidden
@@ -87,7 +87,7 @@ export default function QuizJoinPage() {
             value={code}
             onChange={(event) => setCode(event.target.value.replace(/\D/g, "").slice(0, 6))}
             placeholder="000000"
-            className="mt-3 h-28 rounded-none border-0 border-b-4 border-black bg-transparent px-0 text-center font-mono text-5xl font-black tabular-nums tracking-[0.22em] shadow-none placeholder:text-black/12 focus-visible:ring-0 sm:text-6xl"
+            className="mt-3 h-28 rounded-none border-0 border-b border-black bg-transparent px-0 text-center font-mono text-5xl font-black tabular-nums tracking-[0.22em] shadow-none placeholder:text-black/12 focus-visible:ring-0 sm:text-6xl"
             maxLength={6}
             inputMode="numeric"
             autoFocus

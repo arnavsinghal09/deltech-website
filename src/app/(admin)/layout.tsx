@@ -13,10 +13,10 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const isPreview = !!process.env.VERCEL_ENV && process.env.VERCEL_ENV !== "production"
 
   return (
-    <div className="admin-shell flex min-h-svh">
+    <div className="admin-shell flex">
       <AdminSidebar user={user} />
 
-      <div className="flex flex-1 flex-col overflow-hidden">
+      <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
         {/* Top bar */}
         <header className="flex h-16 shrink-0 items-center justify-between gap-3 border-b border-border/70 bg-background px-4 sm:px-6">
           <div className="flex min-w-0 items-center gap-2">
@@ -36,7 +36,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         </header>
 
         {/* Page content */}
-        <main className="flex-1 overflow-auto bg-background p-5 sm:p-7 lg:p-10">{children}</main>
+        <main className="min-h-0 flex-1 overflow-auto overscroll-contain bg-background p-5 sm:p-7 lg:p-10">{children}</main>
       </div>
     </div>
   )

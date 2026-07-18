@@ -25,13 +25,13 @@ export function AdminMobileNav({ user }: { user: SidebarUser }) {
   const isAdmin = user.role === "ADMIN"
 
   return (
-    <div className="lg:hidden">
+    <div className="xl:hidden">
       <Button variant="ghost" size="icon" aria-label="Open navigation" onClick={() => setOpen(true)}>
         <Menu className="size-5" />
       </Button>
 
       <Drawer open={open} onOpenChange={setOpen} direction="left">
-        <DrawerContent className="flex h-full w-80 flex-col">
+        <DrawerContent className="flex h-full w-[min(17rem,calc(100vw-2rem))] flex-col">
           <DrawerHeader className="border-b border-border/70 text-left">
             <DrawerTitle className="display text-2xl">{t("brand.name")}</DrawerTitle>
             <p className="data-label text-muted-foreground">Secretariat console</p>
@@ -50,10 +50,10 @@ export function AdminMobileNav({ user }: { user: SidebarUser }) {
                       href={href}
                       onClick={() => setOpen(false)}
                       className={cn(
-                        "flex items-center gap-3 border-l-2 px-3 py-3 text-base transition-colors",
+                        "flex min-h-12 items-center gap-3 border border-transparent px-3 py-3 text-base transition-colors",
                         isNavActive(pathname, href)
-                          ? "border-primary font-medium text-foreground"
-                          : "border-transparent text-muted-foreground",
+                          ? "border-border bg-accent font-semibold text-accent-foreground"
+                          : "text-muted-foreground hover:bg-muted",
                       )}
                     >
                       <Icon className="size-4 shrink-0" />

@@ -19,7 +19,7 @@ export function AdminSidebar({ user }: { user: SidebarUser }) {
   const isAdmin = user.role === "ADMIN"
 
   return (
-    <aside className="hidden w-72 shrink-0 flex-col border-r border-sidebar-border bg-sidebar lg:flex">
+    <aside className="admin-rail hidden h-full shrink-0 flex-col border-r border-sidebar-border bg-sidebar xl:flex">
       {/* Brand */}
       <div className="border-b border-sidebar-border px-6 py-6">
         <Link href="/admin" className="display block text-2xl text-sidebar-foreground">
@@ -43,10 +43,10 @@ export function AdminSidebar({ user }: { user: SidebarUser }) {
                     key={href}
                     href={href}
                     className={cn(
-                      "flex items-center gap-3 border-l-2 px-3 py-2.5 text-[0.9375rem] transition-colors",
+                      "flex min-h-11 items-center gap-3 border border-transparent px-3 py-2.5 text-[0.9375rem] transition-colors",
                       active
-                        ? "border-primary font-medium text-sidebar-foreground"
-                        : "border-transparent text-sidebar-foreground/65 hover:border-sidebar-border hover:text-sidebar-foreground",
+                        ? "border-sidebar-border bg-sidebar-accent font-semibold text-sidebar-accent-foreground"
+                        : "text-sidebar-foreground/70 hover:bg-sidebar-accent/60 hover:text-sidebar-foreground",
                     )}
                   >
                     <Icon className="size-[1.125rem] shrink-0" />

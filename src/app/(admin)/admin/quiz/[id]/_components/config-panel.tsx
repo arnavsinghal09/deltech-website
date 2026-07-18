@@ -15,6 +15,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Separator } from "@/components/ui/separator"
+import { cn } from "@/lib/utils"
 import { t } from "@/content/strings"
 import {
   type SlideData,
@@ -449,12 +450,13 @@ interface Props {
   slide: SlideData | null
   mode: SlideMode
   onChange: (slideId: string, patch: Partial<Pick<SlideData, "prompt" | "config">>) => void
+  className?: string
 }
 
-export function ConfigPanel({ slide, mode, onChange }: Props) {
+export function ConfigPanel({ slide, mode, onChange, className }: Props) {
   if (!slide) {
     return (
-      <aside className="flex w-[360px] shrink-0 items-center justify-center border-l bg-background">
+      <aside className={cn("admin-rail flex shrink-0 items-center justify-center border-l bg-background", className)}>
         <p className="text-base text-muted-foreground">Select a slide to configure</p>
       </aside>
     )
@@ -464,7 +466,7 @@ export function ConfigPanel({ slide, mode, onChange }: Props) {
     onChange(slide.id, patch)
 
   return (
-    <aside className="flex w-[360px] shrink-0 flex-col overflow-hidden border-l border-black/15 bg-background">
+    <aside className={cn("admin-rail flex shrink-0 flex-col overflow-hidden border-l border-black/15 bg-background", className)}>
       <div className="flex items-center gap-2 border-b px-5 py-5">
         <span className="font-mono text-xs font-bold uppercase tracking-[0.18em] text-primary">
           {t(`quiz.slideType.${slide.type}` as Parameters<typeof t>[0])}

@@ -16,16 +16,16 @@ export function SettingsNav() {
   const pathname = usePathname()
 
   return (
-    <nav className="flex shrink-0 gap-1 overflow-x-auto lg:w-56 lg:flex-col lg:gap-1">
+    <nav className="flex shrink-0 gap-1 overflow-x-auto overscroll-x-contain lg:w-[var(--admin-rail-width)] lg:flex-col lg:gap-1">
       {SECTIONS.map(({ href, label, exact }) => (
         <Link
           key={href}
           href={href}
           className={cn(
-            "whitespace-nowrap border-l-4 px-4 py-3 text-base transition-colors",
+            "min-h-12 whitespace-nowrap border border-transparent px-4 py-3 text-base transition-colors",
             (exact ? pathname === href : pathname.startsWith(href))
-              ? "border-primary bg-primary/5 font-semibold text-foreground"
-              : "border-transparent text-muted-foreground hover:border-border hover:text-foreground",
+              ? "border-border bg-accent font-semibold text-accent-foreground"
+              : "text-muted-foreground hover:bg-muted hover:text-foreground",
           )}
         >
           {label}

@@ -6,7 +6,7 @@ import { supabase } from "@/lib/supabase"
 import { t } from "@/content/strings"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
-import { AVATARS, type SlideData, type QuizBroadcast, type LBEntry, type MCQConfig, type ScaleConfig, type WordCloudConfig, type OpenTextConfig } from "@/lib/quiz-types"
+import { AVATARS, type SlideData, type QuizBroadcast, type LBEntry } from "@/lib/quiz-types"
 import { asMCQ, asScale, asWordCloud, asOpenText } from "@/lib/quiz-types"
 
 type AppState =
@@ -229,7 +229,7 @@ export function ParticipantApp({ sessionId, roomCode, initialStatus, presentatio
             placeholder={t("quiz.nicknamePlaceholder")}
             maxLength={24}
             autoFocus
-            className="h-14 rounded-none border-0 border-b-4 border-foreground bg-transparent px-0 text-xl shadow-none focus-visible:ring-0"
+            className="h-14 rounded-none border-0 border-b border-foreground bg-transparent px-0 text-xl shadow-none focus-visible:ring-0"
           />
           {nicknameError && <p className="text-sm text-destructive">{nicknameError}</p>}
           <Button type="submit" size="lg" className="h-14 rounded-none text-base">{t("common.next")} →</Button>
@@ -271,7 +271,7 @@ export function ParticipantApp({ sessionId, roomCode, initialStatus, presentatio
             {[0, 1, 2].map((i) => (
               <span
                 key={i}
-                className="size-3 bg-teal-600 animate-bounce"
+                className="size-3 animate-pulse bg-teal-600"
                 style={{ animationDelay: `${i * 0.15}s` }}
               />
             ))}
@@ -301,7 +301,7 @@ export function ParticipantApp({ sessionId, roomCode, initialStatus, presentatio
             {lbEntries.slice(0, 10).map((entry) => (
               <div
                 key={entry.nickname}
-                className={`flex items-center gap-3 border-l-4 px-4 py-4 ${entry.nickname === nickname ? "border-teal-700 bg-teal-50" : "border-transparent bg-black/5"}`}
+                className={`flex items-center gap-3 border px-4 py-4 ${entry.nickname === nickname ? "border-teal-700 bg-teal-50" : "border-black/10 bg-black/5"}`}
               >
                 <span className="w-6 text-center text-sm font-bold text-teal-600">
                   {t("quiz.rankN", { n: entry.rank })}
@@ -398,7 +398,7 @@ export function ParticipantApp({ sessionId, roomCode, initialStatus, presentatio
                   key={i}
                   onClick={() => handleMCQToggle(i)}
                   disabled={isLocked}
-                  className={`min-h-16 w-full border-l-4 px-5 py-4 text-left text-base font-semibold transition-all ${selectedIndices.includes(i) ? "border-teal-700 bg-teal-50 text-teal-900 shadow-[5px_5px_0_#0f766e]" : "border-black/20 bg-white/55 hover:border-teal-700 hover:bg-white"} disabled:cursor-not-allowed disabled:opacity-50`}
+                  className={`min-h-16 w-full border px-5 py-4 text-left text-base font-semibold transition-colors ${selectedIndices.includes(i) ? "border-teal-700 bg-teal-50 text-teal-900" : "border-black/20 bg-white/55 hover:border-teal-700 hover:bg-white"} disabled:cursor-not-allowed disabled:opacity-50`}
                 >
                   {opt}
                 </button>
@@ -542,7 +542,7 @@ export function ParticipantApp({ sessionId, roomCode, initialStatus, presentatio
 function Screen({ children, padding, k }: { children: React.ReactNode; padding?: boolean; k?: string }) {
   const reduce = useReducedMotion()
   return (
-    <div className={`relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-[#07100d] ${padding ? "px-4 py-10" : "px-4 py-8"}`}>
+    <div className={`overscroll-dark relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-[#07100d] ${padding ? "px-4 py-10" : "px-4 py-8"}`}>
       <div className="paper-grid absolute inset-0 opacity-[0.1]" aria-hidden />
       <motion.div
         aria-hidden

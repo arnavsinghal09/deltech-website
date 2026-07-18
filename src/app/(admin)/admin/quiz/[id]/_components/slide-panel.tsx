@@ -1,7 +1,6 @@
 "use client"
 
 import { ChevronUp, ChevronDown, Copy, Trash2, Plus } from "lucide-react"
-import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -31,13 +30,14 @@ interface Props {
   onDuplicate: (id: string) => void
   onMoveUp: (id: string) => void
   onMoveDown: (id: string) => void
+  className?: string
 }
 
 export function SlidePanel({
-  slides, selectedId, onSelect, onAdd, onDelete, onDuplicate, onMoveUp, onMoveDown,
+  slides, selectedId, onSelect, onAdd, onDelete, onDuplicate, onMoveUp, onMoveDown, className,
 }: Props) {
   return (
-    <aside className="flex w-[260px] shrink-0 flex-col overflow-hidden border-r border-black/15 bg-[#f5f1e8]">
+    <aside className={cn("admin-rail flex shrink-0 flex-col overflow-hidden border-r border-black/15 bg-[#f5f1e8]", className)}>
       <div className="border-b border-black/10 px-4 py-4">
         <p className="font-mono text-xs font-bold uppercase tracking-[0.18em] text-black/45">Run of show · {slides.length}</p>
       </div>
@@ -53,9 +53,9 @@ export function SlidePanel({
                 <button
                   onClick={() => onSelect(slide.id)}
                   className={cn(
-                    "group w-full border-l-4 px-3 py-3 text-left transition-colors",
+                    "group w-full border px-3 py-3 text-left transition-colors",
                     selectedId === slide.id
-                      ? "border-primary bg-white shadow-[5px_5px_0_rgba(15,118,110,0.2)]"
+                      ? "border-primary bg-white"
                       : "border-transparent hover:border-black/20 hover:bg-white/60",
                   )}
                 >
