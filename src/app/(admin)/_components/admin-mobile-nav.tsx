@@ -43,20 +43,20 @@ export function AdminMobileNav({ user }: { user: SidebarUser }) {
               if (items.length === 0) return null
               return (
                 <div key={group.label} className="mb-5">
-                  <p className="data-label mb-2 px-3 text-muted-foreground">{group.label}</p>
+                  <p className="data-label mb-2 px-3 text-[0.9375rem] text-muted-foreground">{group.label}</p>
                   {items.map(({ href, icon: Icon, label }) => (
                     <Link
                       key={href}
                       href={href}
                       onClick={() => setOpen(false)}
                       className={cn(
-                        "flex min-h-12 items-center gap-3 border border-transparent px-3 py-3 text-base transition-colors",
+                        "flex min-h-12 items-center gap-3 border border-transparent px-3 py-3 text-[1.0625rem] leading-snug transition-colors",
                         isNavActive(pathname, href)
                           ? "border-border bg-accent font-semibold text-accent-foreground"
                           : "text-muted-foreground hover:bg-muted",
                       )}
                     >
-                      <Icon className="size-4 shrink-0" />
+                      <Icon className="size-5 shrink-0" />
                       {label}
                     </Link>
                   ))}

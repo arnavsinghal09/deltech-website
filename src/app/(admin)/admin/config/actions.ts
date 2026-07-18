@@ -7,6 +7,7 @@ import { requireStaff, requireAdmin } from "@/lib/authz"
 import { audit } from "@/lib/audit"
 import { callAI, AIRateLimitError } from "@/lib/ai"
 import { revalidatePath } from "next/cache"
+import { ContentSchema, type Content } from "@/content/contentSchema"
 
 // Money/sync config only an ADMIN may touch — kept out of saveContent entirely.
 const PAYMENT_KEYS = new Set([
@@ -40,6 +41,60 @@ export async function saveContent(
     return { success: true }
   } catch {
     return { success: false, error: "Failed to save." }
+  }
+}
+
+const EventControlSchema = ContentSchema.pick({
+  eventMode: true,
+  activeEventName: true,
+  activeEventLabel: true,
+  registrationOpen: true,
+  paymentsEnabled: true,
+  publicSections: true,
+})
+
+type EventControlInput = Pick<
+  Content,
+  | "eventMode"
+  | "activeEventName"
+  | "activeEventLabel"
+  | "registrationOpen"
+  | "paymentsEnabled"
+  | "publicSections"
+>
+
+export async function saveEventControl(
+  input: EventControlInput,
+): Promise<{ success: boolean; error?: string }> {
+  const session = await requireStaff()
+  const parsed = EventControlSchema.safeParse(input)
+  if (!parsed.success) return { success: false, error: "Review the event settings and try again." }
+
+  const { paymentsEnabled, ...eventState } = parsed.data
+  const role = (session.user as { role?: string }).role
+  const partial: Record<string, unknown> = {
+    ...eventState,
+    matrixPublic: eventState.publicSections.matrix,
+  }
+
+  // Intra MUNs are always free. Outside Intra mode, only an admin may change
+  // the payment switch; maintainers can still publish every other event state.
+  if (eventState.eventMode === "INTRA_MUN") {
+    partial.paymentsEnabled = false
+  } else if (role === "ADMIN") {
+    partial.paymentsEnabled = paymentsEnabled
+  }
+
+  try {
+    await setContent(partial)
+    await audit(session.user?.email ?? "unknown", "eventControl.save", "Setting", undefined, {
+      eventMode: eventState.eventMode,
+      keys: Object.keys(partial),
+    })
+    publishContentChanges()
+    return { success: true }
+  } catch {
+    return { success: false, error: "Could not publish the event state." }
   }
 }
 

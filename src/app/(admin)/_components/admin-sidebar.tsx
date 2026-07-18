@@ -35,7 +35,7 @@ export function AdminSidebar({ user }: { user: SidebarUser }) {
           if (items.length === 0) return null
           return (
             <div key={group.label} className="mb-6">
-              <p className="data-label mb-2 px-3 text-muted-foreground">{group.label}</p>
+              <p className="data-label mb-2 px-3 text-[0.9375rem] text-muted-foreground">{group.label}</p>
               {items.map(({ href, icon: Icon, label }) => {
                 const active = isNavActive(pathname, href)
                 return (
@@ -43,13 +43,13 @@ export function AdminSidebar({ user }: { user: SidebarUser }) {
                     key={href}
                     href={href}
                     className={cn(
-                      "flex min-h-11 items-center gap-3 border border-transparent px-3 py-2.5 text-[0.9375rem] transition-colors",
+                      "flex min-h-12 items-center gap-3 border border-transparent px-3 py-3 text-[1.0625rem] leading-snug transition-colors",
                       active
                         ? "border-sidebar-border bg-sidebar-accent font-semibold text-sidebar-accent-foreground"
                         : "text-sidebar-foreground/70 hover:bg-sidebar-accent/60 hover:text-sidebar-foreground",
                     )}
                   >
-                    <Icon className="size-[1.125rem] shrink-0" />
+                    <Icon className="size-5 shrink-0" />
                     {label}
                   </Link>
                 )
@@ -66,7 +66,7 @@ export function AdminSidebar({ user }: { user: SidebarUser }) {
             {(user.name ?? user.email ?? "?").charAt(0).toUpperCase()}
           </div>
           <div className="min-w-0 flex-1">
-            <p className="truncate text-[0.9375rem] font-medium text-sidebar-foreground">
+            <p className="truncate text-base font-medium text-sidebar-foreground">
               {user.name ?? user.email}
             </p>
             <Badge variant={isAdmin ? "default" : "outline"} className="mt-1 text-[0.6875rem]">

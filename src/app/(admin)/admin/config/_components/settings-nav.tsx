@@ -22,7 +22,7 @@ export function SettingsNav() {
           key={href}
           href={href}
           className={cn(
-            "min-h-12 whitespace-nowrap border border-transparent px-4 py-3 text-base transition-colors",
+            "min-h-12 whitespace-nowrap border border-transparent px-4 py-3 text-[1.0625rem] leading-snug transition-colors",
             (exact ? pathname === href : pathname.startsWith(href))
               ? "border-border bg-accent font-semibold text-accent-foreground"
               : "text-muted-foreground hover:bg-muted hover:text-foreground",

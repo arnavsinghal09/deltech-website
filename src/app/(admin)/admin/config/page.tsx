@@ -3,6 +3,7 @@ import { requireStaff } from "@/lib/authz"
 import { EventControl } from "./_components/event-control"
 
 export default async function EventControlPage() {
-  await requireStaff()
-  return <EventControl content={await getContent()} />
+  const session = await requireStaff()
+  const canManagePayments = (session.user as { role?: string }).role === "ADMIN"
+  return <EventControl content={await getContent()} canManagePayments={canManagePayments} />
 }

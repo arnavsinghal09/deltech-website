@@ -3,13 +3,14 @@
 import { useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
-import { Building2, CalendarRange, Check, EyeOff, Megaphone, Rocket, School, WalletCards } from "lucide-react"
+import { Building2, CalendarRange, Check, EyeOff, LockKeyhole, Megaphone, Rocket, School, WalletCards } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
+import { cn } from "@/lib/utils"
 import type { Content } from "@/content/contentSchema"
-import { saveContent } from "../actions"
+import { saveEventControl } from "../actions"
 
 const MODES = [
   { value: "SOCIETY", icon: Building2, title: "Society season", body: "Year-round identity. Events stay quiet until PR starts." },
@@ -28,7 +29,13 @@ const SECTION_ROWS = [
   ["recruitment", "Recruitment", "Show recruitment when the society is hiring."],
 ] as const
 
-export function EventControl({ content }: { content: Content }) {
+export function EventControl({
+  content,
+  canManagePayments,
+}: {
+  content: Content
+  canManagePayments: boolean
+}) {
   const router = useRouter()
   const [mode, setMode] = useState<Content["eventMode"]>(content.eventMode)
   const [eventName, setEventName] = useState(content.activeEventName)
@@ -61,14 +68,13 @@ export function EventControl({ content }: { content: Content }) {
   }
 
   const save = () => startTransition(async () => {
-    const result = await saveContent({
+    const result = await saveEventControl({
       eventMode: mode,
       activeEventName: eventName,
       activeEventLabel: eventLabel,
       registrationOpen,
       paymentsEnabled: mode === "INTRA_MUN" ? false : paymentsEnabled,
       publicSections: sections,
-      matrixPublic: sections.matrix,
     })
     if (!result.success) { toast.error(result.error ?? "Could not save event state."); return }
     toast.success("Public site and event workflow updated.")
@@ -110,12 +116,23 @@ export function EventControl({ content }: { content: Content }) {
         <div><h2 className="font-heading text-3xl">What are we running right now?</h2><p className="mt-2 max-w-2xl text-base text-muted-foreground">This controls the public emphasis and whether allotment creates a payment.</p></div>
         <p className="font-mono text-sm uppercase tracking-wider text-primary">Current · {mode.replace("_", " ")}</p>
       </div>
-      <div className="mt-6 grid gap-px overflow-hidden border border-border bg-border lg:grid-cols-3">
+      <div className="mt-6 grid gap-px overflow-hidden border border-border bg-border lg:grid-cols-3" role="group" aria-label="Event operating mode">
         {MODES.map(({ value, icon: Icon, title, body }) => {
           const selected = mode === value
-          return <button key={value} type="button" onClick={() => chooseMode(value)} className={`relative min-h-48 bg-background p-6 text-left transition-colors hover:bg-muted/60 ${selected ? "bg-primary text-primary-foreground hover:bg-primary" : ""}`}>
+          return <button
+            key={value}
+            type="button"
+            aria-pressed={selected}
+            onClick={() => chooseMode(value)}
+            className={cn(
+              "relative min-h-48 p-6 text-left transition-colors",
+              selected
+                ? "bg-primary text-primary-foreground"
+                : "bg-background text-foreground hover:bg-muted/60",
+            )}
+          >
             <div className="flex items-start justify-between"><Icon className="size-7" />{selected && <span className="flex size-7 items-center justify-center rounded-full bg-background text-foreground"><Check className="size-4" /></span>}</div>
-            <h3 className="mt-10 font-heading text-2xl">{title}</h3><p className={`mt-2 text-sm leading-relaxed ${selected ? "text-primary-foreground/75" : "text-muted-foreground"}`}>{body}</p>
+            <h3 className="mt-10 font-heading text-2xl">{title}</h3><p className={cn("mt-2 text-sm leading-relaxed", selected ? "text-primary-foreground/75" : "text-muted-foreground")}>{body}</p>
           </button>
         })}
       </div>
@@ -150,7 +167,30 @@ export function EventControl({ content }: { content: Content }) {
 
     <section className="grid gap-px overflow-hidden border border-border bg-border lg:grid-cols-2">
       <div className="flex items-center justify-between gap-5 bg-background p-6"><div><p className="font-semibold">Accept registrations</p><p className="mt-1 text-sm text-muted-foreground">Controls whether the form accepts submissions.</p></div><Switch checked={registrationOpen} onCheckedChange={setRegistrationOpen} className="scale-125" /></div>
-      <div className="flex items-center justify-between gap-5 bg-background p-6"><div className="flex gap-3"><WalletCards className="mt-0.5 size-5" /><div><p className="font-semibold">Collect payment after allotment</p><p className="mt-1 text-sm text-muted-foreground">Locked off for free Intra MUNs.</p></div></div><Switch checked={mode === "INTRA_MUN" ? false : paymentsEnabled} onCheckedChange={setPaymentsEnabled} disabled={mode === "INTRA_MUN"} className="scale-125" /></div>
+      <div className="flex items-center justify-between gap-5 bg-background p-6">
+        <div className="flex gap-3">
+          <WalletCards className="mt-0.5 size-5" />
+          <div>
+            <p className="font-semibold">Collect payment after allotment</p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {mode === "INTRA_MUN"
+                ? "Always off for free Intra MUNs."
+                : canManagePayments
+                  ? "Turn on only when the payment workflow is ready."
+                  : "Admin-only. Your other event changes can still be published."}
+            </p>
+          </div>
+        </div>
+        <div className="flex items-center gap-3">
+          {!canManagePayments && <LockKeyhole className="size-4 text-muted-foreground" aria-label="Admin only" />}
+          <Switch
+            checked={mode === "INTRA_MUN" ? false : paymentsEnabled}
+            onCheckedChange={setPaymentsEnabled}
+            disabled={mode === "INTRA_MUN" || !canManagePayments}
+            className="scale-125"
+          />
+        </div>
+      </div>
     </section>
 
     <div className="sticky bottom-5 z-20 flex items-center justify-between border border-border bg-background/95 p-4 shadow-xl backdrop-blur"><p className="hidden text-sm text-muted-foreground sm:block">Apply publishes the new state immediately and clears the public-page cache.</p><Button size="lg" onClick={save} disabled={isPending} className="ml-auto min-w-44">{isPending ? "Publishing…" : "Apply and publish"}</Button></div>
