@@ -90,6 +90,8 @@ model Committee {
   ebMembers        Json?
   isActive         Boolean       @default(true)
   sortOrder        Int           @default(0)
+  portfolioTagLabel String?
+  matrixBrief      String?
   portfolios       Portfolio[]
 }
 
@@ -104,6 +106,8 @@ model Portfolio {
   committeeId String
   committee   Committee       @relation(fields: [committeeId], references: [id])
   name        String
+  tag         String?
+  priority    Int             @default(0)
   status      PortfolioStatus @default(AVAILABLE)
   allotment   Allotment?
 

@@ -1,6 +1,31 @@
 import { z } from "zod";
 
 export const ContentSchema = z.object({
+  eventMode: z.enum(["SOCIETY", "CONFERENCE", "INTRA_MUN"]).default("SOCIETY"),
+  activeEventName: z.string().default(""),
+  activeEventLabel: z.string().default("Next event"),
+  paymentsEnabled: z.boolean().default(true),
+  publicSections: z
+    .object({
+      activeEvent: z.boolean().default(false),
+      registration: z.boolean().default(false),
+      committees: z.boolean().default(false),
+      matrix: z.boolean().default(false),
+      dispatch: z.boolean().default(true),
+      team: z.boolean().default(true),
+      quiz: z.boolean().default(true),
+      recruitment: z.boolean().default(false),
+    })
+    .default({
+      activeEvent: false,
+      registration: false,
+      committees: false,
+      matrix: false,
+      dispatch: true,
+      team: true,
+      quiz: true,
+      recruitment: false,
+    }),
   registrationOpen: z.boolean().default(false),
   registrationClosedMessage: z
     .string()

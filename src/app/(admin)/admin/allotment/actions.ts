@@ -6,6 +6,7 @@ import { audit } from "@/lib/audit"
 import { getActiveProvider } from "@/lib/payments"
 import { sendAllotmentEmail, sendCoDelegateNotice } from "@/lib/resend"
 import { syncSheetCell, syncSheetForDelegate } from "@/lib/sheet-sync"
+import { getContent } from "@/lib/settings"
 
 function isPrismaP2002(err: unknown): boolean {
   // Prisma unique constraint violation
@@ -54,6 +55,8 @@ export async function allotPortfolio(input: {
 }> {
   const session = await requireStaff()
   const adminEmail = session.user?.email ?? "admin"
+  const content = await getContent()
+  const paymentsEnabled = content.eventMode !== "INTRA_MUN" && content.paymentsEnabled
 
   try {
     const txResult = await prisma.$transaction(async (tx) => {
@@ -86,12 +89,12 @@ export async function allotPortfolio(input: {
       })
 
       // 4. Fee lookup — amount always comes from the Fee table, never hardcoded
-      const fee = await tx.fee.findFirst({
+      const fee = paymentsEnabled ? await tx.fee.findFirst({
         where: {
           committeeType: committee?.type ?? "STANDARD",
           isDtu: delegate.isDtu,
         },
-      })
+      }) : null
 
       // 5. Payment provider from settings
       const providerSetting = await tx.setting.findUnique({ where: { key: "paymentProvider" } })
@@ -117,11 +120,11 @@ export async function allotPortfolio(input: {
       // 8. Delegate → ALLOTTED
       await tx.delegate.update({
         where: { id: input.delegateId },
-        data: { status: "ALLOTTED" },
+        data: { status: paymentsEnabled ? "ALLOTTED" : "CONFIRMED" },
       })
 
       // 9. Payment row — provider + amount both from DB, link set after transaction
-      if (fee) {
+      if (paymentsEnabled && fee) {
         await tx.payment.create({
           data: {
             delegateId: input.delegateId,
@@ -140,7 +143,7 @@ export async function allotPortfolio(input: {
     })
 
     // Generate payment link outside the transaction (Razorpay would make external calls here)
-    if (txResult.fee) {
+    if (paymentsEnabled && txResult.fee) {
       const provider = await getActiveProvider()
       const { link, orderId } = await provider.createPaymentLink({
         delegateId: input.delegateId,
@@ -177,6 +180,7 @@ export async function allotPortfolio(input: {
     await audit(adminEmail, "allotment.create", "Delegate", input.delegateId, {
       portfolioId: input.portfolioId,
       committeeId: input.committeeId,
+      paymentsEnabled,
     })
     await syncSheetForDelegate(input.delegateId)
 

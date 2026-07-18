@@ -102,8 +102,8 @@ export async function sendAllotmentEmail(delegateId: string): Promise<void> {
     },
   })
 
-  if (!delegate.allotment || !delegate.payment) {
-    throw new Error(`Delegate ${delegateId} has no allotment or payment record`)
+  if (!delegate.allotment) {
+    throw new Error(`Delegate ${delegateId} has no allotment record`)
   }
 
   const committee = delegate.allotment.portfolio.committee
@@ -114,7 +114,8 @@ export async function sendAllotmentEmail(delegateId: string): Promise<void> {
     .replace("{committee}", committee.name)
     .replace("{portfolio}", portfolio.name)
 
-  const payLink = delegate.payment.paymentLink ?? `${APP_URL}/pay/${delegate.publicToken}`
+  const paymentsEnabled = content.eventMode !== "INTRA_MUN" && content.paymentsEnabled
+  const payLink = delegate.payment?.paymentLink ?? `${APP_URL}/pay/${delegate.publicToken}`
 
   await loggedSend({
     delegateId,
@@ -126,8 +127,9 @@ export async function sendAllotmentEmail(delegateId: string): Promise<void> {
       committeeName: committee.name,
       portfolioName: portfolio.name,
       agenda: committee.agenda ?? null,
-      amountInr: delegate.payment.amountInr,
-      payLink,
+      amountInr: delegate.payment?.amountInr,
+      payLink: paymentsEnabled ? payLink : undefined,
+      paymentsEnabled,
       needsAccommodation: delegate.needsAccommodation,
       accommodationNote: content.accommodationNote,
     }),
