@@ -2,77 +2,106 @@ import Link from "next/link";
 import { t } from "@/content/strings";
 import type { Content } from "@/content/contentSchema";
 
-type Props = { contacts: Content["queryContacts"] };
+type Props = {
+  contacts: Content["queryContacts"];
+  conferenceDates: string;
+  venue: string;
+};
 
-export function Footer({ contacts }: Props) {
+export function Footer({ contacts, conferenceDates, venue }: Props) {
   return (
-    <footer className="mt-auto border-t border-border/70 bg-background">
-      <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6">
-        <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-3">
-          {/* Brand */}
+    <footer className="mt-auto border-t border-border/70 bg-foreground text-background">
+      <div className="section-shell py-16 sm:py-20">
+        <div className="grid gap-12 lg:grid-cols-[1.4fr_0.7fr_0.8fr_1fr]">
           <div>
-            <p className="display text-2xl text-foreground">{t("brand.name")}</p>
-            <p className="mt-2 max-w-56 text-sm leading-relaxed text-muted-foreground">
+            <div className="flex items-center gap-3">
+              <span className="display flex size-12 items-center justify-center rounded-full border border-background/30 text-2xl">
+                D
+              </span>
+              <p className="display text-3xl">{t("brand.name")}</p>
+            </div>
+            <p className="mt-5 max-w-sm text-base leading-relaxed text-background/68">
               {t("brand.tagline")}
             </p>
+            <p className="data-label mt-8 text-background/45">{t("marketing.footerSignal")}</p>
           </div>
 
-          {/* Quick links */}
           <nav aria-label={t("nav.home")}>
-            <p className="eyebrow mb-4">{t("nav.home")}</p>
-            <ul className="space-y-2.5 text-sm">
+            <p className="data-label mb-5 text-gold-300">{t("marketing.footerExplore")}</p>
+            <ul className="space-y-3 text-[0.9375rem]">
               <li>
-                <Link href="/availability" className="text-muted-foreground transition-colors hover:text-foreground">
+                <Link href="/" className="text-background/68 transition-colors hover:text-background">
+                  {t("nav.home")}
+                </Link>
+              </li>
+              <li>
+                <Link href="/availability" className="text-background/68 transition-colors hover:text-background">
                   {t("nav.availability")}
                 </Link>
               </li>
               <li>
-                <Link href="/blog" className="text-muted-foreground transition-colors hover:text-foreground">
+                <Link href="/team" className="text-background/68 transition-colors hover:text-background">
+                  {t("marketing.teamLabel")}
+                </Link>
+              </li>
+              <li>
+                <Link href="/blog" className="text-background/68 transition-colors hover:text-background">
                   {t("nav.blog")}
-                </Link>
-              </li>
-              <li>
-                <Link href="/register" className="text-muted-foreground transition-colors hover:text-foreground">
-                  {t("nav.register")}
-                </Link>
-              </li>
-              <li>
-                <Link href="/quiz/join" className="text-muted-foreground transition-colors hover:text-foreground">
-                  {t("nav.quizJoin")}
                 </Link>
               </li>
             </ul>
           </nav>
 
-          {/* Contacts */}
-          {contacts.length > 0 && (
-            <div>
-              <p className="eyebrow mb-4">{t("landing.sectionContacts")}</p>
-              <ul className="space-y-3 text-sm">
-                {contacts.map((c) => (
-                  <li key={c.phone}>
-                    <p className="font-medium text-foreground">{c.name}</p>
+          <div>
+            <p className="data-label mb-5 text-gold-300">{t("marketing.footerOperations")}</p>
+            <ul className="space-y-3 text-[0.9375rem]">
+              <li>
+                <Link href="/register" className="text-background/68 transition-colors hover:text-background">
+                  {t("nav.register")}
+                </Link>
+              </li>
+              <li>
+                <Link href="/quiz/join" className="text-background/68 transition-colors hover:text-background">
+                  {t("nav.quizJoin")}
+                </Link>
+              </li>
+              <li>
+                <Link href="/signin/staff" className="text-background/68 transition-colors hover:text-background">
+                  {t("marketing.organiserSignIn")}
+                </Link>
+              </li>
+            </ul>
+          </div>
+
+          <div>
+            <p className="data-label mb-5 text-gold-300">{t("marketing.footerBrief")}</p>
+            <p className="text-[0.9375rem] text-background/68">
+              {conferenceDates || t("marketing.datesPending")}
+            </p>
+            <p className="mt-1 text-[0.9375rem] text-background/68">
+              {venue || t("marketing.venuePending")}
+            </p>
+            {contacts.length > 0 && (
+              <ul className="mt-5 space-y-4 text-[0.9375rem]">
+                {contacts.map((contact) => (
+                  <li key={contact.phone}>
+                    <p className="font-semibold text-background">{contact.name}</p>
                     <a
-                      href={`tel:${c.phone}`}
-                      className="font-mono text-xs tabular-nums text-muted-foreground hover:text-primary"
+                      href={"tel:" + contact.phone}
+                      className="font-mono text-sm tabular-nums text-background/60 hover:text-gold-300"
                     >
-                      {c.phone}
+                      {contact.phone}
                     </a>
                   </li>
                 ))}
               </ul>
-            </div>
-          )}
+            )}
+          </div>
         </div>
 
-        <div className="mt-12 flex flex-wrap items-center justify-between gap-3 border-t border-border/60 pt-6 text-xs text-muted-foreground">
+        <div className="mt-14 flex flex-wrap items-center justify-between gap-3 border-t border-background/15 pt-6 text-sm text-background/45">
           <span>{t("brand.name")}</span>
-          <Link
-            href="/signin/staff"
-            className="transition-colors hover:text-foreground"
-          >
-            Organiser sign-in
-          </Link>
+          <span>{t("marketing.footerLocation")}</span>
         </div>
       </div>
     </footer>

@@ -8,7 +8,11 @@ export default async function MarketingLayout({ children }: { children: React.Re
     <div className="flex min-h-svh flex-col">
       <Header />
       <main className="flex-1">{children}</main>
-      <Footer contacts={content.queryContacts} />
+      <Footer
+        contacts={content.queryContacts}
+        conferenceDates={content.conferenceDates}
+        venue={content.venue}
+      />
     </div>
   );
 }
