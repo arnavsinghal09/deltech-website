@@ -22,7 +22,7 @@ interface Props {
   committee: SerializedCommittee
   delegates: SerializedDelegate[]
   fees: Fee[]
-  adminEmail: string
+  paymentsRequired: boolean
   onClose: () => void
   onAllotted: () => void
 }
@@ -36,7 +36,7 @@ export function AllotDialog({
   committee,
   delegates,
   fees,
-  adminEmail,
+  paymentsRequired,
   onClose,
   onAllotted,
 }: Props) {
@@ -85,9 +85,9 @@ export function AllotDialog({
   }, [rankedDelegates, search])
 
   const computedFee = useMemo(() => {
-    if (!selected) return null
+    if (!selected || !paymentsRequired) return null
     return fees.find((f) => f.committeeType === committee.type && f.isDtu === selected.isDtu) ?? null
-  }, [selected, fees, committee.type])
+  }, [selected, fees, committee.type, paymentsRequired])
 
   const handleConfirm = () => {
     if (!selected) return
@@ -208,7 +208,9 @@ export function AllotDialog({
           <div className="space-y-1 rounded-lg bg-muted/60 p-3 text-sm">
             <div className="flex items-center justify-between gap-2">
               <span className="font-medium">{selected.fullName}</span>
-              {computedFee ? (
+              {!paymentsRequired ? (
+                <span className="font-semibold text-primary">Free · confirmed immediately</span>
+              ) : computedFee ? (
                 <span className="font-semibold text-primary">
                   ₹{computedFee.amountInr.toLocaleString("en-IN")}
                 </span>
@@ -217,7 +219,7 @@ export function AllotDialog({
               )}
             </div>
             <p className="text-xs text-muted-foreground">{selected.email}</p>
-            {!computedFee && (
+            {paymentsRequired && !computedFee && (
               <p className="text-xs text-amber-600 dark:text-amber-400">
                 ⚠ No fee for {committee.type} / {selected.isDtu ? "DTU" : "non-DTU"}. Payment row
                 will be skipped.
@@ -231,7 +233,7 @@ export function AllotDialog({
             Cancel
           </Button>
           <Button onClick={handleConfirm} disabled={!selected || isPending}>
-            {isPending ? "Allotting…" : "Confirm allotment"}
+            {isPending ? "Allotting…" : paymentsRequired ? "Confirm allotment" : "Confirm free allotment"}
           </Button>
         </DialogFooter>
       </DialogContent>

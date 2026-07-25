@@ -5,6 +5,8 @@ import {
 interface Props {
   fullName: string
   email: string
+  eventName: string
+  paymentsEnabled: boolean
   statusUrl?: string
 }
 
@@ -15,7 +17,7 @@ const muted = "#71717a"
 const gold = "#8a6a2f"
 const serif = "Georgia, 'Times New Roman', serif"
 
-export function RegistrationReceivedEmail({ fullName, email, statusUrl }: Props) {
+export function RegistrationReceivedEmail({ fullName, email, eventName, paymentsEnabled, statusUrl }: Props) {
   return (
     <Html>
       <Head />
@@ -33,11 +35,18 @@ export function RegistrationReceivedEmail({ fullName, email, statusUrl }: Props)
               Hi {fullName},
             </Text>
             <Text style={{ color: "#3f3f46", fontSize: 15, lineHeight: "1.6", margin: "0 0 12px" }}>
-              Thank you for registering for DelTech MUN. We have received your application and will
-              send your committee allotment and payment link to{" "}
+              Thank you for registering for {eventName}. We have received your application and will
+              send your committee and portfolio allotment to{" "}
               <strong style={{ color: "#18181b" }}>{email}</strong> once the secretariat processes
-              your application.
+              it.
             </Text>
+            <Section style={{ backgroundColor: "#f0fdf9", border: "1px solid #99f6e4", borderRadius: 8, padding: "14px 18px", margin: "0 0 16px" }}>
+              <Text style={{ color: brand, fontSize: 14, fontWeight: 700, lineHeight: "1.5", margin: 0 }}>
+                {paymentsEnabled
+                  ? "If allotted, your confirmation email will include the payment instructions."
+                  : "This is a free Intra MUN. No payment or payment proof will be requested."}
+              </Text>
+            </Section>
             <Text style={{ color: "#3f3f46", fontSize: 15, lineHeight: "1.6", margin: 0 }}>
               Allotments are typically sent within a few days of the registration deadline.
             </Text>

@@ -7,9 +7,9 @@ interface Props {
   primaryDelegateName: string
   committeeName: string
   portfolioName: string
+  paymentsEnabled: boolean
 }
 
-const brand = "#0f766e"
 const bg = "#f4f0e6"
 const card = "#fffdf8"
 const muted = "#71717a"
@@ -21,6 +21,7 @@ export function CoDelegateNoticeEmail({
   primaryDelegateName,
   committeeName,
   portfolioName,
+  paymentsEnabled,
 }: Props) {
   return (
     <Html>
@@ -52,8 +53,10 @@ export function CoDelegateNoticeEmail({
             </Section>
 
             <Text style={{ color: "#3f3f46", fontSize: 14, lineHeight: "1.6", margin: 0 }}>
-              Your primary delegate is responsible for payment. You will receive further conference
-              details closer to the event. If you have any questions, please contact the secretariat.
+              {paymentsEnabled
+                ? "Your primary delegate is responsible for payment. You will receive further event details closer to the date."
+                : "No payment is required for this Intra MUN. Your shared allotment is already confirmed."}
+              {" "}If you have any questions, please contact the secretariat.
             </Text>
           </Section>
 

@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils"
 import { buttonVariants } from "@/components/ui/button"
 import Link from "next/link"
 import { STRINGS } from "@/content/strings"
+import { getContent } from "@/lib/settings"
 
 const STATUS_LABEL: Record<string, string> = {
   REGISTERED: "Registered",
@@ -67,13 +68,15 @@ export default async function StatusPage(props: {
   })
 
   if (!delegate) notFound()
+  const content = await getContent()
+  const paymentsRequired = content.eventMode !== "INTRA_MUN" && content.paymentsEnabled
 
   const session = await auth()
   const isOwner = session?.user?.email?.toLowerCase() === delegate.email.toLowerCase()
 
   const { payment, allotment } = delegate
   const needsPayment =
-    payment && (payment.status === "PENDING" || payment.status === "SENT") && payment.paymentLink
+    paymentsRequired && payment && (payment.status === "PENDING" || payment.status === "SENT") && payment.paymentLink
   const isConfirmed = delegate.status === "CONFIRMED"
 
   return (
@@ -127,8 +130,8 @@ export default async function StatusPage(props: {
 
         {/* Payment */}
         <div className="space-y-3">
-          <p className="text-xs font-semibold uppercase tracking-wider text-primary">Payment</p>
-          {payment ? (
+          <p className="text-xs font-semibold uppercase tracking-wider text-primary">{paymentsRequired ? "Payment" : "Event fee"}</p>
+          {paymentsRequired && payment ? (
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-3">
                 <Field
@@ -168,7 +171,9 @@ export default async function StatusPage(props: {
             </div>
           ) : (
             <p className="text-sm text-muted-foreground">
-              Payment details will appear here once you&apos;ve been allotted a committee.
+              {paymentsRequired
+                ? "Payment details will appear here once you have been allotted a committee."
+                : "No payment is required for this free Intra MUN. Your allotment confirms your place automatically."}
             </p>
           )}
         </div>

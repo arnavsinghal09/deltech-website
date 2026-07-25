@@ -71,6 +71,8 @@ export async function sendRegistrationReceived(delegateId: string): Promise<void
     where: { id: delegateId },
     select: { fullName: true, email: true, publicToken: true },
   })
+  const content = await getContent()
+  const paymentsEnabled = content.eventMode !== "INTRA_MUN" && content.paymentsEnabled
 
   await loggedSend({
     delegateId,
@@ -80,6 +82,8 @@ export async function sendRegistrationReceived(delegateId: string): Promise<void
     reactElement: RegistrationReceivedEmail({
       fullName: delegate.fullName,
       email: delegate.email,
+      eventName: content.activeEventName || content.landingHero.title,
+      paymentsEnabled,
       statusUrl: `${APP_URL}/status/${delegate.publicToken}`,
     }),
   })
@@ -165,6 +169,8 @@ export async function sendCoDelegateNotice(delegateId: string): Promise<void> {
 
   const committee = delegate.allotment.portfolio.committee
   const portfolio = delegate.allotment.portfolio
+  const content = await getContent()
+  const paymentsEnabled = content.eventMode !== "INTRA_MUN" && content.paymentsEnabled
   const subject = STRINGS.email.subjects.coDelegateNotice.replace("{committee}", committee.name)
 
   await loggedSend({
@@ -177,6 +183,7 @@ export async function sendCoDelegateNotice(delegateId: string): Promise<void> {
       primaryDelegateName: delegate.fullName,
       committeeName: committee.name,
       portfolioName: portfolio.name,
+      paymentsEnabled,
     }),
   })
 }
@@ -220,6 +227,9 @@ export async function sendPaymentConfirmed(delegateId: string): Promise<void> {
 }
 
 export async function sendPaymentReminder(delegateId: string): Promise<void> {
+  const content = await getContent()
+  if (content.eventMode === "INTRA_MUN" || !content.paymentsEnabled) return
+
   const delegate = await prisma.delegate.findUniqueOrThrow({
     where: { id: delegateId },
     select: {

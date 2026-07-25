@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
-import { Building2, CalendarRange, Check, EyeOff, LockKeyhole, Megaphone, Rocket, School, WalletCards } from "lucide-react"
+import { Building2, CalendarRange, Check, LockKeyhole, Megaphone, Rocket, School, WalletCards } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -17,6 +17,42 @@ const MODES = [
   { value: "CONFERENCE", icon: CalendarRange, title: "Flagship conference", body: "Bring dates, committees, registration, and payments online." },
   { value: "INTRA_MUN", icon: School, title: "Free Intra MUN", body: "Registration and allotments with no fee or payment email." },
 ] as const
+
+type PresetKey = "SOCIETY" | "INTRA" | "CONFERENCE_PR" | "CONFERENCE_LIVE" | "CUSTOM"
+
+const PRESETS = [
+  { key: "SOCIETY", icon: Building2, title: "Society only", body: "No delegate event is promoted. Recruitment remains independently controlled." },
+  { key: "INTRA", icon: School, title: "Free Intra open", body: "Open registration, matrix, and allotments with payment completely disabled." },
+  { key: "CONFERENCE_PR", icon: Megaphone, title: "Conference PR", body: "Publish the flagship and committees while keeping delegate forms closed." },
+  { key: "CONFERENCE_LIVE", icon: Rocket, title: "Paid registration", body: "Open flagship registration, matrix, allotment, and the payment workflow." },
+] as const
+
+function inferPreset(content: Content): PresetKey {
+  const s = content.publicSections
+  if (
+    content.eventMode === "INTRA_MUN" &&
+    content.registrationOpen &&
+    !content.paymentsEnabled &&
+    s.activeEvent && s.registration && s.committees && s.matrix
+  ) return "INTRA"
+  if (
+    content.eventMode === "CONFERENCE" &&
+    content.registrationOpen &&
+    content.paymentsEnabled &&
+    s.activeEvent && s.registration && s.committees && s.matrix
+  ) return "CONFERENCE_LIVE"
+  if (
+    content.eventMode === "CONFERENCE" &&
+    !content.registrationOpen &&
+    s.activeEvent && !s.registration && s.committees && !s.matrix
+  ) return "CONFERENCE_PR"
+  if (
+    content.eventMode === "SOCIETY" &&
+    !content.registrationOpen &&
+    !s.activeEvent && !s.registration && !s.committees && !s.matrix
+  ) return "SOCIETY"
+  return "CUSTOM"
+}
 
 const SECTION_ROWS = [
   ["activeEvent", "Active event block", "Show the current event on the society homepage."],
@@ -43,28 +79,42 @@ export function EventControl({
   const [registrationOpen, setRegistrationOpen] = useState(content.registrationOpen)
   const [paymentsEnabled, setPaymentsEnabled] = useState(content.paymentsEnabled)
   const [sections, setSections] = useState(content.publicSections)
+  const [activePreset, setActivePreset] = useState<PresetKey>(() => inferPreset(content))
   const [isPending, startTransition] = useTransition()
 
-  const chooseMode = (next: Content["eventMode"]) => {
-    setMode(next)
-    if (next === "INTRA_MUN") setPaymentsEnabled(false)
-  }
-
-  const applyPreset = (preset: "QUIET" | "PR" | "LIVE") => {
-    if (preset === "QUIET") {
+  const applyPreset = (preset: Exclude<PresetKey, "CUSTOM">) => {
+    setActivePreset(preset)
+    if (preset === "SOCIETY") {
+      setMode("SOCIETY")
       setRegistrationOpen(false)
       setPaymentsEnabled(false)
       setSections((current) => ({ ...current, activeEvent: false, registration: false, committees: false, matrix: false }))
       return
     }
-    if (preset === "PR") {
+    if (preset === "INTRA") {
+      setMode("INTRA_MUN")
+      setRegistrationOpen(true)
+      setPaymentsEnabled(false)
+      setSections((current) => ({ ...current, activeEvent: true, registration: true, committees: true, matrix: true }))
+      return
+    }
+    if (preset === "CONFERENCE_PR") {
+      setMode("CONFERENCE")
       setRegistrationOpen(false)
+      setPaymentsEnabled(false)
       setSections((current) => ({ ...current, activeEvent: true, registration: false, committees: true, matrix: false }))
       return
     }
+    setMode("CONFERENCE")
     setRegistrationOpen(true)
-    setPaymentsEnabled(mode !== "INTRA_MUN")
+    setPaymentsEnabled(true)
     setSections((current) => ({ ...current, activeEvent: true, registration: true, committees: true, matrix: true }))
+  }
+
+  const chooseMode = (next: Content["eventMode"]) => {
+    if (next === "SOCIETY") applyPreset("SOCIETY")
+    if (next === "INTRA_MUN") applyPreset("INTRA")
+    if (next === "CONFERENCE") applyPreset("CONFERENCE_PR")
   }
 
   const save = () => startTransition(async () => {
@@ -95,19 +145,42 @@ export function EventControl({
     </section>
 
     <section>
-      <p className="eyebrow">Fast presets</p>
-      <h2 className="mt-3 font-heading text-3xl">Start from the state you mean</h2>
-      <p className="mt-2 text-base text-muted-foreground">A preset changes the switches below. Review them, then apply once.</p>
-      <div className="mt-5 grid gap-px overflow-hidden border border-border bg-border md:grid-cols-3">
-        <button type="button" onClick={() => applyPreset("QUIET")} className="bg-background p-5 text-left transition-colors hover:bg-muted">
-          <EyeOff className="size-6" /><p className="mt-7 text-lg font-bold">Society only</p><p className="mt-1 text-sm text-muted-foreground">Hide event, registration, committees, and matrix.</p>
-        </button>
-        <button type="button" onClick={() => applyPreset("PR")} className="bg-background p-5 text-left transition-colors hover:bg-muted">
-          <Megaphone className="size-6" /><p className="mt-7 text-lg font-bold">PR has started</p><p className="mt-1 text-sm text-muted-foreground">Show event and committees; keep forms closed.</p>
-        </button>
-        <button type="button" onClick={() => applyPreset("LIVE")} className="bg-primary p-5 text-left text-primary-foreground transition-opacity hover:opacity-90">
-          <Rocket className="size-6" /><p className="mt-7 text-lg font-bold">Registration live</p><p className="mt-1 text-sm text-primary-foreground/75">Publish event, registration, committees, and matrix.</p>
-        </button>
+      <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-end">
+        <div>
+          <p className="eyebrow">Fast presets</p>
+          <h2 className="mt-3 font-heading text-3xl">Choose the delegate workflow</h2>
+          <p className="mt-2 text-base text-muted-foreground">Recruitment is independent and is never changed by these presets.</p>
+        </div>
+        <p className="font-mono text-sm uppercase tracking-wider text-primary" aria-live="polite">
+          Draft · {activePreset.replaceAll("_", " ")}
+        </p>
+      </div>
+      <div className="mt-5 grid gap-px overflow-hidden border border-border bg-border sm:grid-cols-2 xl:grid-cols-4" role="group" aria-label="Delegate workflow preset">
+        {PRESETS.map(({ key, icon: Icon, title, body }) => {
+          const selected = activePreset === key
+          return (
+            <button
+              key={key}
+              type="button"
+              aria-pressed={selected}
+              disabled={key === "CONFERENCE_LIVE" && !canManagePayments}
+              onClick={() => applyPreset(key)}
+              className={cn(
+                "min-h-52 p-5 text-left transition-colors active:bg-primary active:text-primary-foreground disabled:cursor-not-allowed disabled:opacity-45",
+                selected
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-background text-foreground hover:bg-muted",
+              )}
+            >
+              <div className="flex items-start justify-between">
+                <Icon className="size-6" />
+                {selected && <span className="flex size-7 items-center justify-center rounded-full bg-background text-foreground"><Check className="size-4" /></span>}
+              </div>
+              <p className="mt-8 text-lg font-bold">{title}</p>
+              <p className={cn("mt-2 text-sm", selected ? "text-primary-foreground/75" : "text-muted-foreground")}>{body}</p>
+            </button>
+          )
+        })}
       </div>
     </section>
     <section className="border-t-4 border-foreground pt-6">
@@ -160,13 +233,16 @@ export function EventControl({
       <div className="mt-6 divide-y divide-border border-y border-border">
         {SECTION_ROWS.map(([key, title, body]) => <div key={key} className="grid gap-4 py-5 sm:grid-cols-[1fr_auto] sm:items-center">
           <div><p className="text-base font-semibold">{title}</p><p className="mt-1 text-sm text-muted-foreground">{body}</p></div>
-          <Switch checked={sections[key]} onCheckedChange={(checked) => setSections((current) => ({ ...current, [key]: checked }))} className="scale-125" />
+          <Switch checked={sections[key]} onCheckedChange={(checked) => {
+            setActivePreset("CUSTOM")
+            setSections((current) => ({ ...current, [key]: checked }))
+          }} className="scale-125" />
         </div>)}
       </div>
     </section>
 
     <section className="grid gap-px overflow-hidden border border-border bg-border lg:grid-cols-2">
-      <div className="flex items-center justify-between gap-5 bg-background p-6"><div><p className="font-semibold">Accept registrations</p><p className="mt-1 text-sm text-muted-foreground">Controls whether the form accepts submissions.</p></div><Switch checked={registrationOpen} onCheckedChange={setRegistrationOpen} className="scale-125" /></div>
+      <div className="flex items-center justify-between gap-5 bg-background p-6"><div><p className="font-semibold">Accept registrations</p><p className="mt-1 text-sm text-muted-foreground">Controls whether the form accepts submissions.</p></div><Switch checked={registrationOpen} onCheckedChange={(checked) => { setActivePreset("CUSTOM"); setRegistrationOpen(checked) }} className="scale-125" /></div>
       <div className="flex items-center justify-between gap-5 bg-background p-6">
         <div className="flex gap-3">
           <WalletCards className="mt-0.5 size-5" />
@@ -185,7 +261,7 @@ export function EventControl({
           {!canManagePayments && <LockKeyhole className="size-4 text-muted-foreground" aria-label="Admin only" />}
           <Switch
             checked={mode === "INTRA_MUN" ? false : paymentsEnabled}
-            onCheckedChange={setPaymentsEnabled}
+            onCheckedChange={(checked) => { setActivePreset("CUSTOM"); setPaymentsEnabled(checked) }}
             disabled={mode === "INTRA_MUN" || !canManagePayments}
             className="scale-125"
           />

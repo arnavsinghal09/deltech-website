@@ -7,6 +7,7 @@ import { SignOutButton } from "@/app/(admin)/_components/sign-out-button";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { t } from "@/content/strings";
+import { getContent } from "@/lib/settings";
 
 const STATUS_LABEL: Record<string, string> = {
   REGISTERED: "Registered",
@@ -65,9 +66,12 @@ export default async function DashboardPage() {
     },
     orderBy: { createdAt: "desc" },
   });
+  const content = await getContent();
+  const paymentsRequired = content.eventMode !== "INTRA_MUN" && content.paymentsEnabled;
 
   const { payment, allotment } = delegate ?? {};
   const needsPayment =
+    paymentsRequired &&
     payment &&
     (payment.status === "PENDING" || payment.status === "SENT") &&
     payment.paymentLink;
@@ -160,9 +164,9 @@ export default async function DashboardPage() {
             {/* Payment */}
             <div className="space-y-3">
               <p className="text-xs font-semibold uppercase tracking-wider text-primary">
-                {t("dashboard.paymentSection")}
+                {paymentsRequired ? t("dashboard.paymentSection") : "Event fee"}
               </p>
-              {payment ? (
+              {paymentsRequired && payment ? (
                 <div className="space-y-4">
                   <div className="grid grid-cols-2 gap-3">
                     <Field
@@ -201,7 +205,11 @@ export default async function DashboardPage() {
                   )}
                 </div>
               ) : (
-                <p className="text-sm text-muted-foreground">{t("dashboard.paymentPendingNote")}</p>
+                <p className="text-sm text-muted-foreground">
+                  {paymentsRequired
+                    ? t("dashboard.paymentPendingNote")
+                    : "No payment is required for this free Intra MUN. Your allotment confirms your place automatically."}
+                </p>
               )}
             </div>
           </div>

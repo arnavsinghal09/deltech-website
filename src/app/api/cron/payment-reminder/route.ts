@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { sendPaymentReminder } from "@/lib/resend"
+import { getContent } from "@/lib/settings"
 
 // Called daily by Vercel Cron at 03:00 UTC (vercel.json).
 // Finds allotted delegates with unpaid payments, skips those reminded
@@ -14,6 +15,10 @@ export async function GET(req: NextRequest) {
   const cronSecret = process.env.CRON_SECRET
   if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  }
+  const content = await getContent()
+  if (content.eventMode === "INTRA_MUN" || !content.paymentsEnabled) {
+    return NextResponse.json({ sent: 0, failed: 0, total: 0, disabled: true })
   }
 
   const since24h = new Date(Date.now() - 24 * 60 * 60 * 1000)

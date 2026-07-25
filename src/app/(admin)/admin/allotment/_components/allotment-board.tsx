@@ -71,10 +71,10 @@ interface Props {
   committees: SerializedCommittee[]
   delegates: SerializedDelegate[]
   fees: Fee[]
-  adminEmail: string
+  paymentsRequired: boolean
 }
 
-export function AllotmentBoard({ committees, delegates, fees, adminEmail }: Props) {
+export function AllotmentBoard({ committees, delegates, fees, paymentsRequired }: Props) {
   const router = useRouter()
   const [selectedCommitteeId, setSelectedCommitteeId] = useState(committees[0]?.id ?? "")
   const [dialogPortfolio, setDialogPortfolio] = useState<SerializedPortfolio | null>(null)
@@ -211,7 +211,7 @@ export function AllotmentBoard({ committees, delegates, fees, adminEmail }: Prop
           committee={dialogCommittee}
           delegates={delegates}
           fees={fees}
-          adminEmail={adminEmail}
+          paymentsRequired={paymentsRequired}
           onClose={handleDialogClose}
           onAllotted={handleAllotted}
         />

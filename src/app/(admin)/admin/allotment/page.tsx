@@ -2,11 +2,12 @@ import { prisma } from "@/lib/prisma"
 import { requireStaff } from "@/lib/authz"
 import { AllotmentBoard } from "./_components/allotment-board"
 import { PageHeader } from "@/app/(admin)/_components/page-header"
+import { getContent } from "@/lib/settings"
 
 export default async function AllotmentPage() {
-  const session = await requireStaff()
+  await requireStaff()
 
-  const [committees, delegates, fees] = await Promise.all([
+  const [committees, delegates, fees, content] = await Promise.all([
     prisma.committee.findMany({
       where: { isActive: true },
       orderBy: { sortOrder: "asc" },
@@ -50,7 +51,9 @@ export default async function AllotmentPage() {
       },
     }),
     prisma.fee.findMany(),
+    getContent(),
   ])
+  const paymentsRequired = content.eventMode !== "INTRA_MUN" && content.paymentsEnabled
 
   const serializedDelegates = delegates.map((d) => ({
     ...d,
@@ -74,15 +77,17 @@ export default async function AllotmentPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        eyebrow="Conference"
+        eyebrow={content.eventMode === "INTRA_MUN" ? "Free Intra MUN" : "Conference"}
         title="Allotment Board"
-        description="Select a committee, then click a portfolio to allot."
+        description={paymentsRequired
+          ? "Select a committee, then allot a portfolio. A payment request is created after allotment."
+          : "Select a committee, then allot a portfolio. The delegate is confirmed immediately—no payment is created."}
       />
       <AllotmentBoard
         committees={serializedCommittees}
         delegates={serializedDelegates}
         fees={fees}
-        adminEmail={session.user.email ?? "admin"}
+        paymentsRequired={paymentsRequired}
       />
     </div>
   )
