@@ -43,3 +43,8 @@ src/generated/
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+/.agents
+/.codex
+CLAUDE.md
+AGENTS.md
