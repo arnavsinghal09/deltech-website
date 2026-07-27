@@ -6,6 +6,9 @@ on:
 jobs:
   check:
     runs-on: ubuntu-latest
+    env:
+      DIRECT_URL: postgresql://user:password@localhost:5432/db
+      DATABASE_URL: postgresql://user:password@localhost:5432/db
     steps:
       - name: Checkout
         uses: actions/checkout@v4
