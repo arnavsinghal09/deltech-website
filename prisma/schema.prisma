@@ -158,6 +158,8 @@ model Delegate {
   payment            Payment?
   emailLogs          EmailLog[]
   createdAt          DateTime   @default(now())
+  checkedInAt        DateTime?
+  checkedInBy        String?
 }
 
 enum Source {
