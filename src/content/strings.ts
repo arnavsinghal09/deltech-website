@@ -585,6 +585,7 @@ export const STRINGS = {
       registrationReceived: "Your DelTech MUN registration is received",
       allotmentSent: "Your DelTech MUN allotment: {committee} — {portfolio}",
       coDelegateNotice: "You have been added as a co-delegate for {committee}",
+      coDelegateRegistered: "You have been added as a co-delegate — DelTech MUN",
       paymentConfirmed: "Payment confirmed — DelTech MUN",
       paymentReminder: "Complete your payment — DelTech MUN",
       blogApproved: 'Your article “{title}” has been published',

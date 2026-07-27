@@ -6,6 +6,7 @@ import { STRINGS } from "@/content/strings"
 import { RegistrationReceivedEmail } from "@/emails/registration-received"
 import { AllotmentEmail } from "@/emails/allotment"
 import { CoDelegateNoticeEmail } from "@/emails/co-delegate-notice"
+import { CoDelegateRegisteredEmail } from "@/emails/co-delegate-registered"
 import { PaymentConfirmedEmail } from "@/emails/payment-confirmed"
 import { PaymentReminderEmail } from "@/emails/payment-reminder"
 import { BlogApprovedEmail } from "@/emails/blog-approved"
@@ -87,6 +88,71 @@ export async function sendRegistrationReceived(delegateId: string): Promise<void
       statusUrl: `${APP_URL}/status/${delegate.publicToken}`,
     }),
   })
+}
+
+/**
+ * Co-delegates are real participants but did not submit the form, so they get their
+ * own template — and deliberately never the primary's `statusUrl`. That token is a
+ * bearer credential for /status/<token> AND /pay/<token>; the primary did not consent
+ * to sharing a payment surface.
+ */
+export async function sendCoDelegateRegistered(delegateId: string): Promise<void> {
+  const delegate = await prisma.delegate.findUniqueOrThrow({
+    where: { id: delegateId },
+    select: {
+      fullName: true,
+      email: true,
+      pref1CommitteeId: true,
+      coDelegate: { select: { fullName: true, email: true } },
+    },
+  })
+
+  if (!delegate.coDelegate) return
+
+  // Delegate.pref1CommitteeId is a plain column, not a Prisma relation.
+  const committee = delegate.pref1CommitteeId
+    ? await prisma.committee.findUnique({
+        where: { id: delegate.pref1CommitteeId },
+        select: { name: true },
+      })
+    : null
+
+  const content = await getContent()
+  const paymentsEnabled = content.eventMode !== "INTRA_MUN" && content.paymentsEnabled
+
+  await loggedSend({
+    delegateId,
+    template: "co-delegate-registered",
+    toEmail: delegate.coDelegate.email,
+    subject: STRINGS.email.subjects.coDelegateRegistered,
+    reactElement: CoDelegateRegisteredEmail({
+      coDelegateName: delegate.coDelegate.fullName,
+      primaryDelegateName: delegate.fullName,
+      primaryDelegateEmail: delegate.email,
+      eventName: content.activeEventName || content.landingHero.title,
+      committeeName: committee?.name ?? null,
+      paymentsEnabled,
+    }),
+  })
+}
+
+/**
+ * Fan-out for every registration entry point. Both sends are attempted regardless of
+ * the other's outcome; failures are aggregated so the caller can log once.
+ */
+export async function sendRegistrationEmails(delegateId: string): Promise<void> {
+  const results = await Promise.allSettled([
+    sendRegistrationReceived(delegateId),
+    sendCoDelegateRegistered(delegateId),
+  ])
+
+  const reasons = results
+    .filter((r): r is PromiseRejectedResult => r.status === "rejected")
+    .map((r) => (r.reason instanceof Error ? r.reason.message : String(r.reason)))
+
+  if (reasons.length > 0) {
+    throw new Error(`Registration emails failed for ${delegateId}: ${reasons.join(" | ")}`)
+  }
 }
 
 export async function sendAllotmentEmail(delegateId: string): Promise<void> {
@@ -326,6 +392,7 @@ export async function sendStaffInvite(email: string, role: string): Promise<void
 
 const RESENDABLE_TEMPLATES: Record<string, (id: string) => Promise<void>> = {
   "registration-received": sendRegistrationReceived,
+  "co-delegate-registered": sendCoDelegateRegistered,
   allotment: sendAllotmentEmail,
   "co-delegate-notice": sendCoDelegateNotice,
   "payment-confirmed": sendPaymentConfirmed,

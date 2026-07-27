@@ -3,7 +3,7 @@
 import { prisma } from "@/lib/prisma"
 import { getContent } from "@/lib/settings"
 import { registerSchema, type RegisterFormValues } from "@/lib/schemas/register"
-import { sendRegistrationReceived } from "@/lib/resend"
+import { sendRegistrationEmails } from "@/lib/resend"
 
 type ActionResult =
   | { success: true; delegateId: string; publicToken: string }
@@ -94,9 +94,13 @@ export async function registerDelegate(data: RegisterFormValues): Promise<Action
   }
 
   try {
-    await sendRegistrationReceived(delegate.id)
-  } catch {
-    // intentionally silent
+    await sendRegistrationEmails(delegate.id)
+  } catch (err) {
+    // Email must never fail the registration — the delegate row is already committed.
+    // loggedSend has already written a FAILED EmailLog row (visible in the admin email
+    // drawer, resendable from there); this line surfaces it in the server logs so a
+    // broken Resend key or address is noticed without someone opening the admin UI.
+    console.error(`[register] registration emails failed for delegate ${delegate.id}:`, err)
   }
 
   return { success: true, delegateId: delegate.id, publicToken: delegate.publicToken }

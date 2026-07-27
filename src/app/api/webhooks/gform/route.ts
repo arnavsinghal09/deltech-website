@@ -109,12 +109,12 @@ export async function POST(req: NextRequest) {
 
   if (source === "SELF") {
     void import("@/lib/resend")
-      .then(({ sendRegistrationReceived }) => sendRegistrationReceived(result.delegateId))
-      .catch(() => undefined)
+      .then(({ sendRegistrationEmails }) => sendRegistrationEmails(result.delegateId))
+      .catch((err) => console.error(`[gform] registration emails failed for ${result.delegateId}:`, err))
   } else if (result.allotted) {
     void import("@/lib/resend")
       .then(({ sendAllotmentEmail }) => sendAllotmentEmail(result.delegateId))
-      .catch(() => undefined)
+      .catch((err) => console.error(`[gform] allotment email failed for ${result.delegateId}:`, err))
   }
 
   return NextResponse.json({ ok: true, delegateId: result.delegateId, allotted: result.allotted })
