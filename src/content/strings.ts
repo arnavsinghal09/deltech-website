@@ -184,6 +184,7 @@ export const STRINGS = {
       altPhonePlaceholder: "+91 9876543210",
       institutionLabel: "Institution",
       institutionPlaceholder: "Your college or university",
+      institutionLockedNote: "Filled automatically because you selected “I am a DTU student”. Untick to edit.",
       isDtuLabel: "I am a DTU student",
       munExperienceLabel: "MUN experience",
       munExperiencePlaceholder: "List committees you have attended (if any)",

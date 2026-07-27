@@ -1,17 +1,28 @@
 import { type UseFormReturn } from "react-hook-form"
 import type { RegisterFormValues } from "@/lib/schemas/register"
-import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form"
+import {
+  FormField,
+  FormItem,
+  FormLabel,
+  FormControl,
+  FormDescription,
+  FormMessage,
+} from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Label } from "@/components/ui/label"
 import { t } from "@/content/strings"
+import { cn } from "@/lib/utils"
 
 interface Props {
   form: UseFormReturn<RegisterFormValues>
+  onDtuChange: (checked: boolean) => void
 }
 
-export function StepPersonal({ form }: Props) {
+export function StepPersonal({ form, onDtuChange }: Props) {
+  const isDtu = form.watch("isDtu")
+
   return (
     <div className="space-y-5">
       <FormField
@@ -87,20 +98,6 @@ export function StepPersonal({ form }: Props) {
 
       <FormField
         control={form.control}
-        name="institution"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>{t("register.personal.institutionLabel")}</FormLabel>
-            <FormControl>
-              <Input placeholder={t("register.personal.institutionPlaceholder")} {...field} />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-
-      <FormField
-        control={form.control}
         name="isDtu"
         render={({ field }) => (
           <FormItem>
@@ -108,13 +105,36 @@ export function StepPersonal({ form }: Props) {
               <FormControl>
                 <Checkbox
                   checked={field.value}
-                  onCheckedChange={(checked) => field.onChange(checked)}
+                  onCheckedChange={(checked) => onDtuChange(Boolean(checked))}
                 />
               </FormControl>
               <Label className="cursor-pointer text-sm font-medium leading-none">
                 {t("register.personal.isDtuLabel")}
               </Label>
             </div>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+
+      <FormField
+        control={form.control}
+        name="institution"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>{t("register.personal.institutionLabel")}</FormLabel>
+            <FormControl>
+              <Input
+                placeholder={t("register.personal.institutionPlaceholder")}
+                {...field}
+                readOnly={isDtu}
+                aria-readonly={isDtu || undefined}
+                className={cn(isDtu && "cursor-not-allowed bg-muted text-muted-foreground")}
+              />
+            </FormControl>
+            {isDtu && (
+              <FormDescription>{t("register.personal.institutionLockedNote")}</FormDescription>
+            )}
             <FormMessage />
           </FormItem>
         )}

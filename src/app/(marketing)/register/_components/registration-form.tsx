@@ -16,6 +16,7 @@ import { StepPref1 } from "./step-pref1"
 import { StepPref2OrCoDelegate } from "./step-pref2-or-co-delegate"
 import { StepAccommodation } from "./step-accommodation"
 import { StepUndertaking } from "./step-undertaking"
+import { useDtuInstitution } from "../_hooks/use-dtu-institution"
 
 interface Committee {
   id: string
@@ -74,6 +75,8 @@ export function RegistrationForm({ committees }: Props) {
   const pref1Committee = committees.find((c) => c.id === pref1CommitteeId)
   const isDoubleDelegation = pref1Committee?.doubleDelegation ?? false
 
+  const { onDtuChange } = useDtuInstitution(form)
+
   const handleNext = async () => {
     if (step === 2) {
       // Co-delegate fields are required when the chosen committee uses double-delegation
@@ -116,7 +119,7 @@ export function RegistrationForm({ committees }: Props) {
 
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-          {step === 0 && <StepPersonal form={form} />}
+          {step === 0 && <StepPersonal form={form} onDtuChange={onDtuChange} />}
           {step === 1 && <StepPref1 form={form} committees={committees} />}
           {step === 2 && (
             <StepPref2OrCoDelegate

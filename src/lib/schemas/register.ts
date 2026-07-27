@@ -1,5 +1,8 @@
 import { z } from "zod"
 
+/** Canonical institution name written when a delegate self-identifies as DTU. */
+export const DTU_INSTITUTION = "Delhi Technological University"
+
 export const coDelegateSchema = z.object({
   fullName: z.string().min(2, "Name must be at least 2 characters"),
   email: z.string().email("Enter a valid email address"),
