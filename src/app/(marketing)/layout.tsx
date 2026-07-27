@@ -2,6 +2,8 @@ import { getContent } from "@/lib/settings";
 import { Header } from "./_components/header";
 import { Footer } from "./_components/footer";
 
+export const dynamic = "force-dynamic";
+
 export default async function MarketingLayout({ children }: { children: React.ReactNode }) {
   const content = await getContent();
   return (
