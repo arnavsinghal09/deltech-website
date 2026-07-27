@@ -11,6 +11,7 @@ import {
   ScrollText,
   ShieldCheck,
   BookOpenText,
+  UserCheck,
   type LucideIcon,
 } from "lucide-react"
 
@@ -34,6 +35,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { href: "/admin", icon: LayoutDashboard, label: "Overview" },
       { href: "/admin/config", icon: Settings2, label: "Event control" },
       { href: "/admin/registrations", icon: Users, label: "Registrations" },
+      { href: "/admin/checkin", icon: UserCheck, label: "Check-in" },
       { href: "/admin/allotment", icon: Kanban, label: "Allotments" },
       { href: "/admin/config/committees", icon: Contact, label: "Matrix & committees" },
       { href: "/admin/import", icon: Upload, label: "Imports" },
