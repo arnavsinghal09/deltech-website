@@ -13,7 +13,10 @@ import { BlogApprovedEmail } from "@/emails/blog-approved"
 import { BlogChangesRequestedEmail } from "@/emails/blog-changes-requested"
 import { StaffInviteEmail } from "@/emails/staff-invite"
 
-const resend = new Resend(process.env.AUTH_RESEND_KEY)
+let resendClient: Resend | undefined
+function getResend(): Resend {
+  return (resendClient ??= new Resend(process.env.AUTH_RESEND_KEY))
+}
 const FROM = process.env.EMAIL_FROM ?? "noreply@deltechmun.in"
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? ""
 
@@ -38,7 +41,7 @@ async function loggedSend({
   let error: string | undefined
 
   try {
-    const { error: apiError } = await resend.emails.send({
+    const { error: apiError } = await getResend().emails.send({
       from: FROM,
       to: toEmail,
       subject,
