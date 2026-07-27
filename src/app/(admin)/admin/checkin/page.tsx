@@ -1,0 +1,76 @@
+import { prisma } from "@/lib/prisma"
+import type { Prisma, AppStatus } from "@/generated/prisma/client"
+import { t } from "@/content/strings"
+import { PageHeader } from "@/app/(admin)/_components/page-header"
+import { CheckinClient, type CheckinDelegate } from "./_components/checkin-client"
+
+const VALID_STATUSES = new Set(["REGISTERED", "ALLOTTED", "PAYMENT_SENT", "CONFIRMED", "CANCELLED", "WAITLISTED"])
+
+export default async function CheckinPage(props: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>
+}) {
+  const params = await props.searchParams
+
+  const get = (key: string) => {
+    const v = params[key]
+    return Array.isArray(v) ? v[0] : v
+  }
+
+  const q = get("q") ?? ""
+  // Defaults to CONFIRMED — the desk only expects confirmed delegates to arrive,
+  // but staff can broaden the filter for edge cases (walk-ins, corrections).
+  const status = get("status") ?? "CONFIRMED"
+
+  const where: Prisma.DelegateWhereInput = {}
+  if (q) {
+    where.AND = [
+      {
+        OR: [
+          { fullName: { contains: q, mode: "insensitive" } },
+          { email: { contains: q, mode: "insensitive" } },
+          { institution: { contains: q, mode: "insensitive" } },
+        ],
+      },
+    ]
+  }
+  if (status && VALID_STATUSES.has(status)) where.status = status as AppStatus
+
+  const [delegatesRaw, checkedInCount, confirmedCount] = await Promise.all([
+    prisma.delegate.findMany({
+      where,
+      orderBy: { fullName: "asc" },
+      include: {
+        allotment: { include: { portfolio: { include: { committee: true } } } },
+        payment: { select: { status: true } },
+      },
+    }),
+    prisma.delegate.count({ where: { status: "CONFIRMED", checkedInAt: { not: null } } }),
+    prisma.delegate.count({ where: { status: "CONFIRMED" } }),
+  ])
+
+  const delegates: CheckinDelegate[] = delegatesRaw.map((d) => ({
+    id: d.id,
+    fullName: d.fullName,
+    email: d.email,
+    institution: d.institution,
+    status: d.status,
+    isDtu: d.isDtu,
+    needsAccommodation: d.needsAccommodation,
+    checkedInAt: d.checkedInAt?.toISOString() ?? null,
+    checkedInBy: d.checkedInBy,
+    committeeName: d.allotment?.portfolio.committee.name ?? null,
+    portfolioName: d.allotment?.portfolio.name ?? null,
+    paymentStatus: d.payment?.status ?? null,
+  }))
+
+  return (
+    <div className="space-y-6">
+      <PageHeader
+        eyebrow="Conference"
+        title={t("admin.nav.checkin")}
+        description={t("checkin.summary", { checkedIn: checkedInCount, confirmed: confirmedCount })}
+      />
+      <CheckinClient delegates={delegates} filters={{ q, status }} />
+    </div>
+  )
+}

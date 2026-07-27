@@ -287,6 +287,7 @@ export const STRINGS = {
       quiz: "Quiz",
       config: "Config",
       strings: "Copy / Strings",
+      checkin: "Check-in",
     },
     overview: {
       totalRegistrations: "Total registrations",
@@ -364,6 +365,26 @@ export const STRINGS = {
       rowsWithErrors: "{count} rows with errors",
       savePreset: "Save column mapping as preset",
     },
+  },
+
+  checkin: {
+    searchPlaceholder: "Name, email, institution…",
+    statusPlaceholder: "Status",
+    headerPortfolio: "Portfolio",
+    checkInButton: "Check in",
+    undoButton: "Undo",
+    notConfirmedBadge: "Not confirmed",
+    checkedInBadge: "Checked in",
+    checkedInAt: "Checked in {time} by {by}",
+    summary: "{checkedIn} / {confirmed} confirmed delegates checked in",
+    deskEyebrow: "Registration desk",
+    confirmButton: "Confirm check-in",
+    alreadyCheckedIn: "Checked in at {time} by {by}",
+    notConfirmedWarning: "This delegate is not marked CONFIRMED yet — double-check before checking them in.",
+    dtuLabel: "DTU student",
+    accommodationLabel: "Needs accommodation",
+    qrCaption: "Show this at the registration desk.",
+    qrHeading: "Check-in QR",
   },
 
   payment: {
