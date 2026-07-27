@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useCallback, useTransition } from "react"
+import { useState, useCallback, useMemo, useTransition } from "react"
 import { useRouter } from "next/navigation"
 import { ArrowUpDown, ArrowUp, ArrowDown, Search, Download, ChevronLeft, ChevronRight, Check, Minus } from "lucide-react"
 import { Input } from "@/components/ui/input"
@@ -13,7 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { cn } from "@/lib/utils"
+import { cn, toSelectItems } from "@/lib/utils"
 import type { SerializedDelegate } from "../_lib/types"
 import type { SortField } from "../_lib/build-where"
 import { DelegateDrawer } from "./delegate-drawer"
@@ -126,6 +126,11 @@ export function RegistrationsClient({ delegates, committees, total, filters }: P
     }
   }
 
+  const committeeItems = useMemo(
+    () => [{ value: "", label: "All committees" }, ...toSelectItems(committees, (c) => c.id, (c) => c.name)],
+    [committees]
+  )
+
   const navigate = useCallback((newFilters: Partial<Filters>) => {
     startTransition(() => {
       router.replace(buildUrl({ ...filters, page: 1, ...newFilters }), { scroll: false })
@@ -174,6 +179,7 @@ export function RegistrationsClient({ delegates, committees, total, filters }: P
 
         {/* Committee filter */}
         <Select
+          items={committeeItems}
           value={filters.committeeId || undefined}
           onValueChange={(v) => navigate({ committeeId: v || "" })}
         >

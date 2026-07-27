@@ -1,3 +1,4 @@
+import { useMemo } from "react"
 import { type UseFormReturn } from "react-hook-form"
 import type { RegisterFormValues } from "@/lib/schemas/register"
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form"
@@ -10,6 +11,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { t } from "@/content/strings"
+import { toSelectItems } from "@/lib/utils"
 
 interface Committee {
   id: string
@@ -23,6 +25,11 @@ interface Props {
 }
 
 export function StepPref1({ form, committees }: Props) {
+  const committeeItems = useMemo(
+    () => toSelectItems(committees, (c) => c.id, (c) => c.name),
+    [committees]
+  )
+
   return (
     <div className="space-y-5">
       <FormField
@@ -31,7 +38,7 @@ export function StepPref1({ form, committees }: Props) {
         render={({ field }) => (
           <FormItem>
             <FormLabel>{t("register.preferences.pref1CommitteeLabel")}</FormLabel>
-            <Select value={field.value} onValueChange={(v) => field.onChange(v)}>
+            <Select items={committeeItems} value={field.value} onValueChange={(v) => field.onChange(v)}>
               <FormControl>
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder="Select a committee" />

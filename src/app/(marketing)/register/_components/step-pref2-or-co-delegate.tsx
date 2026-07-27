@@ -1,3 +1,4 @@
+import { useMemo } from "react"
 import { type UseFormReturn } from "react-hook-form"
 import type { RegisterFormValues } from "@/lib/schemas/register"
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form"
@@ -11,6 +12,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { t } from "@/content/strings"
+import { toSelectItems } from "@/lib/utils"
 
 interface Committee {
   id: string
@@ -26,6 +28,14 @@ interface Props {
 
 export function StepPref2OrCoDelegate({ form, committees, isDoubleDelegation }: Props) {
   const pref1CommitteeId = form.watch("pref1CommitteeId")
+  const pref2Committees = useMemo(
+    () => committees.filter((c) => c.id !== pref1CommitteeId),
+    [committees, pref1CommitteeId]
+  )
+  const pref2CommitteeItems = useMemo(
+    () => toSelectItems(pref2Committees, (c) => c.id, (c) => c.name),
+    [pref2Committees]
+  )
 
   if (isDoubleDelegation) {
     return (
@@ -147,6 +157,7 @@ export function StepPref2OrCoDelegate({ form, committees, isDoubleDelegation }: 
               <span className="ml-1 text-xs text-muted-foreground">({t("common.optional")})</span>
             </FormLabel>
             <Select
+              items={pref2CommitteeItems}
               value={field.value ?? ""}
               onValueChange={(v) => field.onChange(v || undefined)}
             >
@@ -156,13 +167,11 @@ export function StepPref2OrCoDelegate({ form, committees, isDoubleDelegation }: 
                 </SelectTrigger>
               </FormControl>
               <SelectContent>
-                {committees
-                  .filter((c) => c.id !== pref1CommitteeId)
-                  .map((c) => (
-                    <SelectItem key={c.id} value={c.id}>
-                      {c.name}
-                    </SelectItem>
-                  ))}
+                {pref2Committees.map((c) => (
+                  <SelectItem key={c.id} value={c.id}>
+                    {c.name}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
             <FormMessage />
