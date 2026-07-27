@@ -283,6 +283,16 @@
   body:has(.overscroll-dark) {
     background: #07100d;
   }
+  /* Like .overscroll-dark, but follows the active theme instead of pinning
+     the overscroll gutter to near-black in both. */
+  html:has(.overscroll-adaptive),
+  body:has(.overscroll-adaptive) {
+    background: var(--background);
+  }
+  .dark:has(.overscroll-adaptive),
+  .dark body:has(.overscroll-adaptive) {
+    background: #07100d;
+  }
   .admin-shell .eyebrow,
   .admin-shell .data-label {
     font-size: 0.875rem;
