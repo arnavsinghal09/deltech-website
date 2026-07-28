@@ -51,7 +51,8 @@ export async function signupWithMagicLink(
   }
 
   try {
-    await signIn("resend", { email, redirectTo: "/dashboard" });
+    // /go dispatches by role — a new REGISTERER lands on /dashboard.
+    await signIn("resend", { email, redirectTo: "/go" });
     return {};
   } catch (err) {
     if ((err as { digest?: string }).digest?.startsWith("NEXT_REDIRECT")) throw err;

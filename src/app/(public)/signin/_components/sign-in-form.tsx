@@ -8,7 +8,13 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { requestMagicLink, signInWithPassword } from "../actions";
 
-export function SignInForm({ defaultTab = "magic" }: { defaultTab?: "magic" | "password" }) {
+export function SignInForm({
+  defaultTab = "magic",
+  callbackUrl = "",
+}: {
+  defaultTab?: "magic" | "password"
+  callbackUrl?: string
+}) {
   const [mlState, mlAction, mlPending] = useActionState(requestMagicLink, null);
   const [pwState, pwAction, pwPending] = useActionState(signInWithPassword, null);
 
@@ -25,6 +31,7 @@ export function SignInForm({ defaultTab = "magic" }: { defaultTab?: "magic" | "p
 
       <TabsContent value="magic">
         <form action={mlAction} className="flex flex-col gap-5">
+          <input type="hidden" name="callbackUrl" value={callbackUrl} />
           <div className="flex flex-col gap-2">
             <Label htmlFor="ml-email">{t("auth.emailLabel")}</Label>
             <Input
@@ -49,6 +56,7 @@ export function SignInForm({ defaultTab = "magic" }: { defaultTab?: "magic" | "p
 
       <TabsContent value="password">
         <form action={pwAction} className="flex flex-col gap-5">
+          <input type="hidden" name="callbackUrl" value={callbackUrl} />
           <div className="flex flex-col gap-2">
             <Label htmlFor="pw-email">{t("auth.emailLabel")}</Label>
             <Input
