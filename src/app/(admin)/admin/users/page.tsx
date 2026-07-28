@@ -9,7 +9,7 @@ export default async function UsersPage() {
 
   const users = await prisma.user.findMany({
     orderBy: [{ role: "asc" }, { email: "asc" }],
-    select: { id: true, email: true, name: true, role: true },
+    select: { id: true, email: true, name: true, role: true, disabledAt: true },
   })
 
   return (
@@ -17,7 +17,7 @@ export default async function UsersPage() {
       <PageHeader
         eyebrow="System"
         title="Users & roles"
-        description="Maintainers can do everything here except deletions, payment config, revokes, and role changes. Role changes apply on the user's next sign-in."
+        description="Only admins can invite, change roles, disable or delete. Changes take effect on live sessions within a minute. Disabling revokes access but keeps the account and anything it wrote; deleting is only possible for accounts that own nothing."
       >
         <InviteDialog />
       </PageHeader>
