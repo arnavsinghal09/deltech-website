@@ -8,6 +8,9 @@ import { buttonVariants } from "@/components/ui/button"
 import Link from "next/link"
 import { STRINGS } from "@/content/strings"
 import { getContent } from "@/lib/settings"
+import { CheckinQR } from "./_components/checkin-qr"
+
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? ""
 
 const STATUS_LABEL: Record<string, string> = {
   REGISTERED: "Registered",
@@ -177,6 +180,14 @@ export default async function StatusPage(props: {
             </p>
           )}
         </div>
+
+        {/* Check-in QR — only once the delegate is confirmed to attend */}
+        {isConfirmed && (
+          <>
+            <Separator />
+            <CheckinQR checkinUrl={`${APP_URL}/admin/checkin/${delegate.publicToken}`} />
+          </>
+        )}
 
         {/* Login prompt for guests */}
         {!isOwner && (
