@@ -10,6 +10,7 @@ import { SourcePieChart } from "./_components/source-pie-chart"
 import { CommitteeFillTable } from "./_components/committee-fill-table"
 import { SetupChecklist, type ChecklistItem } from "./_components/setup-checklist"
 import { MaintainerWelcome } from "./_components/maintainer-welcome"
+import { FailedEmailsCard } from "./_components/failed-emails-card"
 
 export default async function AdminOverviewPage() {
   const session = await requireStaff()
@@ -26,6 +27,8 @@ export default async function AdminOverviewPage() {
     feeCount,
     memberCount,
     publishedPostCount,
+    failedEmailCount,
+    recentFailedEmails,
     content,
   ] = await Promise.all([
     prisma.delegate.count(),
@@ -50,6 +53,13 @@ export default async function AdminOverviewPage() {
     prisma.fee.count(),
     prisma.member.count({ where: { isActive: true } }),
     prisma.post.count({ where: { status: "PUBLISHED" } }),
+    prisma.emailLog.count({ where: { status: "FAILED" } }),
+    prisma.emailLog.findMany({
+      where: { status: "FAILED" },
+      orderBy: { sentAt: "desc" },
+      take: 8,
+      select: { id: true, template: true, toEmail: true, error: true, sentAt: true, delegateId: true },
+    }),
     getContent(),
   ])
 
@@ -106,6 +116,13 @@ export default async function AdminOverviewPage() {
 
       {isMaintainer && <MaintainerWelcome />}
       {isMaintainer && <SetupChecklist items={checklist} />}
+
+      {failedEmailCount > 0 && (
+        <FailedEmailsCard
+          count={failedEmailCount}
+          logs={recentFailedEmails.map((l) => ({ ...l, sentAt: l.sentAt.toISOString() }))}
+        />
+      )}
 
       {/* KPI cards */}
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">

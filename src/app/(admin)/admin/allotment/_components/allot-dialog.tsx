@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { cn } from "@/lib/utils"
 import { holdPortfolio, allotPortfolio } from "../actions"
+import { preferenceRank } from "../_lib/balance"
 import type { SerializedPortfolio, SerializedCommittee, SerializedDelegate, Fee } from "./allotment-board"
 
 interface Props {
@@ -28,7 +29,7 @@ interface Props {
 }
 
 interface RankedDelegate extends SerializedDelegate {
-  preferenceRank: 1 | 2 | null
+  preferenceRank: 1 | 2 | 3 | null
 }
 
 export function AllotDialog({
@@ -59,11 +60,7 @@ export function AllotDialog({
     return delegates
       .map((d) => ({
         ...d,
-        preferenceRank: (d.pref1CommitteeId === committee.id
-          ? 1
-          : d.pref2CommitteeId === committee.id
-            ? 2
-            : null) as 1 | 2 | null,
+        preferenceRank: preferenceRank(d, committee.id),
       }))
       .sort((a, b) => {
         const ra = a.preferenceRank ?? 99
@@ -183,6 +180,11 @@ export function AllotDialog({
                     {d.preferenceRank === 2 && (
                       <span className="shrink-0 rounded-full bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground">
                         Pref 2
+                      </span>
+                    )}
+                    {d.preferenceRank === 3 && (
+                      <span className="shrink-0 rounded-full bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground">
+                        Pref 3
                       </span>
                     )}
                   </div>
