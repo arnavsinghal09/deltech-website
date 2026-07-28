@@ -1,0 +1,26 @@
+name: PR Checks
+
+on:
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    env:
+      DIRECT_URL: postgresql://user:password@localhost:5432/db
+      DATABASE_URL: postgresql://user:password@localhost:5432/db
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
