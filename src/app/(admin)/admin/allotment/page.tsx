@@ -46,6 +46,8 @@ export default async function AllotmentPage() {
         pref1Portfolio: true,
         pref2CommitteeId: true,
         pref2Portfolio: true,
+        pref3CommitteeId: true,
+        pref3Portfolio: true,
         coDelegate: { select: { id: true, fullName: true } },
         createdAt: true,
       },
