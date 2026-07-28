@@ -47,7 +47,7 @@ export async function registerDelegate(data: RegisterFormValues): Promise<Action
   // Duplicate email guard (DB unique index is the hard guard; this gives a friendly error)
   const existing = await prisma.delegate.findFirst({ where: { email: vals.email } })
   if (existing) {
-    return { success: false, error: "An application with this email already exists." }
+    return { success: false, error: "This email is already registered. Sign in to view your application status." }
   }
 
   let delegate
@@ -88,7 +88,7 @@ export async function registerDelegate(data: RegisterFormValues): Promise<Action
     })
   } catch (err) {
     if (typeof err === "object" && err !== null && "code" in err && (err as { code: unknown }).code === "P2002") {
-      return { success: false, error: "An application with this email already exists." }
+      return { success: false, error: "This email is already registered. Sign in to view your application status." }
     }
     throw err
   }
