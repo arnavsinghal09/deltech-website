@@ -1,10 +1,11 @@
 "use client"
 
-import { useState } from "react"
+import { useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
 import { releaseHold, revokeAllotment } from "../actions"
+import { committeeDemand } from "../_lib/balance"
 import { PortfolioCard } from "./portfolio-card"
 import { AllotDialog } from "./allot-dialog"
 import type { CommitteeType, PortfolioStatus } from "@/generated/prisma/client"
@@ -55,6 +56,8 @@ export interface SerializedDelegate {
   pref1Portfolio: string | null
   pref2CommitteeId: string | null
   pref2Portfolio: string | null
+  pref3CommitteeId: string | null
+  pref3Portfolio: string | null
   coDelegate: { id: string; fullName: string } | null
   createdAt: string
 }
@@ -81,6 +84,12 @@ export function AllotmentBoard({ committees, delegates, fees, paymentsRequired }
   const [dialogCommittee, setDialogCommittee] = useState<SerializedCommittee | null>(null)
 
   const selectedCommittee = committees.find((c) => c.id === selectedCommitteeId)
+
+  // Preference demand across the unallotted pool (delegates are REGISTERED only,
+  // so this is *remaining* demand — the balancing signal). Recomputed as the
+  // pool shrinks on router.refresh().
+  const demand = useMemo(() => committeeDemand(delegates), [delegates])
+  const selectedDemand = selectedCommittee ? demand.get(selectedCommittee.id) : undefined
 
   const handlePortfolioClick = (portfolio: SerializedPortfolio, committee: SerializedCommittee) => {
     if (portfolio.status === "ALLOTTED" || portfolio.status === "BLOCKED") return
@@ -143,6 +152,13 @@ export function AllotmentBoard({ committees, delegates, fees, paymentsRequired }
         {committees.map((c) => {
           const allotted = c.portfolios.filter((p) => p.status === "ALLOTTED").length
           const total = c.portfolios.length
+          const fill = total > 0 ? Math.round((allotted / total) * 100) : 0
+          const d = demand.get(c.id)
+          const p1 = d?.p1 ?? 0
+          const available = total - allotted
+          // Over-subscribed on 1st preference relative to remaining seats — the
+          // cue to consider pushing some delegates to a 2nd preference.
+          const oversubscribed = p1 > available && available > 0
           return (
             <button
               key={c.id}
@@ -155,7 +171,24 @@ export function AllotmentBoard({ committees, delegates, fees, paymentsRequired }
               )}
             >
               <span className="block font-medium leading-tight">{c.name}</span>
-              <span className="block text-xs opacity-70">{allotted}/{total} allotted</span>
+              <span className="mt-1 flex items-center gap-1.5">
+                <span className="h-1 flex-1 overflow-hidden rounded-full bg-muted">
+                  <span
+                    className={cn("block h-full rounded-full", fill === 100 ? "bg-primary" : "bg-primary/60")}
+                    style={{ width: `${fill}%` }}
+                  />
+                </span>
+                <span className="text-[10px] tabular-nums opacity-70">{allotted}/{total}</span>
+              </span>
+              {d && (
+                <span className="mt-1 flex items-center gap-1 text-[10px] opacity-70">
+                  <span className={cn("tabular-nums", oversubscribed && "font-semibold text-amber-600 dark:text-amber-400")}>
+                    P1 {p1}
+                  </span>
+                  <span className="tabular-nums">· P2 {d.p2}</span>
+                  <span className="tabular-nums">· P3 {d.p3}</span>
+                </span>
+              )}
             </button>
           )
         })}
@@ -179,6 +212,17 @@ export function AllotmentBoard({ committees, delegates, fees, paymentsRequired }
                 {" · "}
                 {selectedCommittee.portfolios.length} total
               </span>
+              {selectedDemand && (
+                <span className="text-sm text-muted-foreground">
+                  {"— demand: "}
+                  <span className="tabular-nums">{selectedDemand.p1}</span> pref-1
+                  {" · "}
+                  <span className="tabular-nums">{selectedDemand.p2}</span> pref-2
+                  {" · "}
+                  <span className="tabular-nums">{selectedDemand.p3}</span> pref-3
+                  {" (unallotted pool)"}
+                </span>
+              )}
             </div>
 
             {selectedCommittee.portfolios.length === 0 ? (
