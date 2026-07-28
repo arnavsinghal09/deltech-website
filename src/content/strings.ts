@@ -205,6 +205,7 @@ export const STRINGS = {
         "UNHRC requires two delegates per portfolio. Please provide your co-delegate's information.",
       fullNameLabel: "Co-delegate full name",
       emailLabel: "Co-delegate email",
+      emailPlaceholder: "co@example.com",
       phoneLabel: "Co-delegate phone",
       institutionLabel: "Co-delegate institution",
       munExperienceLabel: "Co-delegate MUN experience",
@@ -288,6 +289,9 @@ export const STRINGS = {
       config: "Config",
       strings: "Copy / Strings",
       checkin: "Check-in",
+    },
+    users: {
+      inviteEmailPlaceholder: "person@deltech.edu",
     },
     overview: {
       totalRegistrations: "Total registrations",

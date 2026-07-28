@@ -10,7 +10,7 @@
 
 `npm run check` globs every `scripts/check-*.ts`, so new assert checks are picked up automatically — no workflow edit needed.
 
-`check:strings` (`check-strings.mjs`) is **not** in the gate yet: it currently fails on 2 pre-existing hardcoded placeholders (`invite-dialog.tsx`, `step-pref2-or-co-delegate.tsx`). Fix those, then append `&& node scripts/check-strings.mjs` to the `check` script to gate it too.
+`check:strings` (`check-strings.mjs`) is part of the gate: it fails the build on hardcoded user-facing literals. Add copy to `src/content/strings.ts` and read it via `t()` instead.
 
 ## Why the preview is CLI-based
 
