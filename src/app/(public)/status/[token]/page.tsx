@@ -8,36 +8,10 @@ import { buttonVariants } from "@/components/ui/button"
 import Link from "next/link"
 import { STRINGS } from "@/content/strings"
 import { getContent } from "@/lib/settings"
+import { STATUS_LABEL, STATUS_VARIANT, PAY_STATUS_LABEL } from "@/lib/status-labels"
 import { CheckinQR } from "./_components/checkin-qr"
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? ""
-
-const STATUS_LABEL: Record<string, string> = {
-  REGISTERED: "Registered",
-  ALLOTTED: "Allotted — payment link coming soon",
-  PAYMENT_SENT: "Payment pending",
-  CONFIRMED: "Confirmed",
-  CANCELLED: "Cancelled",
-  WAITLISTED: "Waitlisted",
-}
-
-const STATUS_VARIANT: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
-  REGISTERED: "secondary",
-  ALLOTTED: "outline",
-  PAYMENT_SENT: "outline",
-  CONFIRMED: "default",
-  CANCELLED: "destructive",
-  WAITLISTED: "secondary",
-}
-
-const PAY_STATUS_LABEL: Record<string, string> = {
-  PENDING: "Awaiting payment",
-  SENT: "Payment link sent",
-  PAID: "Paid",
-  OFFLINE: "Confirmed (UPI)",
-  COMPED: "Comped",
-  FAILED: "Payment failed",
-}
 
 function Field({ label, value }: { label: string; value: React.ReactNode }) {
   return (
