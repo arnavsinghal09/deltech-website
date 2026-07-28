@@ -29,20 +29,44 @@ function roleCanAccess(pathname: string, role: string | null | undefined): boole
 }
 
 // Resolve a post-auth destination from an untrusted callbackUrl.
-// Only same-origin relative paths are honored; anything else (absolute URL,
-// protocol-relative //host, backslash tricks) falls back to the role home.
-// If the path is real but this role can't access it, downgrade to role home
-// rather than send them somewhere they'll be bounced from.
-export function safeLanding(raw: string | null | undefined, role: string | null | undefined): string {
+//
+// Two shapes are honored: a path-absolute reference ("/admin?x=1"), and an
+// absolute URL whose origin matches this app's — NextAuth's `authorized`
+// bounce emits the latter (?callbackUrl=https://host/admin), so rejecting it
+// outright would silently downgrade every intended destination to role home.
+// Anything else (foreign origin, protocol-relative //host, backslash tricks,
+// non-http schemes) falls back to the role home.
+//
+// If the destination is same-origin but this role can't reach it, downgrade to
+// role home rather than send them somewhere they'd immediately bounce off.
+export function safeLanding(
+  raw: string | null | undefined,
+  role: string | null | undefined,
+  origin?: string | null,
+): string {
   const home = roleHome(role)
   if (!raw) return home
-  // Only a path-absolute reference is same-origin-safe: a single leading slash,
-  // not protocol-relative (//host), no backslash tricks. A scheme (https:) can't
-  // appear because it can't start with a slash, so these checks are sufficient —
-  // new URL("/x", origin) always resolves to the same origin.
-  if (!raw.startsWith("/") || raw.startsWith("//") || raw.includes("\\")) {
+
+  let candidate = raw
+
+  // Absolute URL — honor it only when the origin matches ours.
+  if (/^https?:\/\//i.test(raw)) {
+    if (!origin) return home
+    try {
+      const target = new URL(raw)
+      if (target.origin !== new URL(origin).origin) return home
+      candidate = target.pathname + target.search + target.hash
+    } catch {
+      return home
+    }
+  }
+
+  // Path-absolute only: one leading slash, not protocol-relative, no backslash
+  // tricks. Any remaining scheme (javascript:, //host) fails these checks.
+  if (!candidate.startsWith("/") || candidate.startsWith("//") || candidate.includes("\\")) {
     return home
   }
-  const pathname = raw.split(/[?#]/)[0]
-  return roleCanAccess(pathname, role) ? raw : home
+
+  const pathname = candidate.split(/[?#]/)[0]
+  return roleCanAccess(pathname, role) ? candidate : home
 }
