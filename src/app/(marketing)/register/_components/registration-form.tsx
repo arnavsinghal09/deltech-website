@@ -1,6 +1,6 @@
 "use client"
 
-import { useRef, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useRouter } from "next/navigation"
@@ -52,6 +52,19 @@ export function RegistrationForm({ committees }: Props) {
   // fast double-click or Enter could fire onSubmit twice before it applies.
   const submitLock = useRef(false)
   const router = useRouter()
+
+  // Move focus to the step heading on each step change so keyboard and
+  // screen-reader users land on the new step's content (not stranded on the
+  // now-hidden previous "Next" button). Skip the initial mount.
+  const headingRef = useRef<HTMLHeadingElement>(null)
+  const mounted = useRef(false)
+  useEffect(() => {
+    if (!mounted.current) {
+      mounted.current = true
+      return
+    }
+    headingRef.current?.focus()
+  }, [step])
 
   const form = useForm<RegisterFormValues, unknown, RegisterFormValues>({
     resolver: zodResolver(registerSchema) as never,
@@ -122,6 +135,12 @@ export function RegistrationForm({ committees }: Props) {
   return (
     <div className="space-y-8">
       <Stepper steps={STEPS} currentStep={step} />
+
+      {/* Focus lands here on each step change, announcing the new step to
+          screen readers (visually hidden — the Stepper conveys progress). */}
+      <h2 ref={headingRef} tabIndex={-1} className="sr-only">
+        {`Step ${step + 1} of ${STEPS.length}: ${STEPS[step]}`}
+      </h2>
 
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
