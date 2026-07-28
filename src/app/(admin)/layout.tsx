@@ -15,7 +15,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   return (
     <div className="admin-shell flex">
       <AdminSidebar user={user} />
-
+      
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
         {/* Top bar */}
         <header className="flex h-16 shrink-0 items-center justify-between gap-3 border-b border-border/70 bg-background px-4 sm:px-6">
