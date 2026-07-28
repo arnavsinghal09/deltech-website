@@ -70,7 +70,7 @@ export function StepPref2OrCoDelegate({ form, committees, isDoubleDelegation }: 
               <FormControl>
                 <Input
                   type="email"
-                  placeholder="co@example.com"
+                  placeholder={t("register.coDelegate.emailPlaceholder")}
                   {...field}
                   value={field.value ?? ""}
                 />
