@@ -65,7 +65,13 @@ export async function saveDraft(
         coverImage:  data.coverImage ?? null,
         readMin:     data.readMin,
         slug:        newSlug,
-        status:      "DRAFT",
+        // Autosave must not change the review state. This forced "DRAFT"
+        // unconditionally, and the editor autosaves 1.5s after any keystroke,
+        // so an author fixing a typo while awaiting review silently pulled
+        // their own post out of the admin queue. Nothing told either side, and
+        // the Submit button stayed hidden because canSubmit came from the
+        // initial server prop.
+        status:      post.status === "PENDING" ? "PENDING" : "DRAFT",
       },
     })
     return { success: true, slug: newSlug }

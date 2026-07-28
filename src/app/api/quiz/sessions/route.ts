@@ -1,10 +1,7 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { auth } from "@/lib/auth"
-
-function generateRoomCode(): string {
-  return Math.floor(100000 + Math.random() * 900000).toString()
-}
+import { createOrGetQuizSession } from "@/lib/quiz-session"
 
 // GET ?code=123456  — participant lookup (public)
 export async function GET(request: Request) {
@@ -41,22 +38,6 @@ export async function POST(request: Request) {
 
   const { presentationId } = (await request.json()) as { presentationId: string }
 
-  // Reuse an existing lobby/active session
-  const existing = await prisma.quizSession.findFirst({
-    where: { presentationId, status: { in: ["lobby", "active"] } },
-  })
-  if (existing) return NextResponse.json(existing)
-
-  // Generate a unique room code
-  let roomCode = generateRoomCode()
-  for (let i = 0; i < 5; i++) {
-    const clash = await prisma.quizSession.findFirst({ where: { roomCode } })
-    if (!clash) break
-    roomCode = generateRoomCode()
-  }
-
-  const session = await prisma.quizSession.create({
-    data: { presentationId, roomCode, status: "lobby" },
-  })
+  const session = await createOrGetQuizSession(presentationId)
   return NextResponse.json(session, { status: 201 })
 }

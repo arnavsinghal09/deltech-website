@@ -426,4 +426,10 @@ model Response {
   createdAt DateTime @default(now())
 
   @@index([sessionId, slideId])
+  // The application-level "already submitted" check is a read-then-write, so
+  // two taps ~50ms apart both passed it and scored twice. This is the real
+  // guard. ponytail: Postgres treats NULLs as distinct, so it covers QUIZ mode
+  // (nicknamed, where points matter) and not anonymous POLL votes; add
+  // NULLS NOT DISTINCT if anonymous ballot-stuffing ever matters.
+  @@unique([sessionId, slideId, nickname])
 }

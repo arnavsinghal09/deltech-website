@@ -67,15 +67,27 @@ export async function POST(request: Request) {
     }
   }
 
-  await prisma.response.create({
-    data: {
-      sessionId,
-      slideId,
-      nickname,
-      answer: answer as never,
-      points,
-    },
-  })
+  // The findFirst above is only for the friendly 409. This is the real guard:
+  // two taps milliseconds apart both cleared that check and scored twice.
+  try {
+    await prisma.response.create({
+      data: {
+        sessionId,
+        slideId,
+        nickname,
+        answer: answer as never,
+        points,
+      },
+    })
+  } catch (err) {
+    if (
+      typeof err === "object" && err !== null && "code" in err &&
+      (err as { code: unknown }).code === "P2002"
+    ) {
+      return NextResponse.json({ error: "already_submitted" }, { status: 409 })
+    }
+    throw err
+  }
 
   // Current rank for this participant (total points)
   let rank: number | null = null
