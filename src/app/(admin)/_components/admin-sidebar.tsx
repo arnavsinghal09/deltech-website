@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils"
 import { t } from "@/content/strings"
 import { Badge } from "@/components/ui/badge"
 import { SignOutButton } from "./sign-out-button"
+import { AccountLink } from "./account-link"
 import { NAV_GROUPS, isNavActive } from "./admin-nav"
 
 export interface SidebarUser {
@@ -73,6 +74,7 @@ export function AdminSidebar({ user }: { user: SidebarUser }) {
               {user.role}
             </Badge>
           </div>
+          <AccountLink compact />
           <SignOutButton compact />
         </div>
       </div>

@@ -15,7 +15,10 @@ export async function requestMagicLink(
   _prev: { error?: string } | null,
   formData: FormData,
 ): Promise<{ error?: string }> {
-  const email = (formData.get("email") as string)?.trim();
+  // Lowercased like every other auth path. Without this, a link requested for
+  // "Foo@Bar.com" mints a VerificationToken whose identifier never matches the
+  // stored (lowercased) User.email, so the link resolves to nothing.
+  const email = (formData.get("email") as string)?.trim().toLowerCase();
 
   try {
     await signIn("resend", { email, redirectTo: dispatchTarget(formData) });

@@ -5,6 +5,8 @@ import { prisma } from "@/lib/prisma"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { PenLine, Clock } from "lucide-react"
+import { AccountLink } from "@/app/(admin)/_components/account-link"
+import { SignOutButton } from "@/app/(admin)/_components/sign-out-button"
 
 const STATUS_LABEL: Record<string, string> = {
   DRAFT:             "Draft",
@@ -48,12 +50,18 @@ export default async function WritePage() {
           <h1 className="font-serif text-2xl font-bold text-gray-900">Your stories</h1>
           <p className="mt-1 text-sm text-gray-500">{posts.length} post{posts.length !== 1 ? "s" : ""}</p>
         </div>
-        <Link href="/write/new">
-          <Button className="gap-2">
-            <PenLine className="size-4" />
-            New story
-          </Button>
-        </Link>
+        <div className="flex items-center gap-2">
+          {/* The author area had no header controls at all, so a pure AUTHOR
+              could neither sign out nor reach /account to set a password. */}
+          <AccountLink compact />
+          <SignOutButton compact />
+          <Link href="/write/new">
+            <Button className="gap-2">
+              <PenLine className="size-4" />
+              New story
+            </Button>
+          </Link>
+        </div>
       </div>
 
       {posts.length === 0 ? (

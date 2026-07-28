@@ -25,6 +25,7 @@ function roleCanAccess(pathname: string, role: string | null | undefined): boole
   if (pathname.startsWith("/admin")) return role === "ADMIN" || role === "MAINTAINER"
   if (pathname.startsWith("/write")) return role === "AUTHOR" || role === "ADMIN" || role === "MAINTAINER"
   if (pathname.startsWith("/dashboard")) return role === "REGISTERER"
+  if (pathname.startsWith("/account")) return !!role // any signed-in role
   return true // public path
 }
 
