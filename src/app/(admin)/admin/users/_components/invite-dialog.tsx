@@ -22,6 +22,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { t } from "@/content/strings"
 import { inviteStaff } from "../actions"
 
 type Role = "ADMIN" | "MAINTAINER" | "AUTHOR" | "REGISTERER"
@@ -69,7 +70,7 @@ export function InviteDialog() {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="person@deltech.edu"
+                placeholder={t("admin.users.inviteEmailPlaceholder")}
               />
             </div>
             <div className="space-y-1.5">
