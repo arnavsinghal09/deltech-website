@@ -13,5 +13,7 @@ export async function GET(req: NextRequest) {
   }
   const role = (session.user as { role?: string } | undefined)?.role
   const to = req.nextUrl.searchParams.get("to")
-  return NextResponse.redirect(new URL(safeLanding(to, role), req.nextUrl))
+  // Pass our origin so an absolute same-origin callbackUrl (what NextAuth's
+  // bounce produces) is honored, while foreign origins fall back to role home.
+  return NextResponse.redirect(new URL(safeLanding(to, role, req.nextUrl.origin), req.nextUrl))
 }
