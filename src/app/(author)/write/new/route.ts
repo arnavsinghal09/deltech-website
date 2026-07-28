@@ -1,10 +1,9 @@
 import { redirect } from "next/navigation"
-import { auth } from "@/lib/auth"
+import { requireAuthor } from "@/lib/authz"
 import { prisma } from "@/lib/prisma"
 
 export async function GET() {
-  const session = await auth()
-  if (!session?.user?.id) redirect("/signin")
+  const session = await requireAuthor()
 
   const post = await prisma.post.create({
     data: {

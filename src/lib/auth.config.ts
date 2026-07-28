@@ -1,4 +1,5 @@
 import type { NextAuthConfig } from "next-auth";
+import { roleHome } from "@/lib/nav";
 
 // Edge-safe config: no providers, no Prisma. Imported by both auth.ts and proxy.ts.
 // Providers and the JWT callback (which needs Prisma) live in auth.ts only.
@@ -30,14 +31,15 @@ export const authConfig = {
       }
 
       if (pathname.startsWith("/write")) {
-        return !!auth;
+        return role === "AUTHOR" || role === "ADMIN" || role === "MAINTAINER";
       }
 
       if (pathname.startsWith("/dashboard")) {
-        if (role === "ADMIN" || role === "MAINTAINER") {
-          return Response.redirect(new URL("/admin", request.nextUrl));
-        }
-        return role === "REGISTERER";
+        if (role === "REGISTERER") return true;
+        // Any other authenticated role (staff, author) belongs elsewhere —
+        // send them to their own home instead of a dead-end bounce to /signin.
+        if (role) return Response.redirect(new URL(roleHome(role), request.nextUrl));
+        return false; // unauthenticated → /signin
       }
 
       return true;

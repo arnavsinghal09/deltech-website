@@ -19,6 +19,13 @@ export default function CheckEmailPage() {
           <p className="mt-2 text-sm text-muted-foreground">{t("auth.checkEmailMessage")}</p>
           <div className="rule my-5" />
           <p className="text-xs text-muted-foreground">{t("auth.checkEmailExpiry")}</p>
+          <p className="mt-4 text-xs text-muted-foreground">
+            Didn’t get it? Check spam, or{" "}
+            <Link href="/signin" className="font-medium text-teal-800 underline underline-offset-2">
+              request another link
+            </Link>
+            .
+          </p>
         </div>
       </div>
     </div>

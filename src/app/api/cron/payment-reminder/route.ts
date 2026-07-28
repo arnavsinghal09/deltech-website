@@ -10,10 +10,11 @@ import { getContent } from "@/lib/settings"
 const DAILY_CAP = 80
 
 export async function GET(req: NextRequest) {
-  // Protect: only Vercel Cron or the CRON_SECRET bearer
+  // Protect: only the CRON_SECRET bearer. Fail closed — an unset secret must
+  // not leave this email-sending endpoint world-callable.
   const authHeader = req.headers.get("authorization")
   const cronSecret = process.env.CRON_SECRET
-  if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
+  if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
   const content = await getContent()
