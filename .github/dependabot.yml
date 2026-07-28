@@ -6,10 +6,31 @@ updates:
       interval: weekly
     open-pull-requests-limit: 5
     groups:
-      all:
+      # Only minor + patch are batched. Majors arrive as individual PRs so one
+      # incompatible bump can't block the rest (a grouped `*` once failed CI on
+      # 30 updates purely because of the TypeScript major).
+      minor-and-patch:
         patterns:
           - "*"
+        update-types:
+          - minor
+          - patch
+    ignore:
+      # Next.js needs the TypeScript 6 compiler API; TS 7 (the Go rewrite) fails
+      # `next build` with "does not provide the compiler API required by Next.js".
+      # Revisit when Next.js supports it.
+      - dependency-name: typescript
+        update-types: [version-update:semver-major]
+      # Keep @types/node on the major that matches the runtime (Node 20 in CI
+      # and on Vercel). Bump this deliberately alongside the runtime, not apart.
+      - dependency-name: "@types/node"
+        update-types: [version-update:semver-major]
+
   - package-ecosystem: github-actions
     directory: "/"
     schedule:
       interval: weekly
+    groups:
+      actions:
+        patterns:
+          - "*"

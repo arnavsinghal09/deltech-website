@@ -32,6 +32,13 @@ The Vercel project has an **Ignored Build Step** that cancels Vercel's own git-t
 - **`NEXT_PUBLIC_APP_URL`** on Preview should stay the production URL, so emails a preview sends link to prod, not the ephemeral preview.
 - **Branch protection (optional, recommended)**: GitHub → Settings → Branches → protect `main` → require the `check` status + a review before merge.
 
+## Dependency updates (Dependabot)
+
+- **Minor + patch are grouped** into one weekly PR; **majors come individually**. An earlier `patterns: ["*"]` group put 30 updates in one PR that failed CI purely because of the TypeScript major — one bad bump blocked 29 good ones.
+- **`typescript` majors are ignored.** Next.js requires the TypeScript 6 compiler API; TS 7 (the Go rewrite) fails `next build` with *"does not provide the compiler API required by Next.js"*. Revisit when Next.js supports it.
+- **`@types/node` majors are ignored.** Keep it on the major matching the runtime (Node 20 in CI and on Vercel); bump it deliberately with the runtime.
+- **The `preview` job is skipped for Dependabot and fork PRs.** GitHub does not expose repository Actions secrets to them, so `vercel --token=` would be empty and the job would always fail. `check` still gates those PRs. (Not exposing secrets to fork PRs is also the correct security posture for a public repo.)
+
 ## Risk note: open previews on the production database
 
 With Vercel Authentication off, a preview URL is reachable by anyone who has it, and this repo is **public** — preview URLs are posted in PR comments. Each preview runs **unreviewed code against the production database**. App auth still gates admin/staff routes, but public flows (e.g. the registration form) will write real rows.
