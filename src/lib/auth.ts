@@ -5,6 +5,7 @@ import Credentials from "next-auth/providers/credentials";
 import { prisma } from "@/lib/prisma";
 import { authConfig } from "@/lib/auth.config";
 import { verifyPassword } from "@/lib/password";
+import { MAGIC_LINK_MAX_AGE_S } from "@/lib/magic-link";
 
 declare module "next-auth" {
   interface Session {
@@ -22,7 +23,17 @@ declare module "next-auth" {
 export const { handlers, auth, signIn, signOut } = NextAuth({
   ...authConfig,
   providers: [
-    Resend({ from: process.env.EMAIL_FROM! }),
+    Resend({
+      from: process.env.EMAIL_FROM!,
+      maxAge: MAGIC_LINK_MAX_AGE_S,
+      // Without this Auth.js sends its own stock template on a raw fetch that
+      // never reaches EmailLog. Imported lazily so the email templates stay
+      // out of every bundle that merely needs auth().
+      async sendVerificationRequest({ identifier, url }) {
+        const { sendMagicLink } = await import("@/lib/resend");
+        await sendMagicLink(identifier, url);
+      },
+    }),
     Credentials({
       credentials: { email: {}, password: {} },
       async authorize(credentials) {
