@@ -4,6 +4,7 @@ import { requireStaff } from "@/lib/authz"
 import { TabCommittees } from "../_components/tab-committees"
 import { TabPortfolios } from "../_components/tab-portfolios"
 import { MatrixVisibilityCard } from "../_components/matrix-visibility-card"
+import { ResyncMatrixCard } from "../_components/resync-matrix-card"
 
 export default async function CommitteesSettingsPage() {
   await requireStaff()
@@ -60,6 +61,7 @@ export default async function CommitteesSettingsPage() {
       </section>
 
       <MatrixVisibilityCard matrixPublic={content.matrixPublic} />
+      <ResyncMatrixCard />
     </div>
   )
 }

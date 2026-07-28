@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useRef, useState } from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useRouter } from "next/navigation"
@@ -48,6 +48,9 @@ const STEP_FIELDS: (keyof RegisterFormValues)[][] = [
 export function RegistrationForm({ committees }: Props) {
   const [step, setStep] = useState(0)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  // Synchronous lock: the disabled-button state updates a paint later, so a
+  // fast double-click or Enter could fire onSubmit twice before it applies.
+  const submitLock = useRef(false)
   const router = useRouter()
 
   const form = useForm<RegisterFormValues, unknown, RegisterFormValues>({
@@ -98,6 +101,8 @@ export function RegistrationForm({ committees }: Props) {
   }
 
   const onSubmit = async (data: RegisterFormValues) => {
+    if (submitLock.current) return // already in flight — ignore the repeat
+    submitLock.current = true
     setIsSubmitting(true)
     try {
       const result = await registerDelegate(data)
@@ -109,6 +114,7 @@ export function RegistrationForm({ committees }: Props) {
     } catch {
       toast.error(t("toast.errorGeneric"))
     } finally {
+      submitLock.current = false
       setIsSubmitting(false)
     }
   }

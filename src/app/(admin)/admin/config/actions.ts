@@ -2,7 +2,8 @@
 
 import { z } from "zod"
 import { prisma } from "@/lib/prisma"
-import { setContent } from "@/lib/settings"
+import { setContent, getContent } from "@/lib/settings"
+import { syncSheetCell } from "@/lib/sheet-sync"
 import { requireStaff, requireAdmin } from "@/lib/authz"
 import { audit } from "@/lib/audit"
 import { callAI, AIRateLimitError } from "@/lib/ai"
@@ -42,6 +43,43 @@ export async function saveContent(
   } catch {
     return { success: false, error: "Failed to save." }
   }
+}
+
+// Replay every allotted cell's current state to the public Google Sheet.
+// syncSheetCell is best-effort per cell (fire-and-forget, self-heals on next
+// state change), so a mirror that's down for a while silently drifts — this
+// is the manual "reconcile now" for when it comes back.
+// ponytail: sequential to avoid hammering the single Apps Script endpoint;
+// parallelize in chunks only if a very large room makes this too slow.
+export async function resyncMatrix(): Promise<{ success: boolean; synced?: number; error?: string }> {
+  const session = await requireStaff()
+  const content = await getContent()
+  if (!content.sheetSyncUrl) {
+    return { success: false, error: "No sheet sync URL configured (set it under Config → Money)." }
+  }
+
+  const allotted = await prisma.portfolio.findMany({
+    where: { status: "ALLOTTED", allotment: { isNot: null } },
+    select: {
+      name: true,
+      committee: { select: { name: true } },
+      allotment: { select: { delegate: { select: { status: true } } } },
+    },
+  })
+
+  for (const p of allotted) {
+    if (!p.allotment) continue
+    await syncSheetCell({
+      committee: p.committee.name,
+      portfolio: p.name,
+      state: p.allotment.delegate.status === "CONFIRMED" ? "paid" : "allotted",
+    })
+  }
+
+  await audit(session.user?.email ?? "unknown", "matrix.resync", "Setting", undefined, {
+    synced: allotted.length,
+  })
+  return { success: true, synced: allotted.length }
 }
 
 const EventControlSchema = ContentSchema.pick({

@@ -8,33 +8,7 @@ import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { t } from "@/content/strings";
 import { getContent } from "@/lib/settings";
-
-const STATUS_LABEL: Record<string, string> = {
-  REGISTERED: "Registered",
-  ALLOTTED: "Allotted — payment coming soon",
-  PAYMENT_SENT: "Payment pending",
-  CONFIRMED: "Confirmed",
-  CANCELLED: "Cancelled",
-  WAITLISTED: "Waitlisted",
-};
-
-const STATUS_VARIANT: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
-  REGISTERED: "secondary",
-  ALLOTTED: "outline",
-  PAYMENT_SENT: "outline",
-  CONFIRMED: "default",
-  CANCELLED: "destructive",
-  WAITLISTED: "secondary",
-};
-
-const PAY_STATUS_LABEL: Record<string, string> = {
-  PENDING: "Awaiting payment",
-  SENT: "Payment link sent",
-  PAID: "Paid",
-  OFFLINE: "Confirmed (UPI)",
-  COMPED: "Comped",
-  FAILED: "Payment failed",
-};
+import { STATUS_LABEL, STATUS_VARIANT, PAY_STATUS_LABEL } from "@/lib/status-labels";
 
 function Field({ label, value }: { label: string; value: React.ReactNode }) {
   return (
