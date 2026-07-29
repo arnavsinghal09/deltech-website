@@ -3,10 +3,8 @@ name: Reset staging
 # Manual only. Wipes the staging database and rebuilds it from
 # prisma/seed-staging.ts.
 #
-# This is the pressure valve for sharing one staging database: PR branches
-# apply their own migrations to it, so migrations from PRs that are never
-# merged accumulate, and test data piles up. `migrate deploy` tolerates
-# applied-but-absent migrations so nothing breaks, but the schema drifts.
+# This is the pressure valve for the staging database: test data piles up over
+# time, so this rebuilds a clean copy of the current main-branch schema.
 on:
   workflow_dispatch:
     inputs:
@@ -53,6 +51,15 @@ jobs:
           ALLOW_DESTRUCTIVE_SEED: "1"
           DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
           DIRECT_URL: ${{ secrets.STAGING_DIRECT_URL }}
+
+      # Copies only integration configuration: Google Form source URLs,
+      # column mappings, and the public-sheet mirror URL. Delegates, payments,
+      # users, and every other production record remain in Production.
+      - name: Sync production integration configuration
+        run: npm run sync:staging:integrations
+        env:
+          PROD_DATABASE_URL: ${{ secrets.PROD_DATABASE_URL }}
+          STAGING_DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
 
       - name: Summary
         run: echo "Staging reset and reseeded. https://test.deltechmun.in" >> "$GITHUB_STEP_SUMMARY"

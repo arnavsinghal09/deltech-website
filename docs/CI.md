@@ -1,49 +1,56 @@
 # CI, deployments and the staging environment
 
-## Three environments, one Vercel project
+## Two environments, one Vercel project
 
 | | Vercel env scope | Database | URL |
 |---|---|---|---|
 | Production | Production | prod Supabase | `deltechmun.in` |
 | Staging (tracks `main`) | Preview | **staging** Supabase | `test.deltechmun.in` |
-| Per-PR preview | Preview | **staging** Supabase | unique `*.vercel.app`, commented on the PR |
 
 Staging and production are separated by Vercel's env scopes rather than by two
-projects: no second project to keep in sync, no extra project-ID secrets, and
-`preview.yml` needs no special targeting. The one failure mode is a variable
-added as "All Environments", which silently re-points every preview at
-production. That is exactly how this used to be broken, so
+projects: no second project to keep in sync and no extra project-ID secrets.
+Pull requests run CI but do not deploy; Vercel Hobby's upload allowance is too
+small for a deployment on every PR. The one failure mode is a variable added as
+"All Environments", which silently re-points staging at production. That is
+exactly how this used to be broken, so
 `scripts/check-env-isolation.ts` fails the build if Preview and Production ever
 resolve to the same `DATABASE_URL`.
 
-**Nothing on staging can reach production.** Different database, different
-`AUTH_SECRET`, its own Resend key, and `CRON_SECRET`/`SHEET_SYNC_SECRET`
-deliberately unset so the cron routes and the Google Sheet mirror fail closed.
+**Application data is isolated; integrations are deliberately shared.** The
+website reads and writes delegates, users, payments, settings, and logs in Neon,
+with a different `AUTH_SECRET`. It shares Production's Resend, Razorpay, Google
+Form, cron, public-sheet, Supabase Realtime/Storage, and Groq credentials so the
+complete flows can be tested.
 
-Email and Razorpay are **live** on staging, on purpose: you cannot test a
-registration flow whose emails are stubbed out. The containment is the data, not
-a kill switch, so the staging seed only ever uses `staging+*@deltechmun.in`
-addresses. **Never copy production data into staging.**
+This means staging uses the real Resend API, can create real Razorpay payment
+links, consumes live Google Form responses, and updates the public Google
+Sheet. To prevent duplicate messages to live form respondents,
+`EMAIL_REDIRECT_TO` sends every staging email to `ADMIN_EMAIL` and prefixes the
+subject with its intended recipient. **Never copy production database records
+into staging.**
 
 ## Workflows
 
 | Workflow | Trigger | Does |
 |---|---|---|
 | `check.yml` (CI) | PR, and called by `deploy.yml` | `tsc --noEmit`, `npm run check`, `next build`. The gate. |
-| `preview.yml` | PR | Migrates staging, deploys a preview, comments the URL. |
 | `deploy.yml` | push `main` | `ci` → then `staging` → then `production`. |
-| `reset-staging.yml` | manual | Wipes and reseeds the staging database. |
+| `reset-staging.yml` | manual | Wipes and reseeds Neon, then copies integration configuration. |
+| `staging-cron.yml` | daily/manual | Invokes both protected cron routes on staging. |
 
 ```
 push main
   └─ ci            reuses check.yml
-      └─ staging      migrate staging → deploy → alias test.deltechmun.in
+      └─ staging      migrate → deploy → alias → smoke-test test.deltechmun.in
           └─ production  migrate prod → deploy --prod
 ```
 
 Production depends on staging, so a migration that is going to fail does so
 against the scratch database first. `deploy.yml` has a `concurrency` group, so
 two quick merges queue rather than racing two migrations at the same database.
+There is no human pause: once the staging deployment succeeds, Production
+deploys immediately. Use `test.deltechmun.in` for ongoing functional testing,
+not as a manual promotion gate.
 
 `check.yml` has no `push: [main]` trigger. `deploy.yml` calls it instead;
 adding both would run CI twice per merge and, because they share a concurrency
@@ -55,27 +62,22 @@ with no workflow edit.
 ## The IPv6 trap
 
 Migrations run `prisma migrate deploy` against `DIRECT_URL`
-(`prisma.config.ts:8`). Both `*_DIRECT_URL` secrets **must** be the Supabase
-**session pooler**:
+(`prisma.config.ts:8`).
 
-```
-postgresql://postgres.<ref>:<pw>@aws-1-<region>.pooler.supabase.com:5432/postgres
-```
+- `STAGING_DIRECT_URL` is Neon's **unpooled** connection string. The running
+  application uses the separate pooled `STAGING_DATABASE_URL`.
+- `PROD_DIRECT_URL` must be Supabase's **session pooler**:
 
-- `db.<ref>.supabase.co:5432` is **IPv6-only**, and GitHub runners have no IPv6.
-  Using it fails with `P1001 Can't reach database server`.
-- Port **6543** is the transaction pooler and **cannot run DDL**. Migrations need
-  5432 (session mode). The app's runtime `DATABASE_URL` uses 6543, which is correct.
+  ```
+  postgresql://postgres.<ref>:<pw>@aws-1-<region>.pooler.supabase.com:5432/postgres
+  ```
 
-### Before setup has run
+  `db.<ref>.supabase.co:5432` is IPv6-only, and GitHub runners have no IPv6.
+  Port 6543 is the transaction pooler and cannot run DDL.
 
-The pipeline degrades instead of blocking. With `STAGING_DIRECT_URL` and
-`PROD_DIRECT_URL` unset, both migration steps emit a warning and skip, the
-staging deploy still produces `test.deltechmun.in`, and production deploys
-exactly as it did before. The PR comment says plainly that the preview is still
-on the production database. Nothing is gated on the staging environment
-existing, so this could be merged without freezing deployments; run the setup
-below to turn the warnings into real gates.
+The pipeline fails closed when either migration URL is missing. Production also
+stays untouched when staging cannot migrate, deploy, claim its stable alias, or
+serve its database-backed homepage and availability routes.
 
 ## Setup
 
@@ -100,14 +102,21 @@ export STAGING_DATABASE_URL=...         # 'Connection pooling' CHECKED, host has
 npm run setup:staging
 ```
 
-It writes the Preview-scoped env vars (copying what it can from Production),
-adds `test.deltechmun.in`, deletes the stray `test-deltech-website` project,
-sets the `STAGING_*` GitHub secrets, and turns on branch protection requiring
-`check`. It refuses if either URL points at production, or if the two are the
-wrong way round (PgBouncer cannot run DDL). It prints what it changed, what was
-already in place, and what still needs you.
+It writes the Preview-scoped Neon URLs and stable staging origin, copies the
+approved integration credentials from Production, adds `test.deltechmun.in`,
+deletes the stray `test-deltech-website` project, sets the `STAGING_*` GitHub
+secrets, and turns on branch protection requiring `check`. It refuses if either
+staging URL points at production or if the pooled/unpooled URLs are reversed.
+It prints what it changed, what was already in place, and what still needs you.
 
-Then run **Reset staging** once to migrate and seed the new database.
+Then run **Reset staging** once. After seeding fake application data, it copies
+only these Production integration records into Neon:
+
+- `sheetSyncUrl`, `recruitmentSheetUrl`, and `sheetPullSources` settings;
+- `ImportPreset` column mappings.
+
+It does not copy delegates, users, payments, email logs, or other Production
+records.
 
 ### What it cannot do
 
@@ -116,12 +125,14 @@ Then run **Reset staging** once to migrate and seed the new database.
 - **DNS.** Point `test.deltechmun.in` at Vercel yourself.
 - **`PROD_DIRECT_URL`.** Your local `DIRECT_URL` is the IPv6-only host, so the
   script will not use it. Set the secret to the production *session pooler* URL.
-- **Razorpay test keys**, and only when you want them. Staging does not need
-  them on day one: `paymentProvider` seeds to `upi_qr`, so nothing calls
-  Razorpay until you flip that setting. When you do, add `rzp_test_…` keys and a
-  test-mode webhook at `https://test.deltechmun.in/api/webhooks/razorpay`; test
-  cards then drive the real webhook, the real status transition and the real
-  confirmation email, with no money moving.
+- **Google Apps Script deployment.** Copy the updated
+  `docs/apps-script/gform-webhook.gs` into the live form's linked sheet so new
+  submissions fan out to both Production and staging. The daily staging sync
+  repairs missed deliveries.
+- **Razorpay webhook registration.** Add
+  `https://test.deltechmun.in/api/webhooks/razorpay` in Razorpay using the
+  shared webhook secret. Unknown delegate IDs are acknowledged and ignored by
+  either environment.
 
 ## Staging data
 
@@ -138,23 +149,30 @@ refuses outright if `DATABASE_URL` matches the production project ref.
 Run it via the **Reset staging** workflow (type `reset staging` to confirm), or
 locally with `npm run db:seed:staging`.
 
-Staging is shared, so PR branches apply their own migrations to it. Migrations
-from PRs that are never merged accumulate; `migrate deploy` ignores
-applied-but-absent migrations so nothing breaks, but the schema drifts. Reset
-when it gets untidy.
+Staging tracks `main`, so only merged migrations are applied to it. Reset when
+test data gets untidy or when you need a clean rehearsal against the current
+schema.
+
+## Staging cron jobs
+
+Vercel schedules `vercel.json` crons only for Production deployments. Staging
+uses `.github/workflows/staging-cron.yml` once per day instead. It reads the
+Preview-scoped `CRON_SECRET` through the Vercel API and calls both
+`/api/cron/payment-reminder` and `/api/cron/gform-sync` on
+`test.deltechmun.in`. It can also be run manually from Actions.
 
 ## Deployment protection
 
-Preview URLs must be publicly reachable for reviewers, so Vercel Authentication
-is off (Project → Settings → **Deployment Protection**). Previews now run
-against staging, so a public preview URL no longer exposes the production
-database, which was the standing risk this whole setup removes.
+The staging URL must be publicly reachable for testers, so Vercel Authentication
+is off (Project → Settings → **Deployment Protection**). Staging runs against
+its own database, so the public URL does not expose the production database.
 
 ## Link URLs in emails
 
 `src/lib/app-url.ts` resolves `NEXT_PUBLIC_APP_URL || NEXT_PUBLIC_VERCEL_URL`.
-Set it to the production origin on Production and leave it **unset on Preview**,
-so each PR preview's emails link back to that preview rather than to production.
+Set it to `https://deltechmun.in` on Production and
+`https://test.deltechmun.in` on Preview, so each environment's emails link back
+to its stable origin.
 `scripts/check-app-url.ts` pins the fallback order and stops any consumer going
 back to reading the env directly.
 
@@ -166,9 +184,9 @@ back to reading the env directly.
 - **`typescript` majors ignored.** Next.js needs the TS 6 compiler API; TS 7 (the
   Go rewrite) fails `next build`. Revisit when Next.js supports it.
 - **`@types/node` majors ignored.** Keep it on the major matching the runtime.
-- **`preview` is skipped for Dependabot and fork PRs.** GitHub does not expose
-  repository secrets to them, so `vercel --token=` would be empty. `check` still
-  gates them, and `check-env-isolation` skips itself for the same reason.
+- **PRs run CI only.** `check-env-isolation` skips itself for Dependabot and
+  fork PRs because GitHub does not expose `VERCEL_TOKEN` to them; the rest of
+  `check` still gates them.
 
 ## Moving to a society-owned Vercel account later
 

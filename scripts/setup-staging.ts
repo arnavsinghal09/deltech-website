@@ -170,20 +170,34 @@ async function setPreviewEnv(projectId: string, orgId: string) {
 
   const prodValue = (key: string) =>
     envs.find((e) => e.key === key && (e.target ?? []).includes("production"))?.value
+  const previewOnlyValue = (key: string) =>
+    envs.find(
+      (e) =>
+        e.key === key &&
+        (e.target ?? []).includes("preview") &&
+        !(e.target ?? []).includes("production"),
+    )?.value
+  const stagingEmailRecipient = prodValue("ADMIN_EMAIL")
+  if (!stagingEmailRecipient) {
+    manual.push("ADMIN_EMAIL: required to redirect staging mail away from real form respondents")
+  }
 
   const desired: Record<string, string> = {
     DATABASE_URL: STAGING_DATABASE_URL,
     DIRECT_URL: STAGING_DIRECT_URL,
     // Distinct from production so a staging session cannot be replayed there.
-    AUTH_SECRET: randomBytes(32).toString("base64"),
+    // Preserve it on re-runs so configuring staging does not sign everyone out.
+    AUTH_SECRET: previewOnlyValue("AUTH_SECRET") ?? randomBytes(32).toString("base64"),
     // Makes staging mail obvious in an inbox.
     EMAIL_FROM: STAGING_EMAIL_FROM,
+    ...(stagingEmailRecipient ? { EMAIL_REDIRECT_TO: stagingEmailRecipient } : {}),
+    // PRs do not deploy; Preview scope is the stable staging environment.
+    NEXT_PUBLIC_APP_URL: `https://${STAGING_DOMAIN}`,
   }
 
-  // Copy the rest from Production so nothing has to be retyped. Deliberately
-  // omitted: CRON_SECRET and SHEET_SYNC_SECRET (staging must fail closed), and
-  // NEXT_PUBLIC_APP_URL (unset on Preview so each PR preview's emails link back
-  // to itself; the staging alias sets it separately below).
+  // Application data stays on Neon, while integrations deliberately use the
+  // same credentials as Production so their complete flows can be exercised.
+  // The staging cron routes still read and write through Neon via DATABASE_URL.
   // NEXT_PUBLIC_SUPABASE_* are copied deliberately. They are NOT the database:
   // they drive Supabase Realtime (the quiz) and Storage (blog images), which
   // staging shares with production. Consequence worth knowing: blog images
@@ -197,13 +211,27 @@ async function setPreviewEnv(projectId: string, orgId: string) {
     "RAZORPAY_KEY_SECRET",
     "RAZORPAY_WEBHOOK_SECRET",
     "GFORM_SHARED_SECRET",
+    "CRON_SECRET",
+    "SHEET_SYNC_SECRET",
     "GROQ_API_KEY",
     "GROQ_MODEL",
     "ADMIN_EMAIL",
   ]
+  const requiredShared = new Set([
+    "AUTH_RESEND_KEY",
+    "RAZORPAY_KEY_ID",
+    "RAZORPAY_KEY_SECRET",
+    "RAZORPAY_WEBHOOK_SECRET",
+    "GFORM_SHARED_SECRET",
+    "CRON_SECRET",
+    "SHEET_SYNC_SECRET",
+  ])
   for (const key of copyFromProd) {
     const v = prodValue(key)
     if (v) desired[key] = v
+    else if (requiredShared.has(key)) {
+      manual.push(`${key}: missing from Production, so staging cannot copy it`)
+    }
   }
 
   for (const [key, value] of Object.entries(desired)) {
@@ -254,11 +282,6 @@ async function setPreviewEnv(projectId: string, orgId: string) {
     }
   }
 
-  // Staging's own stable origin, used only by the aliased main deployment.
-  manual.push(
-    `Set NEXT_PUBLIC_APP_URL=https://${STAGING_DOMAIN} on Preview ONLY if you want every PR ` +
-      `preview to link to the staging domain rather than to itself. Left unset by default.`,
-  )
 }
 
 // ---------------------------------------------------------------------------

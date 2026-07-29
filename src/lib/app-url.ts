@@ -8,8 +8,6 @@
 //
 //   Production   NEXT_PUBLIC_APP_URL = https://deltechmun.in
 //   Staging      NEXT_PUBLIC_APP_URL = https://test.deltechmun.in
-//   PR preview   unset, so it falls through to that deployment's own URL and
-//                the mail it sends links back to itself
 //
 // Both variables are NEXT_PUBLIC_, so this resolves identically on the server
 // and in the one client component that needs it (the quiz presenter).

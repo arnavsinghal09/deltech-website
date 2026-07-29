@@ -15,7 +15,7 @@ assert.equal(
   "an explicit origin must win over the Vercel fallback, trailing slash stripped",
 )
 
-// PR previews leave it unset, so links point back at that deployment.
+// A Vercel deployment with no explicit origin falls back to its own URL.
 assert.equal(
   resolveAppUrl(undefined, "deltech-website-abc123.vercel.app"),
   "https://deltech-website-abc123.vercel.app",

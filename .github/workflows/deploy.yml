@@ -34,24 +34,23 @@ jobs:
       - name: Install
         run: npm ci
 
-      # Skips rather than fails while the staging database does not exist yet,
-      # so merging this pipeline cannot freeze production deploys. Once
-      # `npm run setup:staging` has run, the secret exists and this becomes a
-      # real gate.
-      #
-      # DIRECT_URL must be the Supabase SESSION pooler (port 5432 on
-      # pooler.supabase.com), NOT db.<ref>.supabase.co. That host is IPv6-only
-      # and GitHub runners have no IPv6, so it fails with P1001. Port 6543 is
-      # the transaction pooler and cannot run DDL.
+      # Neon unpooled URL. Missing staging credentials are fatal: Production
+      # must not deploy when its staging gate did not actually run.
       - name: Migrate staging
         env:
           DIRECT_URL: ${{ secrets.STAGING_DIRECT_URL }}
         run: |
           if [ -z "$DIRECT_URL" ]; then
-            echo "::warning::STAGING_DIRECT_URL is not set, so the staging migration was skipped. Run 'npm run setup:staging' (see docs/CI.md)."
-            exit 0
+            echo "::error::STAGING_DIRECT_URL is not set. Run 'Set up staging (Vercel side)'."
+            exit 1
           fi
           npx prisma migrate deploy
+
+      - name: Sync production integration configuration
+        run: npm run sync:staging:integrations
+        env:
+          PROD_DATABASE_URL: ${{ secrets.PROD_DATABASE_URL }}
+          STAGING_DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
 
       - name: Install Vercel CLI
         run: npm install --global vercel@latest
@@ -63,12 +62,13 @@ jobs:
       - name: Build
         run: vercel build --token=${{ secrets.VERCEL_TOKEN }}
 
-      # See preview.yml: command substitution inside echo hides a failure.
+      # Capture the URL separately: command substitution inside echo would hide
+      # a failed deploy and let the job go green with an empty URL.
       - name: Deploy staging
         id: deploy
         run: |
           set -o pipefail
-          URL=$(vercel deploy --prebuilt --token=${{ secrets.VERCEL_TOKEN }})
+          URL=$(vercel deploy --prebuilt --archive=tgz --token=${{ secrets.VERCEL_TOKEN }})
           if [ -z "$URL" ]; then
             echo "::error::vercel deploy produced no URL."
             exit 1
@@ -79,14 +79,23 @@ jobs:
       # time. Vercel's branch-domain feature cannot do this for us because the
       # project's Ignored Build Step cancels git-triggered builds.
       #
-      # Non-fatal. The domain does not exist until `npm run setup:staging` has
-      # run, and a missing alias is cosmetic: the deployment above already
-      # succeeded and is reachable at its own URL. Letting this fail the job
-      # took `production` down with it, since production needs staging.
       - name: Alias to test.deltechmun.in
+        run: vercel alias set "${{ steps.deploy.outputs.url }}" test.deltechmun.in --token=${{ secrets.VERCEL_TOKEN }}
+
+      # The homepage and availability board both read application settings from
+      # Neon, so these checks verify more than static asset delivery.
+      - name: Smoke-test staging
         run: |
-          if ! vercel alias set "${{ steps.deploy.outputs.url }}" test.deltechmun.in --token=${{ secrets.VERCEL_TOKEN }}; then
-            echo "::warning::Could not alias test.deltechmun.in (the domain is probably not on the project yet). Staging is live at ${{ steps.deploy.outputs.url }}. Run 'npm run setup:staging'."
+          for path in / /availability /signin; do
+            curl --fail --silent --show-error --location \
+              --retry 5 --retry-delay 5 --retry-all-errors \
+              "https://test.deltechmun.in${path}" > /dev/null
+          done
+          STATUS=$(curl --silent --output /dev/null --write-out "%{http_code}" \
+            "https://test.deltechmun.in/api/cron/gform-sync")
+          if [ "$STATUS" != "401" ]; then
+            echo "::error::Uncredentialed staging cron returned HTTP $STATUS instead of 401."
+            exit 1
           fi
 
   production:
@@ -104,18 +113,15 @@ jobs:
       - name: Install
         run: npm ci
 
-      # Nothing applied migrations before this. Merging a schema change shipped
-      # code against a database missing those columns, silently, until someone
-      # remembered to run the CLI by hand. Warns rather than fails while the
-      # secret is missing, so this pipeline landing cannot stop deployments;
-      # that leaves the pre-existing manual step in place until setup runs.
+      # Supabase session pooler (port 5432). Missing migration credentials are
+      # fatal: shipping code against an old schema is not a valid deployment.
       - name: Migrate production
         env:
           DIRECT_URL: ${{ secrets.PROD_DIRECT_URL }}
         run: |
           if [ -z "$DIRECT_URL" ]; then
-            echo "::warning::PROD_DIRECT_URL is not set, so production was NOT migrated. Set it to the SESSION pooler URL (port 5432 on pooler.supabase.com); db.<ref>.supabase.co is IPv6-only and unreachable from runners."
-            exit 0
+            echo "::error::PROD_DIRECT_URL is not set. Use the SESSION pooler URL (port 5432 on pooler.supabase.com)."
+            exit 1
           fi
           npx prisma migrate deploy
 
@@ -129,4 +135,4 @@ jobs:
         run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
 
       - name: Deploy production
-        run: vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }}
+        run: vercel deploy --prebuilt --prod --archive=tgz --token=${{ secrets.VERCEL_TOKEN }}

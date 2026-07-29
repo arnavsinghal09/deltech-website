@@ -19,6 +19,7 @@ function getResend(): Resend {
   return (resendClient ??= new Resend(process.env.AUTH_RESEND_KEY))
 }
 const FROM = process.env.EMAIL_FROM ?? "noreply@deltechmun.in"
+const REDIRECT_TO = process.env.EMAIL_REDIRECT_TO?.trim()
 
 
 // ---------------------------------------------------------------------------
@@ -42,10 +43,12 @@ async function loggedSend({
   let error: string | undefined
 
   try {
+    const recipient = REDIRECT_TO || toEmail
+    const deliveredSubject = REDIRECT_TO ? `[STAGING → ${toEmail}] ${subject}` : subject
     const { error: apiError } = await getResend().emails.send({
       from: FROM,
-      to: toEmail,
-      subject,
+      to: recipient,
+      subject: deliveredSubject,
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       react: reactElement as any,
     })
