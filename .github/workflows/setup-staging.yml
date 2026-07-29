@@ -13,6 +13,12 @@ name: Set up staging (Vercel side)
 # from a maintainer's machine with `gh`.
 on:
   workflow_dispatch:
+    inputs:
+      deploy_staging:
+        description: Deploy and smoke-test test.deltechmun.in after setup
+        required: false
+        default: false
+        type: boolean
 
 concurrency:
   group: setup-staging
@@ -85,10 +91,105 @@ jobs:
           SKIP_GH_SECRETS: "1"
         run: npm run setup:staging
 
+      # This is the pre-merge recovery path. The Deploy workflow cannot be
+      # dispatched manually until its workflow_dispatch trigger reaches main,
+      # while this long-standing setup workflow can run from the PR branch.
+      - name: Require shared integrations before deployment
+        if: inputs.deploy_staging
+        env:
+          PROD_ADMIN_EMAIL: ${{ secrets.PROD_ADMIN_EMAIL }}
+          PROD_AUTH_RESEND_KEY: ${{ secrets.PROD_AUTH_RESEND_KEY }}
+          PROD_RAZORPAY_KEY_ID: ${{ secrets.PROD_RAZORPAY_KEY_ID }}
+          PROD_RAZORPAY_KEY_SECRET: ${{ secrets.PROD_RAZORPAY_KEY_SECRET }}
+          PROD_RAZORPAY_WEBHOOK_SECRET: ${{ secrets.PROD_RAZORPAY_WEBHOOK_SECRET }}
+          PROD_GFORM_SHARED_SECRET: ${{ secrets.PROD_GFORM_SHARED_SECRET }}
+          PROD_CRON_SECRET: ${{ secrets.PROD_CRON_SECRET }}
+          PROD_SHEET_SYNC_SECRET: ${{ secrets.PROD_SHEET_SYNC_SECRET }}
+          PROD_NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.PROD_NEXT_PUBLIC_SUPABASE_URL }}
+          PROD_NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.PROD_NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}
+          PROD_GROQ_API_KEY: ${{ secrets.PROD_GROQ_API_KEY }}
+        run: |
+          missing=0
+          for key in \
+            PROD_ADMIN_EMAIL \
+            PROD_AUTH_RESEND_KEY \
+            PROD_RAZORPAY_KEY_ID \
+            PROD_RAZORPAY_KEY_SECRET \
+            PROD_RAZORPAY_WEBHOOK_SECRET \
+            PROD_GFORM_SHARED_SECRET \
+            PROD_CRON_SECRET \
+            PROD_SHEET_SYNC_SECRET \
+            PROD_NEXT_PUBLIC_SUPABASE_URL \
+            PROD_NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY \
+            PROD_GROQ_API_KEY
+          do
+            if [ -z "${!key}" ]; then
+              echo "::error::$key is not set."
+              missing=1
+            fi
+          done
+          exit "$missing"
+
+      - name: Migrate staging
+        if: inputs.deploy_staging
+        env:
+          DIRECT_URL: ${{ secrets.STAGING_DIRECT_URL }}
+        run: npx prisma migrate deploy
+
+      - name: Sync production integration configuration
+        if: inputs.deploy_staging
+        env:
+          PROD_DATABASE_URL: ${{ secrets.PROD_DATABASE_URL }}
+          STAGING_DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
+        run: npm run sync:staging:integrations
+
+      - name: Refresh Vercel preview env
+        if: inputs.deploy_staging
+        run: vercel pull --yes --environment=preview --token=${{ secrets.VERCEL_TOKEN }}
+
+      - name: Build staging
+        if: inputs.deploy_staging
+        run: vercel build --token=${{ secrets.VERCEL_TOKEN }}
+
+      - name: Deploy staging
+        if: inputs.deploy_staging
+        id: deploy
+        run: |
+          set -o pipefail
+          URL=$(vercel deploy --prebuilt --archive=tgz --token=${{ secrets.VERCEL_TOKEN }})
+          if [ -z "$URL" ]; then
+            echo "::error::vercel deploy produced no URL."
+            exit 1
+          fi
+          echo "url=$URL" >> "$GITHUB_OUTPUT"
+
+      - name: Alias to test.deltechmun.in
+        if: inputs.deploy_staging
+        run: vercel alias set "${{ steps.deploy.outputs.url }}" test.deltechmun.in --token=${{ secrets.VERCEL_TOKEN }}
+
+      - name: Smoke-test staging
+        if: inputs.deploy_staging
+        run: |
+          for path in / /availability /signin; do
+            curl --fail --silent --show-error --location \
+              --retry 5 --retry-delay 5 --retry-all-errors \
+              "https://test.deltechmun.in${path}" > /dev/null
+          done
+          STATUS=$(curl --silent --output /dev/null --write-out "%{http_code}" \
+            "https://test.deltechmun.in/api/cron/gform-sync")
+          if [ "$STATUS" != "401" ]; then
+            echo "::error::Uncredentialed staging cron returned HTTP $STATUS instead of 401."
+            exit 1
+          fi
+
       - name: Next steps
         run: |
           {
             echo "### Staging configured"
             echo ""
-            echo "Run **Reset staging** to migrate and seed, then check <https://test.deltechmun.in>."
+            if [ "${{ inputs.deploy_staging }}" = "true" ]; then
+              echo "Staging was deployed and smoke-tested at <https://test.deltechmun.in>."
+            else
+              echo "Run **Reset staging**, then rerun this workflow with **deploy_staging** to deploy and verify <https://test.deltechmun.in>."
+            fi
           } >> "$GITHUB_STEP_SUMMARY"
