@@ -70,8 +70,16 @@ jobs:
       # Gives main's staging build a stable address instead of a new hash each
       # time. Vercel's branch-domain feature cannot do this for us because the
       # project's Ignored Build Step cancels git-triggered builds.
+      #
+      # Non-fatal. The domain does not exist until `npm run setup:staging` has
+      # run, and a missing alias is cosmetic: the deployment above already
+      # succeeded and is reachable at its own URL. Letting this fail the job
+      # took `production` down with it, since production needs staging.
       - name: Alias to test.deltechmun.in
-        run: vercel alias set "${{ steps.deploy.outputs.url }}" test.deltechmun.in --token=${{ secrets.VERCEL_TOKEN }}
+        run: |
+          if ! vercel alias set "${{ steps.deploy.outputs.url }}" test.deltechmun.in --token=${{ secrets.VERCEL_TOKEN }}; then
+            echo "::warning::Could not alias test.deltechmun.in (the domain is probably not on the project yet). Staging is live at ${{ steps.deploy.outputs.url }}. Run 'npm run setup:staging'."
+          fi
 
   production:
     needs: [ci, staging]
