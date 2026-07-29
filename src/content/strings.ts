@@ -568,7 +568,7 @@ export const STRINGS = {
     sendLinkButton: "Send magic link",
     checkEmailTitle: "Check your inbox",
     checkEmailMessage: "We sent a sign-in link to your email. Click it to continue.",
-    checkEmailExpiry: "The link expires in 10 minutes.",
+    checkEmailExpiry: "The link expires in 30 minutes.",
     errorDefault: "Something went wrong. Please try again.",
     delegateNote: "No account needed to register as a delegate.",
     magicLinkTab: "Magic link",
@@ -607,12 +607,13 @@ export const STRINGS = {
 
   email: {
     subjects: {
+      magicLink: "Your DelTech MUN sign-in link",
       registrationReceived: "Your DelTech MUN registration is received",
-      allotmentSent: "Your DelTech MUN allotment: {committee} — {portfolio}",
+      allotmentSent: "Your DelTech MUN allotment: {committee}, {portfolio}",
       coDelegateNotice: "You have been added as a co-delegate for {committee}",
-      coDelegateRegistered: "You have been added as a co-delegate — DelTech MUN",
-      paymentConfirmed: "Payment confirmed — DelTech MUN",
-      paymentReminder: "Complete your payment — DelTech MUN",
+      coDelegateRegistered: "You have been added as a co-delegate at DelTech MUN",
+      paymentConfirmed: "Payment confirmed at DelTech MUN",
+      paymentReminder: "Your DelTech MUN payment is still pending",
       blogApproved: 'Your article “{title}” has been published',
       blogChangesRequested: 'Changes requested on “{title}”',
     },
