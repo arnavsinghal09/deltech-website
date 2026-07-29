@@ -5,18 +5,36 @@ import Credentials from "next-auth/providers/credentials";
 import { prisma } from "@/lib/prisma";
 import { authConfig } from "@/lib/auth.config";
 import { verifyPassword } from "@/lib/password";
+import { sessionNeedsRefresh } from "@/lib/user-admin";
+
+type AppRole = "ADMIN" | "MAINTAINER" | "AUTHOR" | "REGISTERER";
 
 declare module "next-auth" {
   interface Session {
     user: {
       id: string;
-      role: "ADMIN" | "MAINTAINER" | "AUTHOR" | "REGISTERER";
+      role: AppRole;
     } & DefaultSession["user"];
   }
+}
 
-  interface JWT {
-    role?: "ADMIN" | "MAINTAINER" | "AUTHOR" | "REGISTERER";
-  }
+// JWT extends Record<string, unknown>, so `role` and `checkedAt` are readable
+// and writable without a module augmentation ("next-auth/jwt" is not resolvable
+// under this tsconfig's module resolution).
+
+// Accounts are only ever created deliberately: /signup for delegates, an admin
+// invite for staff. Left to itself the email provider signs *anyone* up: on
+// link click Auth.js creates the missing row with the schema default role
+// (AUTHOR), which grants /write. So an unknown address must be refused, not
+// provisioned. This is also what stops a deleted user walking back in through
+// a magic link that was already in their inbox.
+async function mayStartSession(email: string | null | undefined): Promise<boolean> {
+  if (!email) return false;
+  const user = await prisma.user.findUnique({
+    where: { email: email.trim().toLowerCase() },
+    select: { disabledAt: true },
+  });
+  return !!user && !user.disabledAt;
 }
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
@@ -31,7 +49,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         if (!email || !password) return null;
 
         const user = await prisma.user.findUnique({ where: { email } });
-        if (!user?.passwordHash) return null;
+        if (!user?.passwordHash || user.disabledAt) return null;
 
         const valid = await verifyPassword(password, user.passwordHash);
         if (!valid) return null;
@@ -43,25 +61,38 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: PrismaAdapter(prisma),
   callbacks: {
     // Override the callbacks from authConfig, keeping session+authorized
-    // and adding a robust jwt callback that runs only in the Node.js context.
+    // and adding jwt/signIn, which need Prisma and so only run on Node.
     ...authConfig.callbacks,
+
+    // Runs before Auth.js creates or resumes anything. For the email provider
+    // it fires twice, once when the link is requested and once when it is
+    // clicked, so an unknown or disabled address never receives a link and
+    // never gets an account created for it.
+    async signIn({ user }) {
+      return mayStartSession(user?.email);
+    },
+
     async jwt({ token, user }) {
-      // On sign-in: user is the full object returned by authorize or the adapter.
+      // On sign-in: user is the full object from authorize or the adapter.
       if (user && "role" in user) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (token as any).role = (user as any).role;
+        token.role = (user as { role: AppRole }).role;
+        token.checkedAt = Date.now();
+        return token;
       }
-      // Fallback: if role is still missing (e.g. NextAuth v5 beta adapter quirk),
-      // fetch it from the DB so the session is always correct.
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      if (!(token as any).role && token.sub) {
-        const dbUser = await prisma.user.findUnique({
-          where: { id: token.sub },
-          select: { role: true },
-        });
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        if (dbUser) (token as any).role = dbUser.role;
-      }
+
+      // Otherwise re-read the row once the cached copy goes stale, so role
+      // changes, disables and deletions take effect on live sessions.
+      if (!token.sub || !sessionNeedsRefresh(token.checkedAt, Date.now())) return token;
+
+      const dbUser = await prisma.user.findUnique({
+        where: { id: token.sub },
+        select: { role: true, disabledAt: true },
+      });
+      // Deleted or disabled: returning null invalidates the session.
+      if (!dbUser || dbUser.disabledAt) return null;
+
+      token.role = dbUser.role;
+      token.checkedAt = Date.now();
       return token;
     },
   },

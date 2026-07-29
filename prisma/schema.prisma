@@ -19,6 +19,8 @@ model User {
   role          Role      @default(AUTHOR)
   passwordHash  String?
   emailVerified DateTime?
+  disabledAt    DateTime?
+  createdAt     DateTime  @default(now())
   accounts      Account[]
   sessions      Session[]
   posts         Post[]
