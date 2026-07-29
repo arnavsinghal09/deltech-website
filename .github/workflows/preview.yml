@@ -68,10 +68,16 @@ jobs:
           STAGING_DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
         run: |
           PULLED=$(grep -m1 '^DATABASE_URL=' .vercel/.env.preview.local 2>/dev/null | cut -d= -f2- | tr -d '"' || true)
-          # Host only: safe to log, and enough to tell Neon from Supabase when
-          # the comparison below does not do what you expect.
-          echo "pulled DB host:   $(printf '%s' "$PULLED" | sed -E 's#^[^@]*@##; s#/.*##')"
-          echo "expected DB host: $(printf '%s' "$STAGING_DATABASE_URL" | sed -E 's#^[^@]*@##; s#/.*##')"
+          # Booleans rather than the host itself: GitHub masks anything that
+          # looks like a secret, which turned the useful half of this into
+          # "[SENSITIVE]" and told us nothing.
+          case "$PULLED" in
+            *neon.tech*)      echo "pulled points at: neon (staging)" ;;
+            *supabase.com*)   echo "pulled points at: supabase (PRODUCTION)" ;;
+            "")               echo "pulled points at: nothing (no DATABASE_URL in the pulled env)" ;;
+            *)                echo "pulled points at: an unrecognised host" ;;
+          esac
+          echo "pulled length=${#PULLED} expected length=${#STAGING_DATABASE_URL}"
           if [ -n "$STAGING_DATABASE_URL" ] && [ "$PULLED" = "$STAGING_DATABASE_URL" ]; then
             echo "staging=true" >> "$GITHUB_OUTPUT"
           else
