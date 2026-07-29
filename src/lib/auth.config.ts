@@ -39,7 +39,7 @@ export const authConfig = {
 
       if (pathname.startsWith("/dashboard")) {
         if (role === "REGISTERER") return true;
-        // Any other authenticated role (staff, author) belongs elsewhere —
+        // Any other authenticated role (staff, author) belongs elsewhere.
         // send them to their own home instead of a dead-end bounce to /signin.
         if (role) return Response.redirect(new URL(roleHome(role), request.nextUrl));
         return false; // unauthenticated → /signin

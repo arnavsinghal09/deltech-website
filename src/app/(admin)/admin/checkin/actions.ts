@@ -17,7 +17,7 @@ export interface CheckInResult {
 // Idempotent: if the delegate is already checked in, this is a no-op that just
 // returns the existing state (never errors). Race-safe via a conditional
 // updateMany (mirrors holdPortfolio's AVAILABLE → ON_HOLD guard in
-// admin/allotment/actions.ts) — if two staff members tap "Check in" for the
+// admin/allotment/actions.ts), if two staff members tap "Check in" for the
 // same delegate at once, only one write wins and the other observes it.
 export async function checkInDelegate(delegateId: string): Promise<CheckInResult> {
   const session = await requireStaff()
@@ -47,7 +47,7 @@ export async function checkInDelegate(delegateId: string): Promise<CheckInResult
   })
 
   if (result.count === 0) {
-    // Lost the race — another staff member just checked this delegate in.
+    // Lost the race, another staff member just checked this delegate in.
     const fresh = await prisma.delegate.findUniqueOrThrow({
       where: { id: delegateId },
       select: { checkedInAt: true, checkedInBy: true },

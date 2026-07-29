@@ -33,11 +33,11 @@ Field definitions and common column name patterns:
 - whatsapp: Phone or WhatsApp number. Common: "Phone number", "Phone", "WhatsApp", "Mobile", "Contact number"
 - institution: College, university, or school. Common: "College", "Institution", "University", "School"
 - committee: FIRST committee preference. Common: "Committee preference 1", "Committee 1", "1st preference", "Pref 1 committee"
-- portfolio: FIRST portfolio/country. Common: "Portfolio 1", "Country 1", "Character 1" — paired with the first committee preference
+- portfolio: FIRST portfolio/country. Common: "Portfolio 1", "Country 1", "Character 1", paired with the first committee preference
 - committee2: SECOND committee preference. Common: "Committee preference 2", "Committee 2", "2nd preference", "Pref 2 committee"
-- portfolio2: SECOND portfolio/country. Common: "Portfolio 2", "Country 2", "Character 2" — paired with the second committee preference
+- portfolio2: SECOND portfolio/country. Common: "Portfolio 2", "Country 2", "Character 2", paired with the second committee preference
 - committee3: THIRD committee preference. Common: "Committee preference 3", "Committee 3", "3rd preference", "Pref 3 committee"
-- portfolio3: THIRD portfolio/country. Common: "Portfolio 3", "Country 3", "Character 3" — paired with the third committee preference
+- portfolio3: THIRD portfolio/country. Common: "Portfolio 3", "Country 3", "Character 3", paired with the third committee preference
 - note: Remarks or special instructions. Common: "Note", "Remarks", "Comments", "Special notes"
 
 Respond with a JSON object using exactly these keys (string value = the exact matching header, null = no match):
@@ -72,7 +72,7 @@ Respond with a JSON object using exactly these keys (string value = the exact ma
 }
 
 // ---------------------------------------------------------------------------
-// Clean & normalise rows — deterministic pipeline first, AI only for leftovers
+// Clean & normalise rows, deterministic pipeline first, AI only for leftovers
 // ---------------------------------------------------------------------------
 
 export type CleanedRow = MappedRow & { _note?: string; _skip?: boolean }
@@ -106,7 +106,7 @@ export async function cleanImportRowsWithGemini(
 
   const committees = await getCommitteeRefs()
 
-  // Pass 1 — deterministic. Free, instant, and correct for the common case.
+  // Pass 1, deterministic. Free, instant, and correct for the common case.
   const cleaned: CleanedRow[] = []
   const needsAI: number[] = []
 
@@ -133,7 +133,7 @@ export async function cleanImportRowsWithGemini(
 
   if (needsAI.length === 0) return { success: true, cleaned }
 
-  // Pass 2 — AI, batched, zod-validated. Failure falls back to pass 1 output.
+  // Pass 2 · AI, batched, zod-validated. Failure falls back to pass 1 output.
   const BATCH = 40
   const committeeList = committees.map((c) => c.name).join(", ") || "(none defined yet)"
 
@@ -164,11 +164,11 @@ export async function cleanImportRowsWithGemini(
       if (err instanceof AIRateLimitError) {
         return { success: false, error: err.message, rateLimited: true }
       }
-      // AI unavailable or returned garbage — deterministic result stands.
+      // AI unavailable or returned garbage, deterministic result stands.
       batchIdx.forEach((i) => {
         cleaned[i] = {
           ...cleaned[i],
-          _note: [cleaned[i]._note, "AI cleanup unavailable — check committee names"]
+          _note: [cleaned[i]._note, "AI cleanup unavailable, check committee names"]
             .filter(Boolean)
             .join(", "),
         }
@@ -191,23 +191,23 @@ IMPORTANT: Some rows may be non-data rows added to the spreadsheet for convenien
 
 Normalise every field in each data row according to these rules:
 
-fullName — Proper title case. Strip leading honorifics (Mr, Ms, Mrs, Dr, Prof, Er, Ar, Adv, CA, Er.) but keep them if embedded mid-name. Preserve hyphens and apostrophes. Indian names: keep all parts capitalised (e.g. "RITU SHARMA" → "Ritu Sharma", "md. arshad" → "Md. Arshad").
+fullName · Proper title case. Strip leading honorifics (Mr, Ms, Mrs, Dr, Prof, Er, Ar, Adv, CA, Er.) but keep them if embedded mid-name. Preserve hyphens and apostrophes. Indian names: keep all parts capitalised (e.g. "RITU SHARMA" → "Ritu Sharma", "md. arshad" → "Md. Arshad").
 
-email — Lowercase, strip all whitespace. Fix common typos: gmial/gmal/gamil → gmail, yahooo/yaho → yahoo, redifmail/redimail → rediffmail, outloo/otlook → outlook, hotmal/homail → hotmail. Remove spaces around "@" or ".". Leave unchanged if clearly invalid or empty.
+email · Lowercase, strip all whitespace. Fix common typos: gmial/gmal/gamil → gmail, yahooo/yaho → yahoo, redifmail/redimail → rediffmail, outloo/otlook → outlook, hotmal/homail → hotmail. Remove spaces around "@" or ".". Leave unchanged if clearly invalid or empty.
 
-whatsapp — Digits only, with India country code (91). Return null if value is "N/A", "na", "same", "same as above", "nil", empty, clearly not a phone number, or fewer than 10 digits.
+whatsapp · Digits only, with India country code (91). Return null if value is "N/A", "na", "same", "same as above", "nil", empty, clearly not a phone number, or fewer than 10 digits.
 
-institution — Proper title case, trim. Return null if empty or "N/A".
+institution · Proper title case, trim. Return null if empty or "N/A".
 
-committee / committee2 / committee3 — Each: match to the closest entry from the valid committees list (case-insensitive, fuzzy). The returned value MUST be an exact string from the valid committees list, or null if no confident match — do not guess or invent.
+committee / committee2 / committee3 · Each: match to the closest entry from the valid committees list (case-insensitive, fuzzy). The returned value MUST be an exact string from the valid committees list, or null if no confident match, do not guess or invent.
 
-portfolio / portfolio2 / portfolio3 — Each: standard proper-case country or character name. Expand only if unambiguous: "USA" → "United States of America", "UK" → "United Kingdom", "UAE" → "United Arab Emirates". Return null if empty.
+portfolio / portfolio2 / portfolio3 · Each: standard proper-case country or character name. Expand only if unambiguous: "USA" → "United States of America", "UK" → "United Kingdom", "UAE" → "United Arab Emirates". Return null if empty.
 
-note — Trim whitespace only. Return null if empty.
+note · Trim whitespace only. Return null if empty.
 
-_note — Short comma-separated list of changes you made. Return null if nothing changed and _skip is false.
+_note · Short comma-separated list of changes you made. Return null if nothing changed and _skip is false.
 
-_skip — true only if this row is clearly a non-data row. false for all real delegate rows.
+_skip, true only if this row is clearly a non-data row. false for all real delegate rows.
 
 Input rows (${rows.length} total):
 ${JSON.stringify(rows.map(({ _note: _n, _skip: _s, ...r }) => r))}

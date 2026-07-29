@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-// Editorial display serif — variable optical size so the same family holds up
+// Editorial display serif, variable optical size so the same family holds up
 // from 96px hero headlines down to 18px card titles.
 const fraunces = Fraunces({
   variable: "--font-display",
@@ -25,7 +25,7 @@ const fraunces = Fraunces({
 
 export const metadata: Metadata = {
   title: STRINGS.brand.name,
-  description: `${STRINGS.brand.tagline} — registrations, committees, and more.`,
+  description: `${STRINGS.brand.tagline}, registrations, committees, and more.`,
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

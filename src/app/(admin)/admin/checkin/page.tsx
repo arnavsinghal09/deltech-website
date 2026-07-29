@@ -20,7 +20,7 @@ export default async function CheckinPage(props: {
   }
 
   const q = get("q") ?? ""
-  // Defaults to CONFIRMED — the desk only expects confirmed delegates to arrive,
+  // Defaults to CONFIRMED, the desk only expects confirmed delegates to arrive,
   // but staff can broaden the filter for edge cases (walk-ins, corrections).
   const status = get("status") ?? "CONFIRMED"
 

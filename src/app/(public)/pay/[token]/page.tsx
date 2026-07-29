@@ -14,7 +14,7 @@ export default async function PayPage(props: {
 }) {
   const { token } = await props.params
 
-  // token = Delegate.publicToken (random, unguessable — never the row id)
+  // token = Delegate.publicToken (random, unguessable, never the row id)
   const delegate = await prisma.delegate.findUnique({
     where: { publicToken: token },
     include: {
@@ -67,7 +67,7 @@ export default async function PayPage(props: {
     ["PAID", "OFFLINE", "COMPED"].includes(payment.status) ||
     delegate.status === "CONFIRMED"
 
-  // UPI intent string — only built when provider is upi_qr
+  // UPI intent string, only built when provider is upi_qr
   const upiString =
     payment.provider === "upi_qr"
       ? (() => {
@@ -167,7 +167,7 @@ export default async function PayPage(props: {
                 {content.paymentProofUrl ? (
                   <li><a className="font-semibold text-primary underline" href={content.paymentProofUrl}>Submit the payment screenshot here.</a></li>
                 ) : (
-                  <li>Your spot is held — no separate form is required.</li>
+                  <li>Your spot is held, no separate form is required.</li>
                 )}
                 <li>
                   We&apos;ll confirm your registration once we verify the payment (within 24 hrs).

@@ -44,7 +44,7 @@ export default async function CommitteesSettingsPage() {
         <p className="eyebrow">01 / Structure</p>
         <h2 className="mt-3 font-heading text-3xl">Committees</h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          The bodies of the conference — with import aliases for partner sheets.
+          The bodies of the conference, with import aliases for partner sheets.
         </p>
         <div className="rule my-6" />
         <TabCommittees committees={serialized} />

@@ -82,7 +82,7 @@ export async function signupWithMagicLink(
   }
 
   try {
-    // /go dispatches by role — a new REGISTERER lands on /dashboard.
+    // /go dispatches by role, a new REGISTERER lands on /dashboard.
     await signIn("resend", { email, redirectTo: "/go" });
     return {};
   } catch (err) {

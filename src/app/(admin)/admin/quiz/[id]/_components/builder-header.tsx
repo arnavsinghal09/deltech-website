@@ -93,7 +93,7 @@ export function BuilderHeader({
           <ChevronDown className="size-4 text-background/55" />
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" className="w-52">
-          <DropdownMenuLabel className="text-xs">{t("quiz.builder.themes.classic")} — presets</DropdownMenuLabel>
+          <DropdownMenuLabel className="text-xs">{t("quiz.builder.themes.classic")}, presets</DropdownMenuLabel>
           <DropdownMenuSeparator />
           {Object.entries(PRESET_THEMES).map(([key, preset]) => (
             <DropdownMenuItem

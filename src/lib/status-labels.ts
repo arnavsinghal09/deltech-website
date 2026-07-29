@@ -3,7 +3,7 @@
 
 export const STATUS_LABEL: Record<string, string> = {
   REGISTERED: "Registered",
-  ALLOTTED: "Allotted — payment link coming soon",
+  ALLOTTED: "Allotted, payment link coming soon",
   PAYMENT_SENT: "Payment pending",
   CONFIRMED: "Confirmed",
   CANCELLED: "Cancelled",

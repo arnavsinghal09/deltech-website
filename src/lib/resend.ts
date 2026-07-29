@@ -102,7 +102,7 @@ export async function sendRegistrationReceived(delegateId: string): Promise<void
 
 /**
  * Co-delegates are real participants but did not submit the form, so they get their
- * own template — and deliberately never the primary's `statusUrl`. That token is a
+ * own template, and deliberately never the primary's `statusUrl`. That token is a
  * bearer credential for /status/<token> AND /pay/<token>; the primary did not consent
  * to sharing a payment surface.
  */

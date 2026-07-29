@@ -15,7 +15,7 @@ function Field({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div>
       <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{label}</p>
-      <p className="mt-0.5 text-sm">{value ?? "—"}</p>
+      <p className="mt-0.5 text-sm">{value ?? "-"}</p>
     </div>
   );
 }
@@ -57,7 +57,7 @@ export default async function DashboardPage() {
       {/* Top bar */}
       <header className="flex h-14 items-center justify-between border-b border-border/60 bg-background px-4 sm:px-6">
         <span className="text-sm font-medium text-muted-foreground">
-          {t("brand.name")} <span className="text-border">—</span>{" "}
+          {t("brand.name")} <span className="text-border">-</span>{" "}
           {t("dashboard.title")}
         </span>
         <div className="flex items-center gap-3">
@@ -87,7 +87,7 @@ export default async function DashboardPage() {
             <div className="flex items-start justify-between gap-4">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                  {t("brand.name")} — Application Status
+                  {t("brand.name")}. Application Status
                 </p>
                 <h1 className="mt-1 text-xl font-bold">{delegate.fullName}</h1>
                 <p className="text-sm text-muted-foreground">{delegate.email}</p>
@@ -170,7 +170,7 @@ export default async function DashboardPage() {
                       href={payment.paymentLink!}
                       className={cn(buttonVariants({ size: "lg" }), "w-full")}
                     >
-                      Pay Now — ₹{payment.amountInr.toLocaleString("en-IN")}
+                      Pay Now · ₹{payment.amountInr.toLocaleString("en-IN")}
                     </Link>
                   )}
 

@@ -46,7 +46,7 @@ export async function releaseHold(portfolioId: string): Promise<void> {
 
 // ── allotPortfolio ─────────────────────────────────────────────────────────────
 // Runs in a Prisma interactive transaction. Race-safe: the unique constraint on
-// Allotment.portfolioId is the hard guard — if two admins confirm simultaneously,
+// Allotment.portfolioId is the hard guard, if two admins confirm simultaneously,
 // one hits P2002 and their transaction rolls back cleanly.
 export async function allotPortfolio(input: {
   portfolioId: string
@@ -93,7 +93,7 @@ export async function allotPortfolio(input: {
         select: { type: true },
       })
 
-      // 4. Fee lookup — amount always comes from the Fee table, never hardcoded
+      // 4. Fee lookup, amount always comes from the Fee table, never hardcoded
       const fee = paymentsEnabled ? await tx.fee.findFirst({
         where: {
           committeeType: committee?.type ?? "STANDARD",
@@ -106,7 +106,7 @@ export async function allotPortfolio(input: {
       const paymentProvider =
         typeof providerSetting?.value === "string" ? providerSetting.value : "upi_qr"
 
-      // 6. Create Allotment — unique constraint on portfolioId is the final race guard
+      // 6. Create Allotment, unique constraint on portfolioId is the final race guard
       await tx.allotment.create({
         data: {
           delegateId: input.delegateId,
@@ -128,7 +128,7 @@ export async function allotPortfolio(input: {
         data: { status: paymentsEnabled ? "ALLOTTED" : "CONFIRMED" },
       })
 
-      // 9. Payment row — provider + amount both from DB, link set after transaction
+      // 9. Payment row, provider + amount both from DB, link set after transaction
       if (paymentsEnabled && fee) {
         await tx.payment.create({
           data: {

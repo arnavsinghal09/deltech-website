@@ -159,7 +159,7 @@ export default async function AdminOverviewPage() {
           value={confirmedCount}
           icon={CheckCircle2}
           description="of total"
-          trend={total > 0 ? `${Math.round((confirmedCount / total) * 100)}%` : "—"}
+          trend={total > 0 ? `${Math.round((confirmedCount / total) * 100)}%` : "-"}
         />
         <StatCard
           title={t("admin.overview.revenueCollected")}
@@ -190,7 +190,7 @@ export default async function AdminOverviewPage() {
 
       {/* Committee fill-rate table */}
       <div className="editorial-card p-5">
-        <h2 className="eyebrow mb-5">{t("admin.overview.byCommittee")} — fill rate</h2>
+        <h2 className="eyebrow mb-5">{t("admin.overview.byCommittee")}, fill rate</h2>
         <CommitteeFillTable data={committeeData} />
       </div>
     </div>

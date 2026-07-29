@@ -41,7 +41,7 @@ function Field({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div>
       <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{label}</p>
-      <p className="mt-0.5 text-sm text-foreground">{value ?? "—"}</p>
+      <p className="mt-0.5 text-sm text-foreground">{value ?? "-"}</p>
     </div>
   )
 }
@@ -93,7 +93,7 @@ export function DelegateDrawer({ delegate, committees, onClose, onUpdated }: Pro
 
   const handleMarkPaid = () => {
     if (!delegate) return
-    runAction(() => markPaidOffline(delegate.id), "Marked as paid — delegate confirmed.")
+    runAction(() => markPaidOffline(delegate.id), "Marked as paid, delegate confirmed.")
   }
 
   const committeeMap = new Map(committees.map(c => [c.id, c.name]))
@@ -194,7 +194,7 @@ export function DelegateDrawer({ delegate, committees, onClose, onUpdated }: Pro
                       size="sm"
                       className="h-8 gap-1.5 text-xs"
                       disabled={isPending}
-                      onClick={() => runAction(() => compDelegate(delegate.id), "Comped — delegate confirmed.")}
+                      onClick={() => runAction(() => compDelegate(delegate.id), "Comped, delegate confirmed.")}
                     >
                       <Gift className="size-3.5" /> Comp
                     </Button>

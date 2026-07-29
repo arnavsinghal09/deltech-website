@@ -17,7 +17,7 @@ interface EditableCellProps {
   className?:   string
 }
 
-function EditableCell({ value, onSave, placeholder = "—", className = "" }: EditableCellProps) {
+function EditableCell({ value, onSave, placeholder = "-", className = "" }: EditableCellProps) {
   const [editing, setEditing] = useState(false)
   const [draft,   setDraft]   = useState(value ?? "")
   const inputRef = useRef<HTMLInputElement>(null)
@@ -268,7 +268,7 @@ export function StepPreview({
                   </td>
                   <td className="px-3 py-2 text-xs text-muted-foreground">{row.index + 1}</td>
 
-                  {/* Full name — not deletable */}
+                  {/* Full name, not deletable */}
                   <td className="px-3 py-2 min-w-[120px]">
                     <div className="flex items-center gap-1">
                       <EditableCell
@@ -286,7 +286,7 @@ export function StepPreview({
                     </div>
                   </td>
 
-                  {/* Email — not deletable */}
+                  {/* Email, not deletable */}
                   <td className="px-3 py-2 min-w-[140px]">
                     <EditableCell
                       value={row.mapped.email}

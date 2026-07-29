@@ -61,7 +61,7 @@ export async function POST(req: NextRequest) {
 
   const { event, payload = {} } = body
 
-  // Respond 200 immediately for unhandled events — Razorpay won't retry
+  // Respond 200 immediately for unhandled events · Razorpay won't retry
   if (
     event !== "payment.captured" &&
     event !== "payment_link.paid" &&
@@ -73,7 +73,7 @@ export async function POST(req: NextRequest) {
 
   const delegateId = extractDelegateId(event, payload)
   if (!delegateId) {
-    // Can't identify the delegate — log and return 200 so Razorpay stops retrying
+    // Can't identify the delegate, log and return 200 so Razorpay stops retrying
     console.warn(`[razorpay webhook] no delegateId in notes for event=${event}`)
     return NextResponse.json({ received: true })
   }

@@ -99,11 +99,11 @@ export const STRINGS = {
     linkedinLabel: "{name} on LinkedIn",
     dispatchEyebrow: "Field notes · opinion · conference intelligence",
     dispatchTitle: "The Dispatch.",
-    dispatchBody: "Ideas from inside the room and beyond it—written by the delegates, chairs, and organisers shaping the conference.",
+    dispatchBody: "Ideas from inside the room and beyond it, written by the delegates, chairs, and organisers shaping the conference.",
     dispatchMark: "DelTech MUN dispatch",
     latestDispatch: "Latest transmission",
     anonymousAuthor: "Anonymous",
-    dispatchEmpty: "The desk is quiet—for now.",
+    dispatchEmpty: "The desk is quiet, for now.",
     dispatchEmptyBody: "The first dispatch is being prepared for publication.",
     quizLive: "Live room signal",
     quizTitle: "Enter the room.",
@@ -190,11 +190,11 @@ export const STRINGS = {
       munExperiencePlaceholder: "List committees you have attended (if any)",
     },
     preferences: {
-      pref1CommitteeLabel: "First preference — committee",
-      pref1PortfolioLabel: "First preference — portfolio",
+      pref1CommitteeLabel: "First preference committee",
+      pref1PortfolioLabel: "First preference portfolio",
       pref1PortfolioPlaceholder: "Country / role you would like",
-      pref2CommitteeLabel: "Second preference — committee",
-      pref2PortfolioLabel: "Second preference — portfolio",
+      pref2CommitteeLabel: "Second preference committee",
+      pref2PortfolioLabel: "Second preference portfolio",
       pref2PortfolioPlaceholder: "Country / role you would like",
       unhrcOnlyNote:
         "UNHRC is a double-delegation committee. It will be your only preference.",
@@ -384,7 +384,7 @@ export const STRINGS = {
     deskEyebrow: "Registration desk",
     confirmButton: "Confirm check-in",
     alreadyCheckedIn: "Checked in at {time} by {by}",
-    notConfirmedWarning: "This delegate is not marked CONFIRMED yet — double-check before checking them in.",
+    notConfirmedWarning: "This delegate is not marked CONFIRMED yet. Double-check before checking them in.",
     dtuLabel: "DTU student",
     accommodationLabel: "Needs accommodation",
     qrCaption: "Show this at the registration desk.",
@@ -647,7 +647,7 @@ export const STRINGS = {
       registrationReceived: "We have your application. Allotments will be sent soon.",
       allotmentSent: "You have been allotted a portfolio. Your payment link is inside.",
       paymentConfirmed: "Your registration is now complete.",
-      paymentReminder: "Your allotment is waiting — complete payment to secure your spot.",
+      paymentReminder: "Your allotment is waiting. Complete payment to secure your spot.",
     },
   },
 } as const;
@@ -672,7 +672,7 @@ function getLeaf(obj: unknown, parts: string[]): string | undefined {
   return typeof cur === "string" ? cur : undefined;
 }
 
-// Sync helper — uses compiled STRINGS. Safe in client and server components.
+// Sync helper that uses compiled STRINGS. Safe in client and server components.
 // For DB overrides in server components, use getStrings() from @/lib/settings.
 export function t(key: StringKey, vars?: Record<string, string | number>): string {
   const value = getLeaf(STRINGS, key.split(".")) ?? key;

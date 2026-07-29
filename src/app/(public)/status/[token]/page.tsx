@@ -18,7 +18,7 @@ function Field({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div>
       <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{label}</p>
-      <p className="mt-0.5 text-sm">{value ?? "—"}</p>
+      <p className="mt-0.5 text-sm">{value ?? "-"}</p>
     </div>
   )
 }
@@ -28,7 +28,7 @@ export default async function StatusPage(props: {
 }) {
   const { token } = await props.params
 
-  // token = Delegate.publicToken (random, unguessable — never the row id)
+  // token = Delegate.publicToken (random, unguessable, never the row id)
   const delegate = await prisma.delegate.findUnique({
     where: { publicToken: token },
     include: {
@@ -64,7 +64,7 @@ export default async function StatusPage(props: {
         <div className="flex items-start justify-between gap-4">
           <div>
             <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              {STRINGS.brand.name} — Application Status
+              {STRINGS.brand.name}. Application Status
             </p>
             <h1 className="mt-1 text-xl font-bold">{delegate.fullName}</h1>
             <p className="text-sm text-muted-foreground">{delegate.email}</p>
@@ -137,7 +137,7 @@ export default async function StatusPage(props: {
                   href={payment.paymentLink!}
                   className={cn(buttonVariants({ size: "lg" }), "w-full")}
                 >
-                  Pay Now — ₹{payment.amountInr.toLocaleString("en-IN")}
+                  Pay Now · ₹{payment.amountInr.toLocaleString("en-IN")}
                 </Link>
               )}
 
@@ -156,7 +156,7 @@ export default async function StatusPage(props: {
           )}
         </div>
 
-        {/* Check-in QR — only once the delegate is confirmed to attend */}
+        {/* Check-in QR, only once the delegate is confirmed to attend */}
         {isConfirmed && (
           <>
             <Separator />
@@ -169,7 +169,7 @@ export default async function StatusPage(props: {
           <>
             <Separator />
             <p className="text-center text-xs text-muted-foreground">
-              This link is unique to you — keep it safe.{" "}
+              This link is unique to you, keep it safe.{" "}
               <Link
                 href="/signin"
                 className="text-primary underline-offset-2 hover:underline"

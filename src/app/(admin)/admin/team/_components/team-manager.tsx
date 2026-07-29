@@ -126,7 +126,7 @@ export function TeamManager({ members, isAdmin }: { members: MemberRow[]; isAdmi
 
       {members.length === 0 ? (
         <div className="rounded-xl border border-dashed border-border py-14 text-center text-sm text-muted-foreground">
-          No members yet — add the board and core team here.
+          No members yet, add the board and core team here.
         </div>
       ) : (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">

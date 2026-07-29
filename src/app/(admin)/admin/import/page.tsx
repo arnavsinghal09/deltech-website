@@ -23,7 +23,7 @@ export default async function ImportPage() {
       <PageHeader
         eyebrow="Conference"
         title="Cross-delegation import"
-        description="Upload a partner sheet, map their columns to our fields, review, and import. Google Form intake lands here automatically — only broken rows need you."
+        description="Upload a partner sheet, map their columns to our fields, review, and import. Google Form intake lands here automatically, only broken rows need you."
       />
       {/* id so the import wizard's completion screen can link straight here */}
       <div id="quarantine" className="scroll-mt-20">

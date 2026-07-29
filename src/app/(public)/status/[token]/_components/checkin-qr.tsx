@@ -8,7 +8,7 @@ interface Props {
 }
 
 // Mirrors pay/[token]/_components/qr-block.tsx's card treatment. Encodes a
-// direct link to /admin/checkin/<token> — a staff member's own phone camera
+// direct link to /admin/checkin/<token>, a staff member's own phone camera
 // app decodes and opens it like any QR link; no in-app scanner needed.
 export function CheckinQR({ checkinUrl }: Props) {
   return (

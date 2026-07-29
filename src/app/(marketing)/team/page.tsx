@@ -4,7 +4,7 @@ import { FadeUp } from "../_components/motion"
 import { t } from "@/content/strings"
 
 export const metadata = {
-  title: "Team — DelTech MUN",
+  title: "Team · DelTech MUN",
   description: "The people behind DelTech MUN.",
 }
 

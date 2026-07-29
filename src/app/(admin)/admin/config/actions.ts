@@ -10,7 +10,7 @@ import { callAI, AIRateLimitError } from "@/lib/ai"
 import { revalidatePath } from "next/cache"
 import { ContentSchema, type Content } from "@/content/contentSchema"
 
-// Money/sync config only an ADMIN may touch — kept out of saveContent entirely.
+// Money/sync config only an ADMIN may touch, kept out of saveContent entirely.
 const PAYMENT_KEYS = new Set([
   "paymentProvider", "staticPaymentLink", "upiVpa", "upiPayeeName", "paymentDeadline",
   "paymentProofUrl", "refundPolicy", "whatsappCommunityUrl", "secretariatEmail", "sheetSyncUrl",
@@ -47,7 +47,7 @@ export async function saveContent(
 
 // Replay every allotted cell's current state to the public Google Sheet.
 // syncSheetCell is best-effort per cell (fire-and-forget, self-heals on next
-// state change), so a mirror that's down for a while silently drifts — this
+// state change), so a mirror that's down for a while silently drifts, this
 // is the manual "reconcile now" for when it comes back.
 // ponytail: sequential to avoid hammering the single Apps Script endpoint;
 // parallelize in chunks only if a very large room makes this too slow.
@@ -231,7 +231,7 @@ export async function deleteCommittee(
     await audit(session.user?.email ?? "unknown", "committee.delete", "Committee", id)
     return { success: true }
   } catch {
-    return { success: false, error: "Cannot delete — committee has linked data." }
+    return { success: false, error: "Cannot delete, committee has linked data." }
   }
 }
 
@@ -320,7 +320,7 @@ export async function deletePortfolio(
     await audit(session.user?.email ?? "unknown", "portfolio.delete", "Portfolio", id)
     return { success: true }
   } catch {
-    return { success: false, error: "Cannot delete — portfolio has an allotment." }
+    return { success: false, error: "Cannot delete, portfolio has an allotment." }
   }
 }
 
@@ -371,7 +371,7 @@ export async function generatePortfolios(
       : isSc
         ? `Tag countries as Permanent, Elected, or Invited/Observer. Include the current P5 and current elected members first, then only agenda-critical invited parties.`
         : committee.type === "PRESS"
-          ? `This is the ONLY type where press roles are valid. Return specific roles such as Reporter — Reuters or Photojournalist — AP and tag each with Desk or Outlet.`
+          ? `This is the ONLY type where press roles are valid. Return specific roles such as Reporter · Reuters or Photojournalist · AP and tag each with Desk or Outlet.`
           : committee.type === "CRISIS"
             ? `Return real characters or offices that belong in this cabinet/crisis. Tag each by faction, institution, or side.`
             : `Return countries ordered by agenda relevance and diplomatic importance, not alphabetically. Include central parties, major powers, regional stakeholders, affected states, and useful coalition voices. Tag by region or role.`
@@ -394,7 +394,7 @@ Respond only with JSON: {"tagLabel":"Party, Participation, Region, Faction, or D
     const raw = await callAI<unknown>(prompt)
     const parsed = portfolioListSchema.safeParse(raw)
     if (!parsed.success) {
-      return { success: false, error: "AI returned an invalid list — try again." }
+      return { success: false, error: "AI returned an invalid list, try again." }
     }
     const seen = new Set<string>()
     const unique = parsed.data.portfolios.filter((entry) => {

@@ -4,7 +4,7 @@ import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit"
 import { parseConfig } from "@/lib/quiz-types"
 import type { MCQConfig, SlideType } from "@/lib/quiz-types"
 
-// POST — participant submits an answer
+// POST, participant submits an answer
 export async function POST(request: Request) {
   const body = (await request.json()) as {
     sessionId: string
@@ -65,7 +65,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "already_submitted" }, { status: 409 })
   }
 
-  // Score (QUIZ mode — check correctness)
+  // Score (QUIZ mode, check correctness)
   let points = 0
   let correct: boolean | null = null
 

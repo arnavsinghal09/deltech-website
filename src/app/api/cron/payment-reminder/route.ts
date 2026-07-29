@@ -47,7 +47,7 @@ async function claimRun(): Promise<boolean> {
 }
 
 export async function GET(req: NextRequest) {
-  // Protect: only the CRON_SECRET bearer. Fail closed — an unset secret must
+  // Protect: only the CRON_SECRET bearer. Fail closed, an unset secret must
   // not leave this email-sending endpoint world-callable.
   const authHeader = req.headers.get("authorization")
   const cronSecret = process.env.CRON_SECRET

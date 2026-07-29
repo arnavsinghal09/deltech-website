@@ -129,7 +129,7 @@ export function AllotDialog({
           <DialogTitle>Allot portfolio</DialogTitle>
           <DialogDescription>
             <span className="font-medium text-foreground">{portfolio.name}</span>
-            {" — "}
+            {" · "}
             {committee.name}
             {onHoldByOther && (
               <span className="ml-2 text-amber-600 dark:text-amber-400">

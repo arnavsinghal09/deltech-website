@@ -19,7 +19,7 @@ interface FailedLog {
 // Surfaces recent failed email sends on the dashboard so a Resend blip during
 // an allotment blast is noticed by staff, not discovered by a delegate who
 // never got their committee. Resend reuses the existing resendEmail action
-// (resendByLogId) — only delegate-linked templates can be replayed by logId.
+// (resendByLogId), only delegate-linked templates can be replayed by logId.
 export function FailedEmailsCard({ count, logs }: { count: number; logs: FailedLog[] }) {
   const router = useRouter()
   const [pendingId, setPendingId] = useState<string | null>(null)

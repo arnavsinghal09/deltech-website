@@ -4,7 +4,7 @@ import { mappedRowSchema, type MappedRow } from "@/lib/schemas/import"
 import type { Source, Prisma } from "@/generated/prisma/client"
 
 // ---------------------------------------------------------------------------
-// Deterministic normalizers — run before (and independently of) any AI pass.
+// Deterministic normalizers, run before (and independently of) any AI pass.
 // One pipeline, three entrances: import wizard, gform webhook, cron re-sync.
 // ---------------------------------------------------------------------------
 

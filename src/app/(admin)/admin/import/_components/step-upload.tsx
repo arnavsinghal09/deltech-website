@@ -81,8 +81,8 @@ export function StepUpload({ onParsed }: Props) {
           </p>
           <p className="mt-1 text-xs text-muted-foreground">
             {file
-              ? `${(file.size / 1024).toFixed(1)} KB — click to change`
-              : ".xlsx, .xls, or .csv — any column order, any formatting"}
+              ? `${(file.size / 1024).toFixed(1)} KB, click to change`
+              : ".xlsx, .xls, or .csv, any column order, any formatting"}
           </p>
         </div>
         <input

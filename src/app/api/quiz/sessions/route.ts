@@ -4,7 +4,7 @@ import { auth } from "@/lib/auth"
 import { createOrGetQuizSession } from "@/lib/quiz-session"
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit"
 
-// GET ?code=123456  — participant lookup (public)
+// GET ?code=123456 , participant lookup (public)
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
   const code = searchParams.get("code")
@@ -40,7 +40,7 @@ export async function GET(request: Request) {
   return NextResponse.json({ session, presentationMode: presentation?.mode ?? "POLL" })
 }
 
-// POST  — admin creates a session
+// POST , admin creates a session
 export async function POST(request: Request) {
   const authSession = await auth()
   const role = (authSession?.user as { role?: string } | undefined)?.role

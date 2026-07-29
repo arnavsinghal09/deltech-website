@@ -7,7 +7,7 @@ import { resyncMatrix } from "../actions"
 
 // Manual reconcile for the public Google Sheet mirror. Cell syncs are
 // best-effort and self-heal on the next state change, so a stable cell can
-// drift if the mirror was down when it was last set — this replays them all.
+// drift if the mirror was down when it was last set, this replays them all.
 export function ResyncMatrixCard() {
   const [isPending, startTransition] = useTransition()
 

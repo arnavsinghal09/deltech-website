@@ -1,4 +1,4 @@
-// Pure helpers for the balance-aware allotment assist. No DB, no React —
+// Pure helpers for the balance-aware allotment assist. No DB, no React.
 // so they stay testable via scripts/check-allot-assist.ts.
 
 export interface PrefDelegate {
@@ -14,7 +14,7 @@ export interface CommitteeDemand {
 }
 
 // How many delegates in the (unallotted) pool name each committee as their
-// 1st / 2nd / 3rd preference. This is the signal staff balance against —
+// 1st / 2nd / 3rd preference. This is the signal staff balance against.
 // e.g. a committee with 40 pref-1s and 6 seats is over-subscribed, so pushing
 // some of those delegates to a thinner 2nd preference is the deliberate call.
 export function committeeDemand(delegates: PrefDelegate[]): Map<string, CommitteeDemand> {

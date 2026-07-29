@@ -72,7 +72,7 @@ export async function deleteMember(id: string): Promise<{ success: boolean; erro
   }
 }
 
-// Reuses the existing blog-images bucket under a team/ prefix — zero new infra.
+// Reuses the existing blog-images bucket under a team/ prefix, zero new infra.
 export async function uploadMemberImage(
   formData: FormData,
 ): Promise<{ url?: string; error?: string }> {

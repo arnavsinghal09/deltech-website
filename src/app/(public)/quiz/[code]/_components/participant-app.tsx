@@ -69,7 +69,7 @@ export function ParticipantApp({ sessionId, roomCode, initialStatus, presentatio
     channel
       .on("broadcast", { event: "quiz" }, ({ payload }: { payload: QuizBroadcast }) => {
         if (payload.event === "START") {
-          // Host has started — remain in lobby until GOTO
+          // Host has started, remain in lobby until GOTO
         } else if (payload.event === "GOTO") {
           submittedRef.current = false
           setCurrentSlide(payload.slide)
@@ -96,7 +96,7 @@ export function ParticipantApp({ sessionId, roomCode, initialStatus, presentatio
           setLocked(false)
           if (!submittedRef.current) setAppState("question")
         } else if (payload.event === "REVEAL") {
-          // If they submitted, we already have result — nothing extra needed
+          // If they submitted, we already have result, nothing extra needed
         } else if (payload.event === "LEADERBOARD") {
           setLbEntries(payload.entries)
           setLbFinal(payload.final)
@@ -560,7 +560,7 @@ export function ParticipantApp({ sessionId, roomCode, initialStatus, presentatio
   )
 }
 
-// k remounts the inner motion wrapper on phase change so the entrance replays —
+// k remounts the inner motion wrapper on phase change so the entrance replays.
 // hard cuts between phases become a quick fade/rise.
 // Both animations here are decorative, and this is the one route that has to
 // load fast on a few hundred phones on venue wifi. Doing them in CSS keeps

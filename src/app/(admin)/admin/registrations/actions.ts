@@ -210,7 +210,7 @@ export async function regeneratePaymentLink(
           isDtu: delegate.isDtu,
         },
       })
-      if (!fee) return { success: false, error: "No matching fee configured — add one in Config → Fees." }
+      if (!fee) return { success: false, error: "No matching fee configured, add one in Config → Fees." }
       amountInr = fee.amountInr
     }
 

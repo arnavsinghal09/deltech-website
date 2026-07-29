@@ -71,11 +71,11 @@ export function ImportWizard({ presets: initialPresets, committeeNames }: Props)
 
         if (!mapResult.success) {
           if (mapResult.rateLimited) {
-            toast.error("AI quota exceeded — import paused. Please retry in a few minutes.")
+            toast.error("AI quota exceeded, import paused. Please retry in a few minutes.")
             setStep("upload")
             return
           }
-          toast.warning("AI could not detect column headers — please map manually.")
+          toast.warning("AI could not detect column headers, please map manually.")
           setStep("mapping")
           return
         }
@@ -90,11 +90,11 @@ export function ImportWizard({ presets: initialPresets, committeeNames }: Props)
 
         if (!cleanResult.success || !cleanResult.cleaned) {
           if (cleanResult.rateLimited) {
-            toast.error("AI quota exceeded — import paused. Please retry in a few minutes.")
+            toast.error("AI quota exceeded, import paused. Please retry in a few minutes.")
             setStep("upload")
             return
           }
-          toast.warning(cleanResult.error ?? "AI normalisation failed — please review manually.")
+          toast.warning(cleanResult.error ?? "AI normalisation failed, please review manually.")
           const fallback: ValidatedRow[] = parsedRows.map((r, i) => {
             const mapped = applyMapping(r, finalMapping, institution)
             const parse  = mappedRowSchema.safeParse(mapped)
@@ -131,7 +131,7 @@ export function ImportWizard({ presets: initialPresets, committeeNames }: Props)
         setStep("preview")
       } catch (err) {
         const msg = err instanceof Error ? err.message : "AI processing failed."
-        toast.error(`${msg} — map columns manually.`)
+        toast.error(`${msg}, map columns manually.`)
         setStep("mapping")
       }
     })
