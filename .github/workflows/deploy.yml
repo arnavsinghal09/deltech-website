@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - main
+  # Lets us refresh and verify test.deltechmun.in before merging. Manual runs
+  # never continue to Production; a push to main is the only production path.
+  workflow_dispatch:
 
 # Merges used to race: two quick merges started two production deploys and two
 # migration runs against the same database. Queue them instead, and never
@@ -99,6 +102,7 @@ jobs:
           fi
 
   production:
+    if: github.event_name == 'push'
     needs: [ci, staging]
     runs-on: ubuntu-latest
     environment: production
