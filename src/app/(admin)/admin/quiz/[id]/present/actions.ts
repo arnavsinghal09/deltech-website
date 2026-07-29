@@ -2,31 +2,11 @@
 
 import { prisma } from "@/lib/prisma"
 import { requireStaff } from "@/lib/authz"
-
-function generateRoomCode(): string {
-  return Math.floor(100000 + Math.random() * 900000).toString()
-}
+import { createOrGetQuizSession } from "@/lib/quiz-session"
 
 export async function createOrGetSession(presentationId: string): Promise<string> {
   await requireStaff()
-
-  const existing = await prisma.quizSession.findFirst({
-    where: { presentationId, status: { in: ["lobby", "active"] } },
-    select: { id: true },
-  })
-  if (existing) return existing.id
-
-  let roomCode = generateRoomCode()
-  for (let i = 0; i < 5; i++) {
-    const clash = await prisma.quizSession.findFirst({ where: { roomCode }, select: { id: true } })
-    if (!clash) break
-    roomCode = generateRoomCode()
-  }
-
-  const session = await prisma.quizSession.create({
-    data: { presentationId, roomCode, status: "lobby" },
-    select: { id: true },
-  })
+  const session = await createOrGetQuizSession(presentationId)
   return session.id
 }
 

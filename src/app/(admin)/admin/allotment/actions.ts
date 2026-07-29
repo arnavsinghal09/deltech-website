@@ -21,13 +21,17 @@ function isPrismaP2002(err: unknown): boolean {
 // ── holdPortfolio ──────────────────────────────────────────────────────────────
 // Soft-locks a portfolio to ON_HOLD while the dialog is open.
 // Only transitions AVAILABLE → ON_HOLD (ignores if already ON_HOLD or ALLOTTED).
+// Returns whether *this* caller took the hold. It used to discard the
+// updateMany count and always report success, so the dialog's `heldByUs` was
+// always true, so `onHoldByOther` was always false and the "on hold by another
+// admin" warning could never render. The soft-lock existed but never fired.
 export async function holdPortfolio(portfolioId: string): Promise<{ success: boolean }> {
   await requireStaff()
-  await prisma.portfolio.updateMany({
+  const { count } = await prisma.portfolio.updateMany({
     where: { id: portfolioId, status: "AVAILABLE" },
     data: { status: "ON_HOLD" },
   })
-  return { success: true }
+  return { success: count === 1 }
 }
 
 // ── releaseHold ────────────────────────────────────────────────────────────────
@@ -51,6 +55,7 @@ export async function allotPortfolio(input: {
 }): Promise<{
   success: boolean
   error?: string
+  warning?: string
   code?: "ALREADY_ALLOTTED" | "DELEGATE_UNAVAILABLE"
 }> {
   const session = await requireStaff()
@@ -142,32 +147,46 @@ export async function allotPortfolio(input: {
       }
     })
 
-    // Generate payment link outside the transaction (Razorpay would make external calls here)
+    // Generate the payment link outside the transaction, because it is an
+    // external HTTP call. It also gets its own try/catch: the allotment above
+    // is already durably committed, so letting a provider outage fall through
+    // to the outer catch reported "Allotment failed. Please try again." while
+    // silently skipping the email, the audit entry and the sheet sync. The
+    // delegate was left allotted with no link and no notification, and the
+    // admin was told nothing had happened.
+    let payLinkFailed = false
     if (paymentsEnabled && txResult.fee) {
-      const provider = await getActiveProvider()
-      const { link, orderId } = await provider.createPaymentLink({
-        delegateId: input.delegateId,
-        publicToken: txResult.delegateToken,
-        amountInr: txResult.fee.amountInr,
-        email: txResult.delegateEmail,
-      })
-      await prisma.payment.update({
-        where: { delegateId: input.delegateId },
-        data: {
-          paymentLink: link,
-          status: "SENT",
-          ...(orderId ? { razorpayOrderId: orderId } : {}),
-        },
-      })
-      await prisma.delegate.update({
-        where: { id: input.delegateId },
-        data: { status: "PAYMENT_SENT" },
-      })
+      try {
+        const provider = await getActiveProvider()
+        const { link, orderId } = await provider.createPaymentLink({
+          delegateId: input.delegateId,
+          publicToken: txResult.delegateToken,
+          amountInr: txResult.fee.amountInr,
+          email: txResult.delegateEmail,
+        })
+        await prisma.payment.update({
+          where: { delegateId: input.delegateId },
+          data: {
+            paymentLink: link,
+            status: "SENT",
+            ...(orderId ? { razorpayOrderId: orderId } : {}),
+          },
+        })
+        await prisma.delegate.update({
+          where: { id: input.delegateId },
+          data: { status: "PAYMENT_SENT" },
+        })
+      } catch (err) {
+        payLinkFailed = true
+        console.error("[allotPortfolio] payment link generation failed", err)
+      }
     }
 
-    // Fire allotment email; co-delegate notice only if UNHRC (doubleDelegation)
+    // Fire allotment email; co-delegate notice only if UNHRC (doubleDelegation).
+    // Skipped when the pay link failed, because that email's whole point is to
+    // carry the link. Regenerating it from the drawer sends the email.
     try {
-      await sendAllotmentEmail(input.delegateId)
+      if (!payLinkFailed) await sendAllotmentEmail(input.delegateId)
     } catch {
       // email failure must not roll back the allotment
     }
@@ -184,6 +203,13 @@ export async function allotPortfolio(input: {
     })
     await syncSheetForDelegate(input.delegateId)
 
+    if (payLinkFailed) {
+      return {
+        success: true,
+        warning:
+          "Allotted, but the payment link could not be generated, so no email was sent. Use “Regenerate pay link” in the delegate drawer once the provider is back.",
+      }
+    }
     return { success: true }
   } catch (err: unknown) {
     // Hard race: unique constraint on portfolioId
