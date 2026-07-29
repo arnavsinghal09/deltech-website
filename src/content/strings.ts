@@ -500,6 +500,7 @@ export const STRINGS = {
     invalidCode: "Room not found. Check the code and try again.",
     enterCodeFirst: "Enter a 6-digit room code above.",
     nicknameRequired: "Please enter a nickname.",
+    nicknameTaken: "That nickname is already in this room. Pick another.",
     avatarRequired: "Please pick an avatar.",
     sessionEnded: "This session has ended. Thanks for playing!",
     submitAnswer: "Submit",
@@ -615,6 +616,7 @@ export const STRINGS = {
       paymentReminder: "Complete your payment — DelTech MUN",
       blogApproved: 'Your article “{title}” has been published',
       blogChangesRequested: 'Changes requested on “{title}”',
+      blogRejected: 'Update on your article “{title}”',
     },
     preview: {
       registrationReceived: "We have your application. Allotments will be sent soon.",

@@ -106,6 +106,25 @@ export function ParticipantApp({ sessionId, roomCode, initialStatus, presentatio
           setAppState("ended")
         }
       })
+      // Two people typing the same name used to merge into one leaderboard
+      // row, and the second one's genuine answer came back 409 "already
+      // submitted" while the UI told them it was received. Presence already
+      // knows who is in the room, so catch it at the door instead.
+      .on("presence", { event: "sync" }, () => {
+        const taken = Object.values(channel.presenceState())
+          .flat()
+          .some(
+            (p) =>
+              (p as { nickname?: string; userId?: string }).nickname === nick &&
+              (p as { userId?: string }).userId !== userIdRef.current,
+          )
+        if (taken) {
+          supabase.removeChannel(channel)
+          channelRef.current = null
+          setNicknameError(t("quiz.nicknameTaken"))
+          setAppState("nickname")
+        }
+      })
       .subscribe(() => {
         channel.track({ nickname: nick, avatar: ava, userId: userIdRef.current })
       })
@@ -167,6 +186,13 @@ export function ParticipantApp({ sessionId, roomCode, initialStatus, presentatio
       const data = (await res.json()) as ResultData
       setResult(data)
       setAppState("result")
+    } else if (res.status === 409) {
+      // Someone else already answered under this nickname. Saying "answer
+      // received" here is what let a collided participant score zero for a
+      // whole quiz without ever seeing an error.
+      submittedRef.current = false
+      setNicknameError(t("quiz.nicknameTaken"))
+      setAppState("nickname")
     } else {
       setAppState("submitted")
     }

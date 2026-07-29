@@ -11,6 +11,7 @@ import { PaymentConfirmedEmail } from "@/emails/payment-confirmed"
 import { PaymentReminderEmail } from "@/emails/payment-reminder"
 import { BlogApprovedEmail } from "@/emails/blog-approved"
 import { BlogChangesRequestedEmail } from "@/emails/blog-changes-requested"
+import { BlogRejectedEmail } from "@/emails/blog-rejected"
 import { StaffInviteEmail } from "@/emails/staff-invite"
 
 let resendClient: Resend | undefined
@@ -376,6 +377,28 @@ export async function sendBlogChangesRequested(postId: string): Promise<void> {
       postTitle: post.title,
       reviewNote: post.reviewNote ?? "",
       editUrl,
+    }),
+  })
+}
+
+export async function sendBlogRejected(postId: string): Promise<void> {
+  const post = await prisma.post.findUniqueOrThrow({
+    where: { id: postId },
+    select: {
+      title: true,
+      reviewNote: true,
+      author: { select: { name: true, email: true } },
+    },
+  })
+
+  await loggedSend({
+    template: "blog-rejected",
+    toEmail: post.author.email!,
+    subject: STRINGS.email.subjects.blogRejected.replace("{title}", post.title),
+    reactElement: BlogRejectedEmail({
+      authorName: post.author.name ?? "Author",
+      postTitle: post.title,
+      reviewNote: post.reviewNote ?? "",
     }),
   })
 }
