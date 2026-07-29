@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma"
 import { getContent } from "@/lib/settings"
 import { registerSchema, type RegisterFormValues } from "@/lib/schemas/register"
 import { sendRegistrationEmails } from "@/lib/resend"
+import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit"
 
 type ActionResult =
   | { success: true; delegateId: string; publicToken: string }
@@ -14,6 +15,14 @@ export async function registerDelegate(data: RegisterFormValues): Promise<Action
   const content = await getContent()
   if (!content.registrationOpen) {
     return { success: false, error: "Registrations are currently closed." }
+  }
+
+  // Keyed on the submitted email so a flood cannot lock out other applicants.
+  if (data?.email) {
+    const limit = await rateLimit(RATE_LIMITS.register, data.email)
+    if (!limit.ok) {
+      return { success: false, error: "Too many attempts. Wait a few minutes and try again." }
+    }
   }
 
   // Validate with shared schema

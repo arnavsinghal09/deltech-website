@@ -5,6 +5,17 @@ import { prisma } from "@/lib/prisma"
 import { requireStaff } from "@/lib/authz"
 import { audit } from "@/lib/audit"
 
+
+// A failed notification must not undo a completed review, but it also must not
+// vanish: EmailLog records it and the failed-email card on /admin surfaces it.
+async function notifyAuthor(send: () => Promise<void>): Promise<void> {
+  try {
+    await send()
+  } catch (err) {
+    console.error("[blog review] author notification failed", err)
+  }
+}
+
 export async function approvePost(postId: string): Promise<{ error?: string }> {
   const session = await requireStaff()
   try {
@@ -16,9 +27,7 @@ export async function approvePost(postId: string): Promise<{ error?: string }> {
   } catch (err) {
     return { error: err instanceof Error ? err.message : "Failed to approve." }
   }
-  void import("@/lib/resend")
-    .then(({ sendBlogApproved }) => sendBlogApproved(postId))
-    .catch(() => {})
+  await notifyAuthor(() => import("@/lib/resend").then((m) => m.sendBlogApproved(postId)))
   redirect("/admin/blog")
 }
 
@@ -36,9 +45,7 @@ export async function requestChanges(
   } catch (err) {
     return { error: err instanceof Error ? err.message : "Failed." }
   }
-  void import("@/lib/resend")
-    .then(({ sendBlogChangesRequested }) => sendBlogChangesRequested(postId))
-    .catch(() => {})
+  await notifyAuthor(() => import("@/lib/resend").then((m) => m.sendBlogChangesRequested(postId)))
   redirect("/admin/blog")
 }
 
@@ -56,5 +63,8 @@ export async function rejectPost(
   } catch (err) {
     return { error: err instanceof Error ? err.message : "Failed to reject." }
   }
+  // Rejection used to send nothing at all, unlike approve and requestChanges.
+  // The author saw a red badge with no reason and could not resubmit.
+  await notifyAuthor(() => import("@/lib/resend").then((m) => m.sendBlogRejected(postId)))
   redirect("/admin/blog")
 }

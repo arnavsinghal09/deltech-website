@@ -12,7 +12,7 @@ interface Props {
   validated: ValidatedRow[]
   skipped:   Set<number>
   onBack:    () => void
-  onDone:    () => void
+  onDone:    (result: CommitResult) => void
 }
 
 export function StepCommit({ validated, skipped, onBack, onDone }: Props) {
@@ -78,7 +78,7 @@ export function StepCommit({ validated, skipped, onBack, onDone }: Props) {
           </div>
         )}
 
-        <Button className="w-full" onClick={onDone}>Done</Button>
+        <Button className="w-full" onClick={() => result && onDone(result)}>Done</Button>
       </div>
     )
   }

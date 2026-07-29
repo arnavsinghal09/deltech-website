@@ -15,6 +15,7 @@ import {
 import { cn } from "@/lib/utils"
 import { t } from "@/content/strings"
 import { SignOutButton } from "./sign-out-button"
+import { AccountLink } from "./account-link"
 import { NAV_GROUPS, isNavActive } from "./admin-nav"
 import type { SidebarUser } from "./admin-sidebar"
 
@@ -72,6 +73,7 @@ export function AdminMobileNav({ user }: { user: SidebarUser }) {
                 {user.role}
               </Badge>
             </div>
+            <AccountLink compact />
             <SignOutButton compact />
           </div>
         </DrawerContent>

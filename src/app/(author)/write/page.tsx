@@ -5,6 +5,8 @@ import { prisma } from "@/lib/prisma"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { PenLine, Clock } from "lucide-react"
+import { AccountLink } from "@/app/(admin)/_components/account-link"
+import { SignOutButton } from "@/app/(admin)/_components/sign-out-button"
 
 const STATUS_LABEL: Record<string, string> = {
   DRAFT:             "Draft",
@@ -48,12 +50,18 @@ export default async function WritePage() {
           <h1 className="font-serif text-2xl font-bold text-gray-900">Your stories</h1>
           <p className="mt-1 text-sm text-gray-500">{posts.length} post{posts.length !== 1 ? "s" : ""}</p>
         </div>
-        <Link href="/write/new">
-          <Button className="gap-2">
-            <PenLine className="size-4" />
-            New story
-          </Button>
-        </Link>
+        <div className="flex items-center gap-2">
+          {/* The author area had no header controls at all, so a pure AUTHOR
+              could neither sign out nor reach /account to set a password. */}
+          <AccountLink compact />
+          <SignOutButton compact />
+          <Link href="/write/new">
+            <Button className="gap-2">
+              <PenLine className="size-4" />
+              New story
+            </Button>
+          </Link>
+        </div>
       </div>
 
       {posts.length === 0 ? (
@@ -80,11 +88,20 @@ export default async function WritePage() {
                     {post.subtitle && (
                       <p className="mt-0.5 truncate text-sm text-gray-500">{post.subtitle}</p>
                     )}
-                    {post.reviewNote && post.status === "CHANGES_REQUESTED" && (
-                      <p className="mt-2 rounded-md bg-amber-50 px-3 py-2 text-xs text-amber-700">
-                        {post.reviewNote}
-                      </p>
-                    )}
+                    {/* REJECTED was excluded here, so a rejected author saw a
+                        red badge and no reason anywhere in the product. */}
+                    {post.reviewNote &&
+                      (post.status === "CHANGES_REQUESTED" || post.status === "REJECTED") && (
+                        <p
+                          className={
+                            post.status === "REJECTED"
+                              ? "mt-2 rounded-md bg-red-50 px-3 py-2 text-xs text-red-700"
+                              : "mt-2 rounded-md bg-amber-50 px-3 py-2 text-xs text-amber-700"
+                          }
+                        >
+                          {post.reviewNote}
+                        </p>
+                      )}
                   </div>
                   <div className="flex shrink-0 flex-col items-end gap-2">
                     <Badge variant={STATUS_VARIANT[post.status] ?? "secondary"} className="text-[11px]">

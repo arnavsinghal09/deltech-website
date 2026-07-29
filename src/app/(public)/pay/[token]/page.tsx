@@ -1,3 +1,4 @@
+import Link from "next/link"
 import { notFound } from "next/navigation"
 import { prisma } from "@/lib/prisma"
 import { Badge } from "@/components/ui/badge"
@@ -30,7 +31,35 @@ export default async function PayPage(props: {
     },
   })
 
-  if (!delegate?.payment) notFound()
+  // An unknown token really is a 404. But a *valid* token whose payment row is
+  // missing is a different situation: the delegate is registered and simply has
+  // nothing to pay yet, or an allotment half-completed. Showing them the
+  // marketing "Page not found" card left them unable to tell whether their
+  // money had gone somewhere or whether they were registered at all.
+  if (!delegate) notFound()
+
+  if (!delegate.payment) {
+    return (
+      <div className="paper-grid grid min-h-svh place-items-center px-4 py-20">
+        <div className="editorial-card w-full max-w-md p-8 text-center">
+          <p className="eyebrow text-gold-500">Payment</p>
+          <h1 className="display mt-4 text-3xl">Nothing to pay yet</h1>
+          <p className="mt-3 text-sm text-muted-foreground">
+            {delegate.fullName}, your registration is on file, but no payment has been raised
+            against it. That is normal before the secretariat publishes your allotment. If you were
+            expecting a payment link, reply to your allotment email and we will sort it out.
+          </p>
+          <div className="rule my-6" />
+          <Link
+            href={`/status/${delegate.publicToken}`}
+            className={cn(buttonVariants({ variant: "outline" }))}
+          >
+            Check your application status
+          </Link>
+        </div>
+      </div>
+    )
+  }
 
   const content = await getContent()
   const { payment, allotment } = delegate

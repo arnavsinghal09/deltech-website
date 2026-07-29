@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma"
 import { requireStaff, requireAdmin } from "@/lib/authz"
 import { audit } from "@/lib/audit"
 import { getActiveProvider } from "@/lib/payments"
-import { delegateInclude, serializeDelegate, type SerializedDelegate } from "./_lib/types"
+import { delegateInclude, serializeDelegate, type SerializedDelegate, type EmailLogEntry } from "./_lib/types"
 import { sendPaymentConfirmed, resendByLogId } from "@/lib/resend"
 import { syncSheetCell, syncSheetForDelegate } from "@/lib/sheet-sync"
 
@@ -244,6 +244,18 @@ export async function regeneratePaymentLink(
   } catch {
     return { success: false, error: "Failed to regenerate payment link." }
   }
+}
+
+// Fetched when the drawer opens rather than joined onto every table row.
+export async function getDelegateEmailLogs(delegateId: string): Promise<EmailLogEntry[]> {
+  await requireStaff()
+  const logs = await prisma.emailLog.findMany({
+    where: { delegateId },
+    orderBy: { sentAt: "desc" },
+    take: 50,
+    select: { id: true, template: true, status: true, error: true, sentAt: true },
+  })
+  return logs.map((l) => ({ ...l, sentAt: l.sentAt.toISOString() }))
 }
 
 export async function resendEmail(

@@ -10,8 +10,9 @@ import { STRINGS } from "@/content/strings"
 import { getContent } from "@/lib/settings"
 import { STATUS_LABEL, STATUS_VARIANT, PAY_STATUS_LABEL } from "@/lib/status-labels"
 import { CheckinQR } from "./_components/checkin-qr"
+import { APP_URL } from "@/lib/app-url"
 
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? ""
+
 
 function Field({ label, value }: { label: string; value: React.ReactNode }) {
   return (

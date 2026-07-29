@@ -25,7 +25,10 @@ export default async function ImportPage() {
         title="Cross-delegation import"
         description="Upload a partner sheet, map their columns to our fields, review, and import. Google Form intake lands here automatically, only broken rows need you."
       />
-      <QuarantinePanel rows={quarantine} />
+      {/* id so the import wizard's completion screen can link straight here */}
+      <div id="quarantine" className="scroll-mt-20">
+        <QuarantinePanel rows={quarantine} />
+      </div>
       <ImportWizard presets={presets} committeeNames={committees.map((c) => c.name)} />
       <PartnerSheetsCard
         sources={content.sheetPullSources}

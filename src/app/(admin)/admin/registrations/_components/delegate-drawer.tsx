@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useTransition } from "react"
+import { useState, useEffect, useCallback, useTransition } from "react"
 import { X, Edit2, CheckCircle, RefreshCw, Gift, Ban, Clock, Link2 } from "lucide-react"
 import {
   Drawer,
@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { toast } from "sonner"
-import type { SerializedDelegate } from "../_lib/types"
+import type { SerializedDelegate, EmailLogEntry } from "../_lib/types"
 import { DelegateEditForm } from "./delegate-edit-form"
 import {
   markPaidOffline,
@@ -22,6 +22,7 @@ import {
   cancelDelegate,
   waitlistDelegate,
   regeneratePaymentLink,
+  getDelegateEmailLogs,
 } from "../actions"
 
 interface Props {
@@ -58,6 +59,22 @@ export function DelegateDrawer({ delegate, committees, onClose, onUpdated }: Pro
   const [editing, setEditing] = useState(false)
   const [isPending, startTransition] = useTransition()
   const [resendingLogId, setResendingLogId] = useState<string | null>(null)
+  // Loaded per-delegate on open, instead of being joined onto every row of the
+  // table behind this drawer.
+  const [emailLogs, setEmailLogs] = useState<EmailLogEntry[] | null>(null)
+
+  const delegateId = delegate?.id ?? null
+  const loadLogs = useCallback(() => {
+    if (!delegateId) return
+    getDelegateEmailLogs(delegateId)
+      .then(setEmailLogs)
+      .catch(() => setEmailLogs([]))
+  }, [delegateId])
+
+  useEffect(() => {
+    setEmailLogs(null)
+    loadLogs()
+  }, [loadLogs])
 
   const runAction = (
     fn: () => Promise<{ success: boolean; error?: string; delegate?: SerializedDelegate }>,
@@ -345,11 +362,13 @@ export function DelegateDrawer({ delegate, committees, onClose, onUpdated }: Pro
 
                 {/* Email history */}
                 <Section title="Email history">
-                  {delegate.emailLogs.length === 0 ? (
+                  {emailLogs === null ? (
+                    <p className="text-sm text-muted-foreground">Loading…</p>
+                  ) : emailLogs.length === 0 ? (
                     <p className="text-sm text-muted-foreground">No emails sent yet.</p>
                   ) : (
                     <div className="space-y-2">
-                      {delegate.emailLogs.map((log) => (
+                      {emailLogs.map((log) => (
                         <div key={log.id} className="flex items-center justify-between gap-2 rounded-md border border-border/60 bg-muted/30 px-3 py-2">
                           <div className="min-w-0 flex-1">
                             <p className="truncate text-xs font-medium">{log.template}</p>
@@ -371,8 +390,10 @@ export function DelegateDrawer({ delegate, committees, onClose, onUpdated }: Pro
                               setResendingLogId(log.id)
                               resendEmail(log.id).then((res) => {
                                 setResendingLogId(null)
-                                if (res.success) toast.success("Email resent.")
-                                else toast.error(res.error ?? "Resend failed.")
+                                if (res.success) {
+                                  toast.success("Email resent.")
+                                  loadLogs()
+                                } else toast.error(res.error ?? "Resend failed.")
                               })
                             }}
                           >

@@ -22,7 +22,7 @@ const ADMIN_REQUIRED = new Set([
   "deleteCommittee", "deletePortfolio", "deleteImportPreset", "deleteMember",
   "cancelDelegate", "revokeAllotment", "deleteApplicant",
   // role / user management
-  "setUserRole", "inviteStaff",
+  "setUserRole", "inviteStaff", "setUserDisabled", "deleteUser",
 ])
 
 function walk(dir: string): string[] {

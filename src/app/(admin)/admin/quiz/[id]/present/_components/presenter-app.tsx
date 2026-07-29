@@ -6,7 +6,7 @@ import { supabase } from "@/lib/supabase"
 import { LobbyScreen } from "./lobby-screen"
 import { QuestionScreen } from "./question-screen"
 import { LeaderboardScreen } from "./leaderboard-screen"
-import { endSession, computeLeaderboard } from "../actions"
+import { endSession, computeLeaderboard, startSlide } from "../actions"
 import type {
   SlideData,
   Tally,
@@ -17,6 +17,7 @@ import type {
   MCQConfig,
 } from "@/lib/quiz-types"
 import { asMCQ } from "@/lib/quiz-types"
+import { APP_URL } from "@/lib/app-url"
 
 type Screen = "lobby" | "question" | "leaderboard"
 
@@ -26,7 +27,7 @@ interface Props {
   slides: SlideData[]
 }
 
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? ""
+
 
 export function PresenterApp({ session, presentation, slides }: Props) {
   const [screen, setScreen] = useState<Screen>("lobby")
@@ -118,6 +119,10 @@ export function PresenterApp({ session, presentation, slides }: Props) {
         config: { ...asMCQ(slide.config), correct: [] } as MCQConfig,
       }
     }
+
+    // Authoritative record of which slide is live and from when. The
+    // broadcast below is for latency; this is what scoring trusts.
+    void startSlide(session.id, slide.id).catch(() => {})
 
     broadcast({
       event: "GOTO",

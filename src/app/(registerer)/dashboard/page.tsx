@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { buttonVariants } from "@/components/ui/button";
 import { SignOutButton } from "@/app/(admin)/_components/sign-out-button";
+import { AccountLink } from "@/app/(admin)/_components/account-link";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { t } from "@/content/strings";
@@ -61,6 +62,7 @@ export default async function DashboardPage() {
         </span>
         <div className="flex items-center gap-3">
           <span className="hidden text-xs text-muted-foreground sm:block">{email}</span>
+          <AccountLink />
           <SignOutButton />
         </div>
       </header>

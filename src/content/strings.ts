@@ -500,6 +500,7 @@ export const STRINGS = {
     invalidCode: "Room not found. Check the code and try again.",
     enterCodeFirst: "Enter a 6-digit room code above.",
     nicknameRequired: "Please enter a nickname.",
+    nicknameTaken: "That nickname is already in this room. Pick another.",
     avatarRequired: "Please pick an avatar.",
     sessionEnded: "This session has ended. Thanks for playing!",
     submitAnswer: "Submit",
@@ -568,7 +569,7 @@ export const STRINGS = {
     sendLinkButton: "Send magic link",
     checkEmailTitle: "Check your inbox",
     checkEmailMessage: "We sent a sign-in link to your email. Click it to continue.",
-    checkEmailExpiry: "The link expires in 10 minutes.",
+    checkEmailExpiry: "The link expires in 30 minutes.",
     errorDefault: "Something went wrong. Please try again.",
     delegateNote: "No account needed to register as a delegate.",
     magicLinkTab: "Magic link",
@@ -591,6 +592,30 @@ export const STRINGS = {
     passwordTooShort: "Password must be at least 8 characters.",
     accountExists: "An account with this email already exists. Sign in instead.",
     nonDelegateAccount: "This email is reserved for an admin or author account.",
+    passwordTooLong: "Password is too long.",
+    emailRequired: "Enter your email address.",
+    forgotPassword: "Forgot your password?",
+    noPasswordYetHint:
+      "Invited by an admin? You will not have a password yet. Use the magic link tab, then set one from your account page.",
+    tooManyRequests: "Too many attempts. Wait a few minutes and try again.",
+  },
+
+  account: {
+    title: "Your account",
+    setPasswordTitle: "Set a password",
+    changePasswordTitle: "Change your password",
+    setPasswordNote:
+      "You signed in with a magic link. Set a password and you can use it to sign in from now on.",
+    changePasswordNote: "You will need your current password to change it.",
+    currentPasswordLabel: "Current password",
+    newPasswordLabel: "New password",
+    savePasswordButton: "Save password",
+    passwordSaved: "Password saved. Use it next time you sign in.",
+    currentPasswordRequired: "Enter your current password.",
+    currentPasswordWrong: "That current password is not right.",
+    notSignedIn: "Your session expired. Sign in again.",
+    backLink: "Back to your dashboard",
+    navLabel: "Account",
   },
 
   dashboard: {
@@ -607,14 +632,16 @@ export const STRINGS = {
 
   email: {
     subjects: {
+      magicLink: "Your DelTech MUN sign-in link",
       registrationReceived: "Your DelTech MUN registration is received",
-      allotmentSent: "Your DelTech MUN allotment: {committee} · {portfolio}",
+      allotmentSent: "Your DelTech MUN allotment: {committee}, {portfolio}",
       coDelegateNotice: "You have been added as a co-delegate for {committee}",
-      coDelegateRegistered: "You have been added as a co-delegate · DelTech MUN",
-      paymentConfirmed: "Payment confirmed · DelTech MUN",
-      paymentReminder: "Complete your payment · DelTech MUN",
+      coDelegateRegistered: "You have been added as a co-delegate at DelTech MUN",
+      paymentConfirmed: "Payment confirmed at DelTech MUN",
+      paymentReminder: "Your DelTech MUN payment is still pending",
       blogApproved: 'Your article “{title}” has been published',
       blogChangesRequested: 'Changes requested on “{title}”',
+      blogRejected: 'Update on your article “{title}”',
     },
     preview: {
       registrationReceived: "We have your application. Allotments will be sent soon.",

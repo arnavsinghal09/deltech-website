@@ -1,4 +1,5 @@
 import type { PaymentProvider } from "./index"
+import { APP_URL } from "@/lib/app-url"
 
 interface RazorpayPaymentLinkResponse {
   id: string
@@ -24,7 +25,6 @@ export class RazorpayProvider implements PaymentProvider {
     amountInr: number
     email: string
   }): Promise<{ link: string; orderId?: string }> {
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? ""
 
     const res = await fetch("https://api.razorpay.com/v1/payment_links", {
       method: "POST",
@@ -41,7 +41,7 @@ export class RazorpayProvider implements PaymentProvider {
         reminder_enable: false,
         notes: { delegateId },
         // After payment, Razorpay redirects back to our pay page
-        callback_url: `${appUrl}/pay/${publicToken}`,
+        callback_url: `${APP_URL}/pay/${publicToken}`,
         callback_method: "get",
       }),
     })
