@@ -6,7 +6,7 @@ function generateRoomCode(): string {
   return Math.floor(100000 + Math.random() * 900000).toString()
 }
 
-// GET ?code=123456  — participant lookup (public)
+// GET ?code=123456 , participant lookup (public)
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
   const code = searchParams.get("code")
@@ -31,7 +31,7 @@ export async function GET(request: Request) {
   return NextResponse.json({ session, presentationMode: presentation?.mode ?? "POLL" })
 }
 
-// POST  — admin creates a session
+// POST , admin creates a session
 export async function POST(request: Request) {
   const authSession = await auth()
   const role = (authSession?.user as { role?: string } | undefined)?.role

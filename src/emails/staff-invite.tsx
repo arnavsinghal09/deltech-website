@@ -24,7 +24,7 @@ export function StaffInviteEmail({ role, signInUrl }: Props) {
         <Container style={{ maxWidth: 560, margin: "40px auto", padding: "0 16px" }}>
           <Section style={{ backgroundColor: card, borderRadius: 12, padding: "40px 40px 32px", border: "1px solid #e6ded0" }}>
             <Text style={{ color: gold, fontWeight: 700, fontSize: 12, letterSpacing: "0.08em", textTransform: "uppercase", margin: "0 0 16px" }}>
-              DelTech MUN — Secretariat
+              DelTech MUN · Secretariat
             </Text>
             <Heading style={{ color: "#18181b", fontFamily: serif, fontSize: 26, fontWeight: 700, margin: "0 0 20px" }}>
               You&apos;re on the team
@@ -33,7 +33,7 @@ export function StaffInviteEmail({ role, signInUrl }: Props) {
               You&apos;ve been added as {roleLabel} on the DelTech MUN platform.
             </Text>
             <Text style={{ color: "#3f3f46", fontSize: 15, lineHeight: "1.6", margin: "0 0 20px" }}>
-              Sign in with this email address — we&apos;ll send you a magic link, no
+              Sign in with this email address, we&apos;ll send you a magic link, no
               password needed.
             </Text>
             <Button

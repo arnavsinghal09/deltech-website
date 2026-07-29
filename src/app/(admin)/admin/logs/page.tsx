@@ -27,7 +27,7 @@ export default async function LogsPage(props: {
         description="Every change, approval, and send by admins and maintainers. Latest 100 shown."
       />
 
-      {/* GET-form filters — no client state needed */}
+      {/* GET-form filters, no client state needed */}
       <form className="flex flex-wrap gap-2" method="get">
         <input
           name="actor"
@@ -93,7 +93,7 @@ export default async function LogsPage(props: {
                     {log.entityId && <span className="opacity-60"> · {log.entityId.slice(0, 8)}</span>}
                   </td>
                   <td className="max-w-64 truncate px-4 py-2.5 font-mono text-xs text-muted-foreground">
-                    {log.meta ? JSON.stringify(log.meta) : "—"}
+                    {log.meta ? JSON.stringify(log.meta) : "-"}
                   </td>
                 </tr>
               ))}

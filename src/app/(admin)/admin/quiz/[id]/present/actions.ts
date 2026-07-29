@@ -51,7 +51,7 @@ export async function computeLeaderboard(
   })
 
   // Grab avatars: take the most recent response per nickname that has avatar info
-  // (avatar stored separately — look it up from a recent session presence snapshot)
+  // (avatar stored separately, look it up from a recent session presence snapshot)
   // We store avatars in nickname responses via the response table only if we add avatar field.
   // Since the Response model doesn't have avatar, we use the presence state from the broadcast.
   // This action only returns scores; the caller supplies avatar from presence state.

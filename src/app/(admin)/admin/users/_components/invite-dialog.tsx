@@ -38,7 +38,7 @@ export function InviteDialog() {
     startTransition(async () => {
       const result = await inviteStaff(email, role)
       if (result.success) {
-        toast.success(`Invited ${email} as ${role} — they'll get an email.`)
+        toast.success(`Invited ${email} as ${role}, they'll get an email.`)
         setOpen(false)
         setEmail("")
         setRole("MAINTAINER")
@@ -60,7 +60,7 @@ export function InviteDialog() {
             <DialogTitle>Invite staff</DialogTitle>
             <DialogDescription>
               Creates their account and emails a link to the staff sign-in. They sign
-              in with this email — no password needed.
+              in with this email, no password needed.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">

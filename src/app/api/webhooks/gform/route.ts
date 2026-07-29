@@ -24,7 +24,7 @@ interface GformBody {
   row: Record<string, string>
 }
 
-// Tolerant header matching for applicant forms — no preset needed.
+// Tolerant header matching for applicant forms, no preset needed.
 function pickColumn(row: Record<string, string>, patterns: RegExp[]): string | undefined {
   for (const pattern of patterns) {
     const key = Object.keys(row).find((k) => pattern.test(k))
@@ -102,7 +102,7 @@ export async function POST(req: NextRequest) {
   })
 
   if (!result.ok) {
-    // duplicate and quarantined are both handled states — 200 so the
+    // duplicate and quarantined are both handled states. 200 so the
     // Apps Script doesn't alert; the quarantine list surfaces them to staff.
     return NextResponse.json({ ok: true, [result.reason]: true })
   }

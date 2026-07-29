@@ -1,5 +1,7 @@
 #!/usr/bin/env node
-// Fails if any .tsx file outside the allowed list contains hardcoded user-visible strings.
+// Two gates in one pass:
+//   1. No hardcoded user-visible strings in .tsx outside the allowed list.
+//   2. No em dashes anywhere under src/ (excluding generated output).
 //
 // Allowed escape: purely decorative / symbol-only content (icons, separators, empty strings).
 // Everything else must go through t() from @/content/strings or getContent() from @/lib/settings.
@@ -33,6 +35,23 @@ const TEXT_NODE_RE = />([A-Za-z][A-Za-z ]+ [A-Za-z][A-Za-z ,.'!?:–-]{2,})</g;
 
 // Lines that are exempt even if they match the pattern
 const EXEMPT_LINE_RE = /\{t\(|strings\.|getContent\(\)|\/\/|STRINGS\[|`|[&|=<>].*[A-Z][a-z]/;
+
+// Walks every source file, not just .tsx, for the em-dash rule.
+function walkAll(dir) {
+  const entries = readdirSync(dir, { withFileTypes: true });
+  const files = [];
+  for (const e of entries) {
+    const full = join(dir, e.name);
+    if (e.isDirectory()) {
+      if (e.name !== "node_modules" && e.name !== ".next" && e.name !== "generated") {
+        files.push(...walkAll(full));
+      }
+    } else if (/\.(ts|tsx|mjs|js|css)$/.test(e.name)) {
+      files.push(full);
+    }
+  }
+  return files;
+}
 
 function walk(dir) {
   const entries = readdirSync(dir, { withFileTypes: true });
@@ -80,6 +99,28 @@ for (const file of walk(SRC)) {
   });
 }
 
+// ---------------------------------------------------------------------------
+// Em dashes. The house style is that we do not use them, in copy or in
+// comments: they were the loudest tell that the writing was machine-generated.
+// A period, a comma, a colon or "·" always covers the job.
+// ---------------------------------------------------------------------------
+let dashes = 0;
+for (const file of walkAll(SRC)) {
+  const rel = relative(ROOT, file);
+  readFileSync(file, "utf8").split("\n").forEach((line, i) => {
+    if (!line.includes("\u2014")) return;
+    console.error(`${rel}:${i + 1}  em dash: ${line.trim().slice(0, 90)}`);
+    dashes++;
+  });
+}
+
+if (dashes > 0) {
+  console.error(
+    `\n❌ ${dashes} em dash(es) found. Use a period, comma, colon, or "·" instead.\n`,
+  );
+  process.exit(1);
+}
+
 if (violations > 0) {
   console.error(
     `\n❌ ${violations} hardcoded string(s) found. Use t() from @/content/strings or getContent() from @/lib/settings.\n` +
@@ -88,4 +129,4 @@ if (violations > 0) {
   process.exit(1);
 }
 
-console.log("✅ check:strings passed — no hardcoded literals found.");
+console.log("✅ check:strings passed. No hardcoded literals and no em dashes.");

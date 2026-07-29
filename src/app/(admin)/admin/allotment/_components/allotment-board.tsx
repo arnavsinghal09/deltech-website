@@ -86,7 +86,7 @@ export function AllotmentBoard({ committees, delegates, fees, paymentsRequired }
   const selectedCommittee = committees.find((c) => c.id === selectedCommitteeId)
 
   // Preference demand across the unallotted pool (delegates are REGISTERED only,
-  // so this is *remaining* demand — the balancing signal). Recomputed as the
+  // so this is *remaining* demand, the balancing signal). Recomputed as the
   // pool shrinks on router.refresh().
   const demand = useMemo(() => committeeDemand(delegates), [delegates])
   const selectedDemand = selectedCommittee ? demand.get(selectedCommittee.id) : undefined
@@ -156,7 +156,7 @@ export function AllotmentBoard({ committees, delegates, fees, paymentsRequired }
           const d = demand.get(c.id)
           const p1 = d?.p1 ?? 0
           const available = total - allotted
-          // Over-subscribed on 1st preference relative to remaining seats — the
+          // Over-subscribed on 1st preference relative to remaining seats, the
           // cue to consider pushing some delegates to a 2nd preference.
           const oversubscribed = p1 > available && available > 0
           return (
@@ -214,7 +214,7 @@ export function AllotmentBoard({ committees, delegates, fees, paymentsRequired }
               </span>
               {selectedDemand && (
                 <span className="text-sm text-muted-foreground">
-                  {"— demand: "}
+                  {",  demand: "}
                   <span className="tabular-nums">{selectedDemand.p1}</span> pref-1
                   {" · "}
                   <span className="tabular-nums">{selectedDemand.p2}</span> pref-2
@@ -248,7 +248,7 @@ export function AllotmentBoard({ committees, delegates, fees, paymentsRequired }
         )}
       </div>
 
-      {/* Allot dialog — rendered outside the grid so it isn't clipped */}
+      {/* Allot dialog, rendered outside the grid so it isn't clipped */}
       {dialogPortfolio && dialogCommittee && (
         <AllotDialog
           portfolio={dialogPortfolio}

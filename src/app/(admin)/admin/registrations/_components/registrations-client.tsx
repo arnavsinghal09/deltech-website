@@ -325,7 +325,7 @@ export function RegistrationsClient({ delegates, committees, total, filters }: P
                     <span className="block truncate text-muted-foreground">{d.institution}</span>
                   </td>
                   <td className="px-4 py-3 text-muted-foreground">
-                    {d.pref1CommitteeId ? (committeeMap.get(d.pref1CommitteeId) ?? "—") : "—"}
+                    {d.pref1CommitteeId ? (committeeMap.get(d.pref1CommitteeId) ?? "-") : "-"}
                   </td>
                   <td className="px-4 py-3">
                     <Badge variant={STATUS_VARIANT[d.status] ?? "secondary"}>

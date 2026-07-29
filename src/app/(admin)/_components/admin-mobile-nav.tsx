@@ -18,7 +18,7 @@ import { SignOutButton } from "./sign-out-button"
 import { NAV_GROUPS, isNavActive } from "./admin-nav"
 import type { SidebarUser } from "./admin-sidebar"
 
-// Mobile counterpart of the sidebar — same grouped nav in a vaul drawer.
+// Mobile counterpart of the sidebar, same grouped nav in a vaul drawer.
 export function AdminMobileNav({ user }: { user: SidebarUser }) {
   const pathname = usePathname()
   const [open, setOpen] = useState(false)

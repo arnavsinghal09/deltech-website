@@ -35,7 +35,7 @@ export function UsersTable({ users, selfEmail }: { users: UserRow[]; selfEmail: 
     startTransition(async () => {
       const result = await setUserRole(userId, role as never)
       if (result.success) {
-        toast.success("Role updated — takes effect on their next sign-in.")
+        toast.success("Role updated, takes effect on their next sign-in.")
         router.refresh()
       } else {
         toast.error(result.error ?? "Failed.")

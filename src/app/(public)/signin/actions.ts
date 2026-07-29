@@ -4,7 +4,7 @@ import { signIn } from "@/lib/auth";
 import { AuthError } from "next-auth";
 
 // Everything lands on /go, the role-aware dispatch route. It resolves the final
-// destination from the intended callbackUrl (sanitized) + the user's role —
+// destination from the intended callbackUrl (sanitized) + the user's role.
 // so magic-link users don't get stranded on the marketing home.
 function dispatchTarget(formData: FormData): string {
   const callbackUrl = (formData.get("callbackUrl") as string | null)?.trim();

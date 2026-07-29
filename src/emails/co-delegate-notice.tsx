@@ -31,7 +31,7 @@ export function CoDelegateNoticeEmail({
         <Container style={{ maxWidth: 560, margin: "40px auto", padding: "0 16px" }}>
           <Section style={{ backgroundColor: card, borderRadius: 12, padding: "40px 40px 32px", border: "1px solid #e6ded0" }}>
             <Text style={{ color: gold, fontWeight: 700, fontSize: 12, letterSpacing: "0.08em", textTransform: "uppercase", margin: "0 0 16px" }}>
-              DelTech MUN — Co-delegate Notice
+              DelTech MUN · Co-delegate Notice
             </Text>
             <Heading style={{ color: "#18181b", fontFamily: serif, fontSize: 26, fontWeight: 700, margin: "0 0 20px" }}>
               You&apos;ve been added as a co-delegate!

@@ -14,7 +14,7 @@ export default function Error({ error, reset }: { error: Error & { digest?: stri
         <p className="eyebrow text-gold-500">Error</p>
         <h1 className="display mt-4 text-4xl">Something went wrong</h1>
         <p className="mt-3 text-sm text-muted-foreground">
-          An unexpected error occurred. You can try again — if it keeps happening, the secretariat
+          An unexpected error occurred. You can try again, if it keeps happening, the secretariat
           has been notified.
         </p>
         {error.digest && (

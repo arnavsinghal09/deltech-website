@@ -26,7 +26,7 @@ export default async function MoneySettingsPage() {
       <div className="editorial-card p-7">
         <h2 className="font-heading text-2xl">Fees</h2>
         <p className="mt-2 text-base text-muted-foreground">
-          Amounts by committee type — allotments always read from this table.
+          Amounts by committee type, allotments always read from this table.
         </p>
         <div className="rule my-5" />
         <TabFees fees={serializedFees} />

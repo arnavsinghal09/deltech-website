@@ -83,7 +83,7 @@ export default async function AllotmentPage() {
         title="Allotment Board"
         description={paymentsRequired
           ? "Select a committee, then allot a portfolio. A payment request is created after allotment."
-          : "Select a committee, then allot a portfolio. The delegate is confirmed immediately—no payment is created."}
+          : "Select a committee, then allot a portfolio. The delegate is confirmed immediately, no payment is created."}
       />
       <AllotmentBoard
         committees={serializedCommittees}

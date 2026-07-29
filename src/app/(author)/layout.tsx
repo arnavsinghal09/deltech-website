@@ -9,7 +9,7 @@ export default async function AuthorLayout({ children }: { children: React.React
   const role = (session?.user as { role?: string } | undefined)?.role
   if (!session) redirect("/signin")
   // Delegates and anyone else without authoring rights go to their own home,
-  // not a dead-end — the blog editor is authors + staff only.
+  // not a dead-end, the blog editor is authors + staff only.
   if (!role || !AUTHOR_ROLES.has(role)) redirect(roleHome(role))
   return <>{children}</>
 }

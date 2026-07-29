@@ -35,12 +35,12 @@ export function PaymentConfirmedEmail({
   return (
     <Html>
       <Head />
-      <Preview>Your registration is confirmed — see you at the conference!</Preview>
+      <Preview>Your registration is confirmed, see you at the conference!</Preview>
       <Body style={{ fontFamily: "Inter, ui-sans-serif, sans-serif", backgroundColor: bg, margin: 0 }}>
         <Container style={{ maxWidth: 560, margin: "40px auto", padding: "0 16px" }}>
           <Section style={{ backgroundColor: card, borderRadius: 12, padding: "40px 40px 32px", border: "1px solid #e6ded0" }}>
             <Text style={{ color: gold, fontWeight: 700, fontSize: 12, letterSpacing: "0.08em", textTransform: "uppercase", margin: "0 0 16px" }}>
-              {eventName} — Payment confirmed
+              {eventName}. Payment confirmed
             </Text>
             <Heading style={{ color: "#18181b", fontFamily: serif, fontSize: 26, fontWeight: 700, margin: "0 0 20px" }}>
               You&apos;re all set! 🎉

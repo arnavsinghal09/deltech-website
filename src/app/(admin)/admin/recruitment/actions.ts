@@ -132,7 +132,7 @@ export async function saveScore(
   return { success: true }
 }
 
-// Manual override — e.g. move someone back a stage, or un-reject.
+// Manual override, e.g. move someone back a stage, or un-reject.
 export async function setApplicantStatus(
   applicantId: string,
   status: ApplicantStatus,

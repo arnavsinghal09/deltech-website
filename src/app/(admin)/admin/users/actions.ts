@@ -8,7 +8,7 @@ import type { Role } from "@/generated/prisma/client"
 const ASSIGNABLE: Role[] = ["ADMIN", "MAINTAINER", "AUTHOR", "REGISTERER"]
 
 // Creates the User row with the right role, then emails a pointer to the
-// staff door. No hand-minted tokens — the normal magic-link flow signs them in.
+// staff door. No hand-minted tokens, the normal magic-link flow signs them in.
 export async function inviteStaff(
   email: string,
   role: Role,
@@ -32,7 +32,7 @@ export async function inviteStaff(
     return { success: true }
   } catch (err) {
     if (typeof err === "object" && err !== null && "code" in err && (err as { code: unknown }).code === "P2002") {
-      return { success: false, error: "A user with this email already exists — change their role below instead." }
+      return { success: false, error: "A user with this email already exists, change their role below instead." }
     }
     return { success: false, error: "Failed to invite." }
   }

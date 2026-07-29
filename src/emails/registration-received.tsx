@@ -21,7 +21,7 @@ export function RegistrationReceivedEmail({ fullName, email, eventName, payments
   return (
     <Html>
       <Head />
-      <Preview>We have your application — allotments will be sent soon.</Preview>
+      <Preview>We have your application, allotments will be sent soon.</Preview>
       <Body style={{ fontFamily: "Inter, ui-sans-serif, sans-serif", backgroundColor: bg, margin: 0 }}>
         <Container style={{ maxWidth: 560, margin: "40px auto", padding: "0 16px" }}>
           <Section style={{ backgroundColor: card, borderRadius: 12, padding: "40px 40px 32px", border: "1px solid #e6ded0" }}>
@@ -56,7 +56,7 @@ export function RegistrationReceivedEmail({ fullName, email, eventName, payments
                 <a href={statusUrl} style={{ color: brand }}>
                   {statusUrl}
                 </a>
-                . This link is private to you — don&apos;t share it.
+                . This link is private to you, don&apos;t share it.
               </Text>
             )}
           </Section>

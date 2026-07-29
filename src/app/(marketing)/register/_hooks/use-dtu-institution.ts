@@ -8,7 +8,7 @@ import { DTU_INSTITUTION, type RegisterFormValues } from "@/lib/schemas/register
  * Ticking "I am a DTU student" fills and locks the institution field; unticking
  * restores whatever the delegate had typed before.
  *
- * Call this in RegistrationForm, not in the step — wizard steps unmount on
+ * Call this in RegistrationForm, not in the step, wizard steps unmount on
  * navigation, which would discard the remembered value.
  */
 export function useDtuInstitution(form: UseFormReturn<RegisterFormValues>) {

@@ -43,7 +43,7 @@ const STAGES: Array<{ key: StageKey; step: string; label: string; help: string }
   { key: "gd", step: "01", label: "GD desk", help: "Read applications, score discussion, send the shortlist forward." },
   { key: "pi", step: "02", label: "PI desk", help: "Review the GD record, interview, and make the final call." },
   { key: "selected", step: "03", label: "Final team", help: "The clean selected list, ready to export." },
-  { key: "rejected", step: "—", label: "Not selected", help: "Archived decisions that can still be restored." },
+  { key: "rejected", step: "-", label: "Not selected", help: "Archived decisions that can still be restored." },
 ]
 
 const VERDICTS = {
@@ -333,7 +333,7 @@ function OutcomeDesk({ tone, applicants }: { tone: "selected" | "rejected"; appl
               <div>
                 <p className="text-lg font-semibold">{applicant.fullName}</p>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  {applicant.email} · GD {applicant.gdScore ?? "—"}/10 · PI {applicant.piScore ?? "—"}/10
+                  {applicant.email} · GD {applicant.gdScore ?? "-"}/10 · PI {applicant.piScore ?? "-"}/10
                 </p>
               </div>
               <Button variant="ghost" disabled={isPending} onClick={() => restore(applicant.id)}>

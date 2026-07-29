@@ -182,8 +182,8 @@ export function CheckinClient({ delegates, filters }: Props) {
                     <div className="font-medium text-card-foreground">{d.fullName}</div>
                     <div className="text-xs text-muted-foreground">{d.email}</div>
                   </td>
-                  <td className="px-4 py-3 text-muted-foreground">{d.committeeName ?? "—"}</td>
-                  <td className="px-4 py-3 text-muted-foreground">{d.portfolioName ?? "—"}</td>
+                  <td className="px-4 py-3 text-muted-foreground">{d.committeeName ?? "-"}</td>
+                  <td className="px-4 py-3 text-muted-foreground">{d.portfolioName ?? "-"}</td>
                   <td className="px-4 py-3">
                     <div className="flex flex-wrap items-center gap-1.5">
                       <Badge variant={STATUS_VARIANT[d.status] ?? "secondary"}>
@@ -195,13 +195,13 @@ export function CheckinClient({ delegates, filters }: Props) {
                     </div>
                   </td>
                   <td className="px-4 py-3 text-xs text-muted-foreground">
-                    {d.paymentStatus ? (PAY_STATUS_LABEL[d.paymentStatus] ?? d.paymentStatus) : "—"}
+                    {d.paymentStatus ? (PAY_STATUS_LABEL[d.paymentStatus] ?? d.paymentStatus) : "-"}
                   </td>
                   <td className="px-4 py-3">
                     {d.checkedInAt ? (
                       <div className="flex items-center gap-2">
                         <span className="text-xs text-muted-foreground">
-                          {t("checkin.checkedInAt", { time: formatTime(d.checkedInAt), by: d.checkedInBy ?? "—" })}
+                          {t("checkin.checkedInAt", { time: formatTime(d.checkedInAt), by: d.checkedInBy ?? "-" })}
                         </span>
                         <Button
                           size="sm"

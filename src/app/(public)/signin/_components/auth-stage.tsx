@@ -61,7 +61,7 @@ export function AuthStage({
             <p className="mt-9 max-w-xl text-lg leading-relaxed text-white/55 sm:text-xl">
               {staff
                 ? "Allotments, money, recruitment, live rooms, and public state. This door is for the people operating the society."
-                : "Your registrations, allotments, writing, and live society experiences—one verified identity."}
+                : "Your registrations, allotments, writing, and live society experiences: one verified identity."}
             </p>
           </div>
           <div className="hidden items-center gap-8 border-t border-white/15 pt-6 font-mono text-xs uppercase tracking-[0.16em] text-white/35 lg:flex">

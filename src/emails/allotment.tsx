@@ -56,13 +56,13 @@ export function AllotmentEmail({
         <Container style={{ maxWidth: 560, margin: "40px auto", padding: "0 16px" }}>
           <Section style={{ backgroundColor: card, borderRadius: 12, padding: "40px 40px 32px", border: "1px solid #e6ded0" }}>
             <Text style={{ color: gold, fontWeight: 700, fontSize: 12, letterSpacing: "0.08em", textTransform: "uppercase", margin: "0 0 16px" }}>
-              {eventName} — Portfolio allotment
+              {eventName}. Portfolio allotment
             </Text>
             <Heading style={{ color: "#18181b", fontFamily: serif, fontSize: 26, fontWeight: 700, margin: "0 0 20px" }}>
               Your portfolio is confirmed!
             </Heading>
             <Text style={{ color: "#3f3f46", fontSize: 15, lineHeight: "1.6", margin: "0 0 24px" }}>
-              Hi {fullName}, congratulations — the Secretariat has allotted you to{" "}
+              Hi {fullName}, congratulations, the Secretariat has allotted you to{" "}
               <strong style={{ color: "#18181b" }}>{committeeName}</strong> as{" "}
               <strong style={{ color: "#18181b" }}>{portfolioName}</strong>.
             </Text>

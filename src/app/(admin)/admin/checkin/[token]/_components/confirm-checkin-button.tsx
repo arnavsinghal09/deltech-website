@@ -47,7 +47,7 @@ export function ConfirmCheckinButton({ delegateId, checkedInAt, checkedInBy }: P
     return (
       <div className="space-y-3 text-center">
         <p className="text-sm text-muted-foreground">
-          {t("checkin.alreadyCheckedIn", { time: formatTime(state.checkedInAt), by: state.checkedInBy ?? "—" })}
+          {t("checkin.alreadyCheckedIn", { time: formatTime(state.checkedInAt), by: state.checkedInBy ?? "-" })}
         </p>
         <Button variant="outline" size="lg" className="w-full" disabled={isPending} onClick={handleUndo}>
           {t("checkin.undoButton")}

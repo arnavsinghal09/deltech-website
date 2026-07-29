@@ -45,13 +45,13 @@ export async function signupWithMagicLink(
   const existing = await prisma.user.findUnique({ where: { email } });
   if (existing) {
     if (existing.role !== "REGISTERER") return { error: "nonDelegateAccount" };
-    // Already a registerer — just resend the link so they can sign in.
+    // Already a registerer, just resend the link so they can sign in.
   } else {
     await prisma.user.create({ data: { email, role: "REGISTERER" } });
   }
 
   try {
-    // /go dispatches by role — a new REGISTERER lands on /dashboard.
+    // /go dispatches by role, a new REGISTERER lands on /dashboard.
     await signIn("resend", { email, redirectTo: "/go" });
     return {};
   } catch (err) {

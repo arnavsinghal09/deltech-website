@@ -1,7 +1,7 @@
 "use client"
 
 // Replaces the root layout when the error happens above it, so it must render
-// its own <html>/<body> and can't rely on globals.css — inline styles only.
+// its own <html>/<body> and can't rely on globals.css, inline styles only.
 export default function GlobalError({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
   return (
     <html lang="en">

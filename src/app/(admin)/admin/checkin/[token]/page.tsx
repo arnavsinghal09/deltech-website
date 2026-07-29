@@ -36,7 +36,7 @@ function Field({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div>
       <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{label}</p>
-      <p className="mt-0.5 text-sm">{value ?? "—"}</p>
+      <p className="mt-0.5 text-sm">{value ?? "-"}</p>
     </div>
   )
 }
@@ -46,7 +46,7 @@ export default async function CheckinTokenPage(props: {
 }) {
   const { token } = await props.params
 
-  // token = Delegate.publicToken — same bearer credential used by /status/[token]
+  // token = Delegate.publicToken, same bearer credential used by /status/[token]
   // and /pay/[token]. This route additionally sits behind the (admin) layout's
   // requireStaff() gate, so reaching this page at all already proves staff auth.
   const delegate = await prisma.delegate.findUnique({

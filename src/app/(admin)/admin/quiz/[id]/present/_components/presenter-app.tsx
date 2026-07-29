@@ -211,7 +211,7 @@ export function PresenterApp({ session, presentation, slides }: Props) {
   }
   const joinUrl = `${APP_URL}/quiz/${session.roomCode}`
 
-  // Which screen is live — keyed so AnimatePresence can cross-fade slides too.
+  // Which screen is live, keyed so AnimatePresence can cross-fade slides too.
   const screenKey =
     screen === "lobby" ? "lobby" : screen === "leaderboard" ? "leaderboard" : `slide-${currentSlide?.id ?? slideIndex}`
 

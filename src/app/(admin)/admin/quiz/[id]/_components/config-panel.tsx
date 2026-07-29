@@ -474,7 +474,7 @@ export function ConfigPanel({ slide, mode, onChange, className }: Props) {
       </div>
 
       <div className="flex-1 space-y-6 overflow-y-auto p-5">
-        {/* Prompt — common to all non-content slides */}
+        {/* Prompt, common to all non-content slides */}
         <FieldRow label="Question / heading">
           <Textarea
             value={slide.prompt}

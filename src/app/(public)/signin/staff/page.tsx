@@ -3,7 +3,7 @@ import { STRINGS } from "@/content/strings"
 import { SignInForm } from "../_components/sign-in-form"
 import { AuthStage } from "../_components/auth-stage"
 
-export const metadata = { title: "Secretariat — " + STRINGS.brand.name }
+export const metadata = { title: "Secretariat · " + STRINGS.brand.name }
 
 export default async function StaffSignInPage(props: {
   searchParams: Promise<{ callbackUrl?: string }>

@@ -19,7 +19,7 @@ export default async function RegisterSuccessPage(props: {
       <h1 className="display-section mx-auto mt-6 max-w-[10ch]">{t("register.success.title")}</h1>
       <p className="body-large mx-auto mt-6 max-w-2xl text-muted-foreground">
         {isFreeIntra
-          ? "Your free Intra MUN registration is in. The secretariat will email your committee and portfolio allotment—no payment is required."
+          ? "Your free Intra MUN registration is in. The secretariat will email your committee and portfolio allotment, no payment is required."
           : t("register.success.message")}
       </p>
       {token && (

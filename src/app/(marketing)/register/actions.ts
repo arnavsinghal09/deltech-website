@@ -64,7 +64,7 @@ export async function registerDelegate(data: RegisterFormValues): Promise<Action
       source: "SELF",
       pref1CommitteeId: vals.pref1CommitteeId,
       pref1Portfolio: vals.pref1Portfolio,
-      // For double-delegation committees, clear pref2 — it is not applicable
+      // For double-delegation committees, clear pref2, it is not applicable
       pref2CommitteeId: isDoubleDelegation ? null : (vals.pref2CommitteeId ?? null),
       pref2Portfolio: isDoubleDelegation ? null : (vals.pref2Portfolio ?? null),
       needsAccommodation: vals.needsAccommodation,
@@ -96,7 +96,7 @@ export async function registerDelegate(data: RegisterFormValues): Promise<Action
   try {
     await sendRegistrationEmails(delegate.id)
   } catch (err) {
-    // Email must never fail the registration — the delegate row is already committed.
+    // Email must never fail the registration, the delegate row is already committed.
     // loggedSend has already written a FAILED EmailLog row (visible in the admin email
     // drawer, resendable from there); this line surfaces it in the server logs so a
     // broken Resend key or address is noticed without someone opening the admin UI.

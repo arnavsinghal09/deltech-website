@@ -1,4 +1,4 @@
-// The 193 UN member states — deterministic portfolio source for STANDARD
+// The 193 UN member states, deterministic portfolio source for STANDARD
 // committees (no AI call needed). Names match the expansion style used by
 // the import cleaner ("United States of America", "United Kingdom").
 export const UN_MEMBERS: string[] = [
