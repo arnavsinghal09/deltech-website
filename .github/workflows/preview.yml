@@ -78,6 +78,17 @@ jobs:
             *)                echo "pulled points at: an unrecognised host" ;;
           esac
           echo "pulled length=${#PULLED} expected length=${#STAGING_DATABASE_URL}"
+          echo "--- keys in the pulled preview env, with value lengths ---"
+          if [ -f .vercel/.env.preview.local ]; then
+            while IFS= read -r line; do
+              case "$line" in ""|\#*) continue ;; esac
+              k=${line%%=*}; v=${line#*=}
+              echo "  $k len=${#v}"
+            done < .vercel/.env.preview.local
+          else
+            echo "  .vercel/.env.preview.local does not exist"
+            ls -la .vercel/ || true
+          fi
           if [ -n "$STAGING_DATABASE_URL" ] && [ "$PULLED" = "$STAGING_DATABASE_URL" ]; then
             echo "staging=true" >> "$GITHUB_OUTPUT"
           else
