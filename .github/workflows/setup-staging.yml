@@ -40,7 +40,23 @@ jobs:
       - name: Link Vercel project
         run: vercel pull --yes --environment=preview --token=${{ secrets.VERCEL_TOKEN }}
 
+      - name: Report env scoping (no values)
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: |
+          node -e '
+            const fs=require("fs");
+            const {projectId,orgId}=JSON.parse(fs.readFileSync(".vercel/project.json","utf8"));
+            fetch(`https://api.vercel.com/v9/projects/${projectId}/env?teamId=${orgId}`,{headers:{Authorization:`Bearer ${process.env.VERCEL_TOKEN}`}})
+              .then(r=>r.json()).then(d=>{
+                console.log("KEY".padEnd(40)+"TARGETS");
+                for(const e of d.envs.sort((a,b)=>a.key.localeCompare(b.key)))
+                  console.log(e.key.padEnd(40)+JSON.stringify(e.target));
+              }).catch(e=>{console.error(e);process.exit(1)});
+          '
+
       - name: Configure staging
+        if: ${{ false }}
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           STAGING_DIRECT_URL: ${{ secrets.STAGING_DIRECT_URL }}
