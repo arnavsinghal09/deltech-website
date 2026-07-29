@@ -68,6 +68,10 @@ jobs:
           STAGING_DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
         run: |
           PULLED=$(grep -m1 '^DATABASE_URL=' .vercel/.env.preview.local 2>/dev/null | cut -d= -f2- | tr -d '"' || true)
+          # Host only: safe to log, and enough to tell Neon from Supabase when
+          # the comparison below does not do what you expect.
+          echo "pulled DB host:   $(printf '%s' "$PULLED" | sed -E 's#^[^@]*@##; s#/.*##')"
+          echo "expected DB host: $(printf '%s' "$STAGING_DATABASE_URL" | sed -E 's#^[^@]*@##; s#/.*##')"
           if [ -n "$STAGING_DATABASE_URL" ] && [ "$PULLED" = "$STAGING_DATABASE_URL" ]; then
             echo "staging=true" >> "$GITHUB_OUTPUT"
           else
@@ -78,9 +82,19 @@ jobs:
       - name: Build
         run: vercel build --token=${{ secrets.VERCEL_TOKEN }}
 
+      # `echo "url=$(vercel deploy ...)"` swallows the exit code: a failed
+      # deploy still exits 0 and the job goes green with an empty URL, which is
+      # worse than a red one. Capture, check, then assert non-empty.
       - name: Deploy preview
         id: deploy
-        run: echo "url=$(vercel deploy --prebuilt --token=${{ secrets.VERCEL_TOKEN }})" >> "$GITHUB_OUTPUT"
+        run: |
+          set -o pipefail
+          URL=$(vercel deploy --prebuilt --token=${{ secrets.VERCEL_TOKEN }})
+          if [ -z "$URL" ]; then
+            echo "::error::vercel deploy produced no URL."
+            exit 1
+          fi
+          echo "url=$URL" >> "$GITHUB_OUTPUT"
 
       - name: Comment preview URL on the PR
         uses: actions/github-script@v7

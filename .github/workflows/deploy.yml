@@ -63,9 +63,17 @@ jobs:
       - name: Build
         run: vercel build --token=${{ secrets.VERCEL_TOKEN }}
 
+      # See preview.yml: command substitution inside echo hides a failure.
       - name: Deploy staging
         id: deploy
-        run: echo "url=$(vercel deploy --prebuilt --token=${{ secrets.VERCEL_TOKEN }})" >> "$GITHUB_OUTPUT"
+        run: |
+          set -o pipefail
+          URL=$(vercel deploy --prebuilt --token=${{ secrets.VERCEL_TOKEN }})
+          if [ -z "$URL" ]; then
+            echo "::error::vercel deploy produced no URL."
+            exit 1
+          fi
+          echo "url=$URL" >> "$GITHUB_OUTPUT"
 
       # Gives main's staging build a stable address instead of a new hash each
       # time. Vercel's branch-domain feature cannot do this for us because the
