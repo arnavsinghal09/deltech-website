@@ -6,59 +6,93 @@
  *
  * Staging and production run out of a single Vercel project, separated by
  * Vercel's Preview and Production env scopes. This script builds the Preview
- * side: a second Supabase project, the env vars pointing at it, a separate
- * Resend key, the test.deltechmun.in domain, the GitHub secrets the workflows
- * need, and branch protection on main.
+ * side: the Preview-scoped env vars pointing at the staging database, the
+ * test.deltechmun.in domain, the GitHub secrets the workflows need, and
+ * branch protection on main. It also deletes the stray test-deltech-website
+ * project that was double-deploying every PR.
  *
  * Everything is skip-if-exists, so re-running is safe and tells you what is
  * already in place.
  *
  * You need:
- *   VERCEL_TOKEN         (already a repo secret; export it locally too)
- *   SUPABASE_ACCESS_TOKEN  supabase.com/dashboard/account/tokens
+ *   VERCEL_TOKEN          (already a repo secret; export it locally too)
+ *   STAGING_DIRECT_URL    Neon unpooled connection string
+ *   STAGING_DATABASE_URL  Neon pooled connection string
  *   gh, authenticated
- *
- * Optional:
- *   RESEND_API_KEY       to mint a separate staging key automatically
  */
 import "dotenv/config"
 import { execFileSync } from "node:child_process"
 import { randomBytes } from "node:crypto"
 import { readFileSync } from "node:fs"
 
-const STAGING_PROJECT_NAME = "deltech-staging"
 const STAGING_DOMAIN = "test.deltechmun.in"
 const OLD_PROJECT_NAME = "test-deltech-website"
-const DB_REGION = "ap-southeast-2" // match production
-const STAGING_EMAIL_FROM = `staging@deltechmun.in`
+const STAGING_EMAIL_FROM = "staging@deltechmun.in"
+
+// Refuse outright if a "staging" URL is actually the production database.
+const PROD_DB_REF = "hktvvxtiobeaphzfmpbf"
 
 const changed: string[] = []
 const skipped: string[] = []
 const manual: string[] = []
 
-function need(name: string): string {
+function need(name: string, hint: string): string {
   const v = process.env[name]?.trim()
   if (!v) {
-    console.error(
-      `\nMissing ${name}.\n` +
-        (name === "SUPABASE_ACCESS_TOKEN"
-          ? "Create one at https://supabase.com/dashboard/account/tokens, then:\n" +
-            `  export SUPABASE_ACCESS_TOKEN=sbp_...\n`
-          : `  export ${name}=...\n`),
-    )
+    console.error(`\nMissing ${name}.\n  ${hint}\n`)
     process.exit(1)
   }
   return v
 }
 
-const VERCEL_TOKEN = need("VERCEL_TOKEN")
-const SUPABASE_TOKEN = need("SUPABASE_ACCESS_TOKEN")
+const VERCEL_TOKEN = need("VERCEL_TOKEN", "export VERCEL_TOKEN=... (or run `npx vercel login`)")
 
-function sh(cmd: string, args: string[], opts: { quiet?: boolean } = {}): string {
-  return execFileSync(cmd, args, {
-    encoding: "utf8",
-    stdio: opts.quiet ? ["ignore", "pipe", "pipe"] : ["ignore", "pipe", "inherit"],
-  }).trim()
+// Staging Postgres. Supabase free tier caps a user at 2 active projects and
+// this account is at the limit, so staging lives on Neon instead. Neon's
+// endpoints are IPv4-reachable, which also sidesteps the IPv6 problem that
+// makes Supabase's direct host unusable from GitHub runners.
+//
+//   STAGING_DIRECT_URL    unpooled endpoint, for `prisma migrate deploy`
+//   STAGING_DATABASE_URL  -pooler endpoint, for the app at runtime
+const STAGING_DIRECT_URL = need(
+  "STAGING_DIRECT_URL",
+  "Neon dashboard > Connect > uncheck 'Connection pooling'. Ends in .neon.tech/<db>?sslmode=require",
+)
+const STAGING_DATABASE_URL = need(
+  "STAGING_DATABASE_URL",
+  "Neon dashboard > Connect > WITH 'Connection pooling'. Host contains '-pooler'.",
+)
+
+for (const [name, url] of [
+  ["STAGING_DIRECT_URL", STAGING_DIRECT_URL],
+  ["STAGING_DATABASE_URL", STAGING_DATABASE_URL],
+] as const) {
+  if (url.includes(PROD_DB_REF)) {
+    console.error(`\n${name} points at the PRODUCTION database. Refusing.\n`)
+    process.exit(1)
+  }
+}
+if (!STAGING_DATABASE_URL.includes("-pooler")) {
+  manual.push(
+    "STAGING_DATABASE_URL does not look pooled (no '-pooler' in the host). Serverless " +
+      "functions open a lot of short-lived connections; use the pooled endpoint for runtime.",
+  )
+}
+if (STAGING_DIRECT_URL.includes("-pooler")) {
+  console.error(
+    "\nSTAGING_DIRECT_URL is the POOLED endpoint. Migrations need the unpooled one:\n" +
+      "PgBouncer in transaction mode cannot run DDL.\n",
+  )
+  process.exit(1)
+}
+
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+function sh(cmd: string, args: string[]): string {
+  return execFileSync(cmd, args, { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] }).trim()
 }
 
 async function api(
@@ -86,122 +120,18 @@ async function api(
 
 const vercel = (path: string, init?: RequestInit) =>
   api(`https://api.vercel.com${path}`, VERCEL_TOKEN, init)
-const supabase = (path: string, init?: RequestInit) =>
-  api(`https://api.supabase.com${path}`, SUPABASE_TOKEN, init)
 
+/** Written by `vercel pull` / `vercel link`. */
 function linkedProject(): { projectId: string; orgId: string } {
   try {
-    const raw = JSON.parse(readFileSync(".vercel/project.json", "utf8")) as {
+    return JSON.parse(readFileSync(".vercel/project.json", "utf8")) as {
       projectId: string
       orgId: string
     }
-    return raw
   } catch {
-    console.error(
-      "\nNo .vercel/project.json. Run `npx vercel link` first so this script knows " +
-        "which project to configure.",
-    )
+    console.error("\nNo .vercel/project.json. Run `npx vercel link` first.\n")
     process.exit(1)
   }
-}
-
-const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
-
-// ---------------------------------------------------------------------------
-// 1. Staging Supabase project
-// ---------------------------------------------------------------------------
-
-interface StagingDb {
-  ref: string
-  password: string
-  anonKey: string
-  poolerHost: string
-}
-
-async function ensureSupabase(): Promise<StagingDb> {
-  const list = await supabase("/v1/projects")
-  if (!list.ok) {
-    console.error(`Supabase API ${list.status}:`, list.body)
-    process.exit(1)
-  }
-  const projects = list.body as Array<{ id: string; name: string; region: string }>
-  const existing = projects.find((p) => p.name === STAGING_PROJECT_NAME)
-
-  // The DB password is only visible at creation time, so a pre-existing project
-  // means we cannot rebuild the connection strings and must ask.
-  if (existing) {
-    skipped.push(`Supabase project "${STAGING_PROJECT_NAME}" already exists (${existing.id})`)
-    const pw = process.env.STAGING_DB_PASSWORD?.trim()
-    if (!pw) {
-      console.error(
-        `\nSupabase project "${STAGING_PROJECT_NAME}" already exists, but its database\n` +
-          "password cannot be read back from the API. Either:\n" +
-          "  - reset it in the dashboard and re-run with STAGING_DB_PASSWORD=... , or\n" +
-          `  - delete the project and let this script recreate it.\n`,
-      )
-      process.exit(1)
-    }
-    const keys = await supabase(`/v1/projects/${existing.id}/api-keys`)
-    const anon =
-      (keys.body as Array<{ name: string; api_key: string }> | undefined)?.find(
-        (k) => k.name === "anon",
-      )?.api_key ?? ""
-    return {
-      ref: existing.id,
-      password: pw,
-      anonKey: anon,
-      poolerHost: `aws-1-${existing.region}.pooler.supabase.com`,
-    }
-  }
-
-  const orgs = await supabase("/v1/organizations")
-  const orgId = (orgs.body as Array<{ id: string }>)[0]?.id
-  if (!orgId) {
-    console.error("No Supabase organization found for this token.")
-    process.exit(1)
-  }
-
-  const password = randomBytes(24).toString("base64url")
-  console.log(`Creating Supabase project "${STAGING_PROJECT_NAME}" in ${DB_REGION}…`)
-  const created = await supabase("/v1/projects", {
-    method: "POST",
-    body: JSON.stringify({
-      name: STAGING_PROJECT_NAME,
-      organization_id: orgId,
-      region: DB_REGION,
-      db_pass: password,
-      plan: "free",
-    }),
-  })
-  if (!created.ok) {
-    console.error(`Supabase create failed (${created.status}):`, created.body)
-    if (created.status === 402 || JSON.stringify(created.body).includes("limit")) {
-      console.error("\nFree tier allows 2 active projects. Pause or delete one and re-run.")
-    }
-    process.exit(1)
-  }
-  const ref = (created.body as { id: string }).id
-  changed.push(`Created Supabase project ${STAGING_PROJECT_NAME} (${ref})`)
-
-  process.stdout.write("Waiting for it to provision")
-  for (let i = 0; i < 60; i++) {
-    await sleep(5000)
-    process.stdout.write(".")
-    const status = await supabase(`/v1/projects/${ref}`)
-    if ((status.body as { status?: string })?.status === "ACTIVE_HEALTHY") break
-  }
-  console.log(" ready")
-
-  const keys = await supabase(`/v1/projects/${ref}/api-keys`)
-  const anonKey =
-    (keys.body as Array<{ name: string; api_key: string }> | undefined)?.find(
-      (k) => k.name === "anon",
-    )?.api_key ?? ""
-
-  console.log(`\n  Save this database password somewhere safe: ${password}\n`)
-  manual.push(`Staging DB password (shown once): ${password}`)
-
-  return { ref, password, anonKey, poolerHost: `aws-1-${DB_REGION}.pooler.supabase.com` }
 }
 
 // ---------------------------------------------------------------------------
@@ -215,7 +145,7 @@ interface VercelEnv {
   value?: string
 }
 
-async function setPreviewEnv(projectId: string, orgId: string, db: StagingDb) {
+async function setPreviewEnv(projectId: string, orgId: string) {
   const qs = `?teamId=${orgId}`
   const current = await vercel(`/v9/projects/${projectId}/env${qs}&decrypt=true`)
   if (!current.ok) {
@@ -227,16 +157,9 @@ async function setPreviewEnv(projectId: string, orgId: string, db: StagingDb) {
   const prodValue = (key: string) =>
     envs.find((e) => e.key === key && (e.target ?? []).includes("production"))?.value
 
-  // Session pooler (5432) for migrations: db.<ref>.supabase.co is IPv6-only and
-  // GitHub runners have no IPv6. Transaction pooler (6543) for the app.
-  const directUrl = `postgresql://postgres.${db.ref}:${db.password}@${db.poolerHost}:5432/postgres`
-  const databaseUrl = `postgresql://postgres.${db.ref}:${db.password}@${db.poolerHost}:6543/postgres`
-
   const desired: Record<string, string> = {
-    DATABASE_URL: databaseUrl,
-    DIRECT_URL: directUrl,
-    NEXT_PUBLIC_SUPABASE_URL: `https://${db.ref}.supabase.co`,
-    NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: db.anonKey,
+    DATABASE_URL: STAGING_DATABASE_URL,
+    DIRECT_URL: STAGING_DIRECT_URL,
     // Distinct from production so a staging session cannot be replayed there.
     AUTH_SECRET: randomBytes(32).toString("base64"),
     // Makes staging mail obvious in an inbox.
@@ -247,7 +170,14 @@ async function setPreviewEnv(projectId: string, orgId: string, db: StagingDb) {
   // omitted: CRON_SECRET and SHEET_SYNC_SECRET (staging must fail closed), and
   // NEXT_PUBLIC_APP_URL (unset on Preview so each PR preview's emails link back
   // to itself; the staging alias sets it separately below).
+  // NEXT_PUBLIC_SUPABASE_* are copied deliberately. They are NOT the database:
+  // they drive Supabase Realtime (the quiz) and Storage (blog images), which
+  // staging shares with production. Consequence worth knowing: blog images
+  // uploaded on staging land in the production `blog-images` bucket, and a
+  // quiz room code colliding across environments would share a channel.
   const copyFromProd = [
+    "NEXT_PUBLIC_SUPABASE_URL",
+    "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY",
     "AUTH_RESEND_KEY",
     "RAZORPAY_KEY_ID",
     "RAZORPAY_KEY_SECRET",
@@ -261,9 +191,6 @@ async function setPreviewEnv(projectId: string, orgId: string, db: StagingDb) {
     const v = prodValue(key)
     if (v) desired[key] = v
   }
-
-  const stagingResend = await ensureResendKey()
-  if (stagingResend) desired.AUTH_RESEND_KEY = stagingResend
 
   for (const [key, value] of Object.entries(desired)) {
     const existing = envs.find((e) => e.key === key && (e.target ?? []).includes("preview"))
@@ -306,33 +233,7 @@ async function setPreviewEnv(projectId: string, orgId: string, db: StagingDb) {
 }
 
 // ---------------------------------------------------------------------------
-// 3. A separate Resend key so staging sends are distinguishable
-// ---------------------------------------------------------------------------
-
-async function ensureResendKey(): Promise<string | null> {
-  const key = process.env.RESEND_API_KEY?.trim()
-  if (!key) {
-    skipped.push("Resend staging key not created (set RESEND_API_KEY to automate)")
-    manual.push(
-      "Optional: create a second Resend API key for staging so its sends are separable " +
-        "from production in the dashboard.",
-    )
-    return null
-  }
-  const res = await api("https://api.resend.com/api-keys", key, {
-    method: "POST",
-    body: JSON.stringify({ name: "deltech-staging", permission: "sending_access" }),
-  })
-  if (!res.ok) {
-    skipped.push(`Resend key creation failed (${res.status}); reusing the production key`)
-    return null
-  }
-  changed.push("Created a separate Resend API key for staging")
-  return (res.body as { token: string }).token
-}
-
-// ---------------------------------------------------------------------------
-// 4. Domain, old project, GitHub secrets, branch protection
+// 3. Domain, old project, GitHub secrets, branch protection
 // ---------------------------------------------------------------------------
 
 async function ensureDomain(projectId: string, orgId: string) {
@@ -377,9 +278,7 @@ function setSecret(name: string, value: string) {
 
 function protectMain() {
   try {
-    const repo = sh("gh", ["repo", "view", "--json", "nameWithOwner", "-q", ".nameWithOwner"], {
-      quiet: true,
-    })
+    const repo = sh("gh", ["repo", "view", "--json", "nameWithOwner", "-q", ".nameWithOwner"])
     execFileSync(
       "gh",
       [
@@ -414,15 +313,12 @@ async function main() {
   const { projectId, orgId } = linkedProject()
   console.log(`Vercel project ${projectId}\n`)
 
-  const db = await ensureSupabase()
-  await setPreviewEnv(projectId, orgId, db)
+  await setPreviewEnv(projectId, orgId)
   await ensureDomain(projectId, orgId)
   await removeOldProject(orgId)
 
-  const direct = `postgresql://postgres.${db.ref}:${db.password}@${db.poolerHost}:5432/postgres`
-  const pooled = `postgresql://postgres.${db.ref}:${db.password}@${db.poolerHost}:6543/postgres`
-  setSecret("STAGING_DIRECT_URL", direct)
-  setSecret("STAGING_DATABASE_URL", pooled)
+  setSecret("STAGING_DIRECT_URL", STAGING_DIRECT_URL)
+  setSecret("STAGING_DATABASE_URL", STAGING_DATABASE_URL)
 
   const prodDirect = process.env.PROD_DIRECT_URL?.trim() ?? process.env.DIRECT_URL?.trim()
   if (prodDirect && prodDirect.includes("pooler.supabase.com:5432")) {

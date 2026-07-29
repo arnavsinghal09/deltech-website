@@ -79,21 +79,40 @@ below to turn the warnings into real gates.
 
 ## Setup
 
-`npm run setup:staging` does almost all of it, and is safe to re-run:
+**Staging Postgres lives on Neon, not Supabase.** Supabase's free tier caps a
+*user* at 2 active projects across all organisations, and this account is at the
+limit (`deltech-mun` + `health-care-optimization`), so no third project can be
+created anywhere. Neon's free tier has no such cap, and its endpoints are
+IPv4-reachable, which sidesteps the IPv6 problem below entirely.
 
-creates the staging Supabase project, writes the Preview-scoped env vars
-(copying what it can from Production), mints a separate Resend key, adds
-`test.deltechmun.in`, deletes the stray `test-deltech-website` project, sets the
-`STAGING_*` GitHub secrets, and turns on branch protection requiring `check`.
+Supabase is still used by staging for **Realtime** (the quiz) and **Storage**
+(blog images): `NEXT_PUBLIC_SUPABASE_*` are not database credentials. Staging
+copies production's values for those, so blog images uploaded on staging land in
+the production `blog-images` bucket, and a quiz room code colliding across
+environments would share a Realtime channel. Both are noise, not corruption.
 
-It needs `VERCEL_TOKEN`, an authenticated `gh`, and a Supabase personal access
-token from <https://supabase.com/dashboard/account/tokens>. It prints what it
-changed, what was already in place, and what still needs you.
+Create a Neon project, then grab both connection strings from **Connect**:
+
+```bash
+export VERCEL_TOKEN=...                 # or run `npx vercel login`
+export STAGING_DIRECT_URL=...           # 'Connection pooling' UNCHECKED
+export STAGING_DATABASE_URL=...         # 'Connection pooling' CHECKED, host has -pooler
+npm run setup:staging
+```
+
+It writes the Preview-scoped env vars (copying what it can from Production),
+adds `test.deltechmun.in`, deletes the stray `test-deltech-website` project,
+sets the `STAGING_*` GitHub secrets, and turns on branch protection requiring
+`check`. It refuses if either URL points at production, or if the two are the
+wrong way round (PgBouncer cannot run DDL). It prints what it changed, what was
+already in place, and what still needs you.
 
 Then run **Reset staging** once to migrate and seed the new database.
 
 ### What it cannot do
 
+- **The Neon project itself.** Sign up and create one; the two connection
+  strings are on the Connect panel.
 - **DNS.** Point `test.deltechmun.in` at Vercel yourself.
 - **`PROD_DIRECT_URL`.** Your local `DIRECT_URL` is the IPv6-only host, so the
   script will not use it. Set the secret to the production *session pooler* URL.
