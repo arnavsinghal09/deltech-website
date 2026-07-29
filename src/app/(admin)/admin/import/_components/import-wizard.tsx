@@ -1,5 +1,6 @@
 "use client"
 
+import Link from "next/link"
 import { useState, useTransition } from "react"
 import { Sparkles, Loader2 } from "lucide-react"
 import { Separator } from "@/components/ui/separator"
@@ -12,7 +13,7 @@ import {
   type MappedRow,
   type ValidatedRow,
 } from "@/lib/schemas/import"
-import type { ImportPresetRecord } from "../actions"
+import type { ImportPresetRecord, CommitResult } from "../actions"
 import { suggestMappingWithGemini, cleanImportRowsWithGemini } from "../actions-ai"
 import { StepUpload } from "./step-upload"
 import { StepMapping } from "./step-mapping"
@@ -42,6 +43,8 @@ export function ImportWizard({ presets: initialPresets, committeeNames }: Props)
   const [skipped,            setSkipped]            = useState<Set<number>>(new Set())
   const [defaultInstitution, setDefaultInstitution] = useState("")
   const [presets,            setPresets]            = useState(initialPresets)
+  // Lifted out of StepCommit so the terminal screen can link to quarantine.
+  const [result,             setResult]             = useState<CommitResult | null>(null)
 
   const [aiProcessing, startAiProcess] = useTransition()
 
@@ -268,7 +271,7 @@ export function ImportWizard({ presets: initialPresets, committeeNames }: Props)
               validated={validated}
               skipped={skipped}
               onBack={goBack}
-              onDone={() => setStep("done")}
+              onDone={(r) => { setResult(r); setStep("done") }}
             />
           )}
 
@@ -278,12 +281,32 @@ export function ImportWizard({ presets: initialPresets, committeeNames }: Props)
               <p className="mt-2 text-sm text-muted-foreground">
                 Delegates have been created and appear in the registrations table.
               </p>
-              <button
-                className="mt-6 text-sm font-medium text-primary underline-offset-2 hover:underline"
-                onClick={reset}
-              >
-                Start another import
-              </button>
+              {/* This screen used to name the registrations table and the
+                  quarantine without linking to either, so the only way on was
+                  to reset the wizard. */}
+              <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+                <Link
+                  href="/admin/registrations"
+                  className="rounded-md border border-input px-4 py-2 text-sm font-medium hover:bg-muted"
+                >
+                  View registrations
+                </Link>
+                {result && result.quarantined > 0 && (
+                  <Link
+                    href="/admin/import#quarantine"
+                    className="rounded-md border border-amber-500/50 px-4 py-2 text-sm font-medium text-amber-700 hover:bg-amber-50 dark:text-amber-400"
+                  >
+                    Review {result.quarantined} quarantined row
+                    {result.quarantined === 1 ? "" : "s"}
+                  </Link>
+                )}
+                <button
+                  className="text-sm font-medium text-primary underline-offset-2 hover:underline"
+                  onClick={reset}
+                >
+                  Start another import
+                </button>
+              </div>
             </div>
           )}
         </>

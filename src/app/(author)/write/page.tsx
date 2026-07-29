@@ -88,11 +88,20 @@ export default async function WritePage() {
                     {post.subtitle && (
                       <p className="mt-0.5 truncate text-sm text-gray-500">{post.subtitle}</p>
                     )}
-                    {post.reviewNote && post.status === "CHANGES_REQUESTED" && (
-                      <p className="mt-2 rounded-md bg-amber-50 px-3 py-2 text-xs text-amber-700">
-                        {post.reviewNote}
-                      </p>
-                    )}
+                    {/* REJECTED was excluded here, so a rejected author saw a
+                        red badge and no reason anywhere in the product. */}
+                    {post.reviewNote &&
+                      (post.status === "CHANGES_REQUESTED" || post.status === "REJECTED") && (
+                        <p
+                          className={
+                            post.status === "REJECTED"
+                              ? "mt-2 rounded-md bg-red-50 px-3 py-2 text-xs text-red-700"
+                              : "mt-2 rounded-md bg-amber-50 px-3 py-2 text-xs text-amber-700"
+                          }
+                        >
+                          {post.reviewNote}
+                        </p>
+                      )}
                   </div>
                   <div className="flex shrink-0 flex-col items-end gap-2">
                     <Badge variant={STATUS_VARIANT[post.status] ?? "secondary"} className="text-[11px]">
