@@ -4,8 +4,8 @@
 // We run staging and production out of a single Vercel project, separated only
 // by Vercel's Preview/Production env scopes. That is simple and needs no second
 // project, but it has one failure mode: a variable added as "All Environments"
-// (Vercel's default when you are not paying attention) silently re-points every
-// PR preview at the production database. That is exactly how this was broken
+// (Vercel's default when you are not paying attention) silently re-points
+// staging at the production database. That is exactly how this was broken
 // before, so it gets a test.
 //
 // Skips when VERCEL_TOKEN is absent, which is the case locally and on fork or
@@ -72,34 +72,84 @@ async function main() {
   assert.ok(prodDb, "DATABASE_URL is not set for the Production environment in Vercel")
   assert.ok(
     previewDb,
-    "DATABASE_URL is not set for the Preview environment in Vercel. Previews would fall back to " +
+    "DATABASE_URL is not set for the Preview environment in Vercel. Staging would fall back to " +
       "an 'All Environments' value, which is almost certainly production. Run `npm run setup:staging`.",
   )
   assert.notEqual(
     previewDb,
     prodDb,
-    "Preview and Production share a DATABASE_URL. Every PR preview and test.deltechmun.in would " +
-      "be writing to the live conference database. Run `npm run setup:staging` to repoint Preview.",
+    "Preview and Production share a DATABASE_URL. test.deltechmun.in would be writing to the " +
+      "live conference database. Run `npm run setup:staging` to repoint Preview.",
+  )
+  assert.match(
+    previewDb,
+    /neon\.tech/i,
+    "Preview DATABASE_URL must point at Neon, not a production service",
   )
 
   // Same trap for the Prisma CLI datasource used by migrations.
   const prodDirect = pick("DIRECT_URL", "production")
   const previewDirect = pick("DIRECT_URL", "preview")
-  if (prodDirect && previewDirect) {
+  assert.ok(previewDirect, "DIRECT_URL is not set for the Preview environment in Vercel")
+  if (prodDirect) {
     assert.notEqual(previewDirect, prodDirect, "Preview and Production share a DIRECT_URL")
   }
+  assert.match(
+    previewDirect,
+    /neon\.tech/i,
+    "Preview DIRECT_URL must point at Neon, not a production service",
+  )
 
-  // Staging must not be able to run the cron routes or write the public sheet.
-  for (const key of ["CRON_SECRET", "SHEET_SYNC_SECRET"]) {
-    const onPreview = envs.find((e) => e.key === key && (e.target ?? []).includes("preview"))
-    assert.ok(
-      !onPreview,
-      `${key} is set on Preview. Leave it unset so staging fails closed: with it set, anyone ` +
-        `holding the value could fire the cron routes against a public preview URL.`,
+  const productionAuth = pick("AUTH_SECRET", "production")
+  const previewAuth = pick("AUTH_SECRET", "preview")
+  assert.ok(productionAuth, "AUTH_SECRET is not set for Production in Vercel")
+  assert.ok(previewAuth, "AUTH_SECRET is not set for Preview in Vercel")
+  assert.notEqual(previewAuth, productionAuth, "Staging and Production must not share AUTH_SECRET")
+
+  // These integrations are deliberately shared. Their application writes
+  // still go through Preview's Neon DATABASE_URL.
+  for (const key of [
+    "AUTH_RESEND_KEY",
+    "RAZORPAY_KEY_ID",
+    "RAZORPAY_KEY_SECRET",
+    "RAZORPAY_WEBHOOK_SECRET",
+    "GFORM_SHARED_SECRET",
+    "CRON_SECRET",
+    "SHEET_SYNC_SECRET",
+  ]) {
+    const productionEnv = envs.find(
+      (env) => env.key === key && (env.target ?? []).includes("production"),
+    )
+    const previewEnv = envs.find(
+      (env) => env.key === key && (env.target ?? []).includes("preview"),
+    )
+    assert.ok(productionEnv, `${key} is not set for Production in Vercel`)
+    assert.ok(previewEnv, `${key} is not set for Preview in Vercel`)
+    if (productionEnv.value && previewEnv.value) {
+      assert.equal(previewEnv.value, productionEnv.value, `${key} must match Production on staging`)
+    }
+  }
+
+  const productionAdmin = envs.find(
+    (env) => env.key === "ADMIN_EMAIL" && (env.target ?? []).includes("production"),
+  )
+  const emailRedirect = envs.find(
+    (env) => env.key === "EMAIL_REDIRECT_TO" && (env.target ?? []).includes("preview"),
+  )
+  assert.ok(productionAdmin, "ADMIN_EMAIL is not set for Production in Vercel")
+  assert.ok(
+    emailRedirect,
+    "EMAIL_REDIRECT_TO is not set for Preview; live form respondents could be emailed twice",
+  )
+  if (productionAdmin.value && emailRedirect.value) {
+    assert.equal(
+      emailRedirect.value,
+      productionAdmin.value,
+      "Staging email must redirect to ADMIN_EMAIL",
     )
   }
 
-  console.log("✅ check-env-isolation passed (Preview and Production are on different databases)")
+  console.log("✅ check-env-isolation passed (Neon data, shared integrations)")
 }
 
 main().catch((err) => {

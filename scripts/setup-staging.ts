@@ -169,21 +169,36 @@ async function setPreviewEnv(projectId: string, orgId: string) {
   const envs = (current.body as { envs: VercelEnv[] }).envs
 
   const prodValue = (key: string) =>
+    process.env[`PROD_${key}`]?.trim() ||
     envs.find((e) => e.key === key && (e.target ?? []).includes("production"))?.value
+  const previewOnlyValue = (key: string) =>
+    envs.find(
+      (e) =>
+        e.key === key &&
+        (e.target ?? []).includes("preview") &&
+        !(e.target ?? []).includes("production"),
+    )?.value
+  const stagingEmailRecipient = prodValue("ADMIN_EMAIL")
+  if (!stagingEmailRecipient) {
+    manual.push("ADMIN_EMAIL: required to redirect staging mail away from real form respondents")
+  }
 
   const desired: Record<string, string> = {
     DATABASE_URL: STAGING_DATABASE_URL,
     DIRECT_URL: STAGING_DIRECT_URL,
     // Distinct from production so a staging session cannot be replayed there.
-    AUTH_SECRET: randomBytes(32).toString("base64"),
+    // Preserve it on re-runs so configuring staging does not sign everyone out.
+    AUTH_SECRET: previewOnlyValue("AUTH_SECRET") ?? randomBytes(32).toString("base64"),
     // Makes staging mail obvious in an inbox.
     EMAIL_FROM: STAGING_EMAIL_FROM,
+    ...(stagingEmailRecipient ? { EMAIL_REDIRECT_TO: stagingEmailRecipient } : {}),
+    // PRs do not deploy; Preview scope is the stable staging environment.
+    NEXT_PUBLIC_APP_URL: `https://${STAGING_DOMAIN}`,
   }
 
-  // Copy the rest from Production so nothing has to be retyped. Deliberately
-  // omitted: CRON_SECRET and SHEET_SYNC_SECRET (staging must fail closed), and
-  // NEXT_PUBLIC_APP_URL (unset on Preview so each PR preview's emails link back
-  // to itself; the staging alias sets it separately below).
+  // Application data stays on Neon, while integrations deliberately use the
+  // same credentials as Production so their complete flows can be exercised.
+  // The staging cron routes still read and write through Neon via DATABASE_URL.
   // NEXT_PUBLIC_SUPABASE_* are copied deliberately. They are NOT the database:
   // they drive Supabase Realtime (the quiz) and Storage (blog images), which
   // staging shares with production. Consequence worth knowing: blog images
@@ -197,17 +212,60 @@ async function setPreviewEnv(projectId: string, orgId: string) {
     "RAZORPAY_KEY_SECRET",
     "RAZORPAY_WEBHOOK_SECRET",
     "GFORM_SHARED_SECRET",
+    "CRON_SECRET",
+    "SHEET_SYNC_SECRET",
     "GROQ_API_KEY",
     "GROQ_MODEL",
     "ADMIN_EMAIL",
   ]
+  const requiredShared = new Set([
+    "AUTH_RESEND_KEY",
+    "RAZORPAY_KEY_ID",
+    "RAZORPAY_KEY_SECRET",
+    "RAZORPAY_WEBHOOK_SECRET",
+    "GFORM_SHARED_SECRET",
+    "CRON_SECRET",
+    "SHEET_SYNC_SECRET",
+  ])
   for (const key of copyFromProd) {
     const v = prodValue(key)
     if (v) desired[key] = v
+    else if (requiredShared.has(key)) {
+      manual.push(`${key}: missing from Production, so staging cannot copy it`)
+    }
   }
 
   for (const [key, value] of Object.entries(desired)) {
     const existing = envs.find((e) => e.key === key && (e.target ?? []).includes("preview"))
+
+    // A row shared with Production must NEVER be PATCHed here. Vercel replaces
+    // the target list rather than merging it, so writing target: ["preview"]
+    // strips Production off the row and it silently loses the variable. That
+    // happened: production lost DATABASE_URL, DIRECT_URL, AUTH_SECRET and
+    // EMAIL_FROM in one go, and the next deploy would have shipped with no
+    // database. Narrow the shared row to Production, then add a separate
+    // Preview row alongside it.
+    if (existing && (existing.target ?? []).includes("production")) {
+      const others = (existing.target ?? []).filter((t) => t !== "preview")
+      const narrow = await vercel(`/v9/projects/${projectId}/env/${existing.id}${qs}`, {
+        method: "PATCH",
+        body: JSON.stringify({ target: others }),
+      })
+      if (!narrow.ok) {
+        console.error(`  ! ${key}: could not narrow shared row (${narrow.status})`, narrow.body)
+        manual.push(`${key}: narrow to Production by hand, then re-run`)
+        continue
+      }
+      changed.push(`${key} narrowed to ${others.join("+")} (was shared with Preview)`)
+      const add = await vercel(`/v10/projects/${projectId}/env${qs}`, {
+        method: "POST",
+        body: JSON.stringify({ key, value, type: "encrypted", target: ["preview"] }),
+      })
+      if (add.ok) changed.push(`Preview env ${key} added`)
+      else console.error(`  ! ${key}: ${add.status}`, add.body)
+      continue
+    }
+
     if (existing) {
       const upd = await vercel(`/v9/projects/${projectId}/env/${existing.id}${qs}`, {
         method: "PATCH",
@@ -225,25 +283,6 @@ async function setPreviewEnv(projectId: string, orgId: string) {
     }
   }
 
-  // Anything scoped to all three environments would override the Preview value
-  // we just set. That is the exact failure this whole change exists to prevent.
-  const leaky = envs.filter(
-    (e) => (e.target ?? []).includes("preview") && (e.target ?? []).includes("production"),
-  )
-  for (const e of leaky) {
-    if (e.key in desired) {
-      manual.push(
-        `${e.key} is scoped to BOTH Preview and Production. Narrow it to Production in the ` +
-          `Vercel dashboard, or previews will keep reading the production value.`,
-      )
-    }
-  }
-
-  // Staging's own stable origin, used only by the aliased main deployment.
-  manual.push(
-    `Set NEXT_PUBLIC_APP_URL=https://${STAGING_DOMAIN} on Preview ONLY if you want every PR ` +
-      `preview to link to the staging domain rather than to itself. Left unset by default.`,
-  )
 }
 
 // ---------------------------------------------------------------------------
