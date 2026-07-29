@@ -1,0 +1,58 @@
+name: Reset staging
+
+# Manual only. Wipes the staging database and rebuilds it from
+# prisma/seed-staging.ts.
+#
+# This is the pressure valve for sharing one staging database: PR branches
+# apply their own migrations to it, so migrations from PRs that are never
+# merged accumulate, and test data piles up. `migrate deploy` tolerates
+# applied-but-absent migrations so nothing breaks, but the schema drifts.
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'Type "reset staging" to confirm. This deletes all staging data.'
+        required: true
+        type: string
+
+concurrency:
+  group: reset-staging
+  cancel-in-progress: false
+
+jobs:
+  reset:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check confirmation
+        if: inputs.confirm != 'reset staging'
+        run: |
+          echo "::error::Confirmation text did not match. Type exactly: reset staging"
+          exit 1
+
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      # Drops and recreates the schema, then replays every migration. Points at
+      # STAGING_DIRECT_URL only; the seed itself refuses to run against the
+      # production project ref as a second line of defence.
+      - name: Reset schema
+        run: npx prisma migrate reset --force --skip-seed
+        env:
+          DIRECT_URL: ${{ secrets.STAGING_DIRECT_URL }}
+
+      - name: Seed staging
+        run: npx tsx prisma/seed-staging.ts
+        env:
+          ALLOW_DESTRUCTIVE_SEED: "1"
+          DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
+          DIRECT_URL: ${{ secrets.STAGING_DIRECT_URL }}
+
+      - name: Summary
+        run: echo "Staging reset and reseeded. https://test.deltechmun.in" >> "$GITHUB_STEP_SUMMARY"

@@ -1,26 +1,99 @@
-name: Deploy to Vercel
+name: Deploy
 
 on:
   push:
     branches:
       - main
 
+# Merges used to race: two quick merges started two production deploys and two
+# migration runs against the same database. Queue them instead, and never
+# cancel a run that may be mid-migration.
+concurrency:
+  group: deploy-main
+  cancel-in-progress: false
+
 jobs:
-  deploy:
+  # Gate. Both deploys depend on this, so a red build ships nothing.
+  ci:
+    uses: ./.github/workflows/check.yml
+    secrets: inherit
+
+  # Staging first. If a migration is going to fail, it fails here, against the
+  # scratch database, before production is touched.
+  staging:
+    needs: ci
     runs-on: ubuntu-latest
-    environment: production
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      # DIRECT_URL must be the Supabase SESSION pooler (port 5432 on
+      # pooler.supabase.com), NOT db.<ref>.supabase.co. That host is IPv6-only
+      # and GitHub runners have no IPv6, so it fails with P1001. Port 6543 is
+      # the transaction pooler and cannot run DDL.
+      - name: Migrate staging
+        run: npx prisma migrate deploy
+        env:
+          DIRECT_URL: ${{ secrets.STAGING_DIRECT_URL }}
 
       - name: Install Vercel CLI
         run: npm install --global vercel@latest
 
-      - name: Pull Vercel environment
+      # Preview scope = the staging database and staging credentials.
+      - name: Pull Vercel preview env
+        run: vercel pull --yes --environment=preview --token=${{ secrets.VERCEL_TOKEN }}
+
+      - name: Build
+        run: vercel build --token=${{ secrets.VERCEL_TOKEN }}
+
+      - name: Deploy staging
+        id: deploy
+        run: echo "url=$(vercel deploy --prebuilt --token=${{ secrets.VERCEL_TOKEN }})" >> "$GITHUB_OUTPUT"
+
+      # Gives main's staging build a stable address instead of a new hash each
+      # time. Vercel's branch-domain feature cannot do this for us because the
+      # project's Ignored Build Step cancels git-triggered builds.
+      - name: Alias to test.deltechmun.in
+        run: vercel alias set "${{ steps.deploy.outputs.url }}" test.deltechmun.in --token=${{ secrets.VERCEL_TOKEN }}
+
+  production:
+    needs: [ci, staging]
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      # Nothing applied migrations before this. Merging a schema change shipped
+      # code against a database missing those columns, silently, until someone
+      # remembered to run the CLI by hand.
+      - name: Migrate production
+        run: npx prisma migrate deploy
+        env:
+          DIRECT_URL: ${{ secrets.PROD_DIRECT_URL }}
+
+      - name: Install Vercel CLI
+        run: npm install --global vercel@latest
+
+      - name: Pull Vercel production env
         run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
 
-      - name: Build project
+      - name: Build
         run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
 
-      - name: Deploy to Vercel
+      - name: Deploy production
         run: vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }}

@@ -2,8 +2,13 @@ name: CI
 
 on:
   pull_request:
-  push:
-    branches: [main]
+  # deploy.yml calls this on pushes to main, so the main pipeline gates on this
+  # job instead of duplicating its steps. Before this, deploy.yml ran in
+  # parallel with CI on the same push and a red build still shipped to
+  # production. There is deliberately no `push: [main]` trigger here: that
+  # would run CI twice per merge, and both runs share this concurrency group,
+  # so they would cancel each other.
+  workflow_call:
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -16,6 +21,9 @@ jobs:
       # Build needs these set but never connects to a real DB — dummy is fine.
       DATABASE_URL: postgresql://user:password@localhost:5432/db
       DIRECT_URL: postgresql://user:password@localhost:5432/db
+      # Lets check-env-isolation.ts query Vercel. Absent on fork and Dependabot
+      # PRs, where that check skips itself rather than failing.
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
     steps:
       - uses: actions/checkout@v4
 

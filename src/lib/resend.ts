@@ -3,6 +3,7 @@ import { Resend } from "resend"
 import { prisma } from "@/lib/prisma"
 import { getContent } from "@/lib/settings"
 import { STRINGS } from "@/content/strings"
+import { APP_URL } from "@/lib/app-url"
 import { RegistrationReceivedEmail } from "@/emails/registration-received"
 import { AllotmentEmail } from "@/emails/allotment"
 import { CoDelegateNoticeEmail } from "@/emails/co-delegate-notice"
@@ -18,7 +19,7 @@ function getResend(): Resend {
   return (resendClient ??= new Resend(process.env.AUTH_RESEND_KEY))
 }
 const FROM = process.env.EMAIL_FROM ?? "noreply@deltechmun.in"
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? ""
+
 
 // ---------------------------------------------------------------------------
 // Core send + log helper

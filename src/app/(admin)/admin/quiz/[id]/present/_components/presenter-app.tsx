@@ -17,6 +17,7 @@ import type {
   MCQConfig,
 } from "@/lib/quiz-types"
 import { asMCQ } from "@/lib/quiz-types"
+import { APP_URL } from "@/lib/app-url"
 
 type Screen = "lobby" | "question" | "leaderboard"
 
@@ -26,7 +27,7 @@ interface Props {
   slides: SlideData[]
 }
 
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? ""
+
 
 export function PresenterApp({ session, presentation, slides }: Props) {
   const [screen, setScreen] = useState<Screen>("lobby")

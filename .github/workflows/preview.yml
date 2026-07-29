@@ -23,12 +23,34 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      # A preview of a branch that adds a column is useless if the database
+      # does not have it. Staging is shared, so this applies the PR's
+      # migrations there; reset-staging.yml is the cleanup valve for
+      # migrations from PRs that never merge.
+      #
+      # DIRECT_URL must be the Supabase SESSION pooler (port 5432 on
+      # pooler.supabase.com). db.<ref>.supabase.co is IPv6-only and GitHub
+      # runners have no IPv6, so it fails with P1001.
+      - name: Migrate staging
+        run: npx prisma migrate deploy
+        env:
+          DIRECT_URL: ${{ secrets.STAGING_DIRECT_URL }}
+
       - name: Install Vercel CLI
         run: npm install --global vercel@latest
 
       # Reuses the existing VERCEL_TOKEN. `vercel pull` auto-detects the linked
       # project from the git remote, exactly like deploy.yml. CLI --prebuilt
-      # deploys bypass the project's Ignored Build Step.
+      # deploys bypass the project's Ignored Build Step. The preview env scope
+      # carries the staging database and staging credentials.
       - name: Pull Vercel preview env
         run: vercel pull --yes --environment=preview --token=${{ secrets.VERCEL_TOKEN }}
 
@@ -45,7 +67,14 @@ jobs:
           script: |
             const url = "${{ steps.deploy.outputs.url }}";
             const marker = "<!-- preview-url -->";
-            const body = `${marker}\n🔍 **Preview:** ${url}\n\n_Shares the production database — treat it as live data._`;
+            const body = [
+              marker,
+              `🔍 **Preview:** ${url}`,
+              "",
+              "Runs against the **staging** database, not production. Break whatever you like.",
+              "Email and Razorpay are live here, so links in any mail this sends point back at this preview.",
+              "Messy state? Run the **Reset staging** workflow.",
+            ].join("\n");
             const { data: comments } = await github.rest.issues.listComments({
               ...context.repo,
               issue_number: context.issue.number,

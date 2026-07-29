@@ -10,6 +10,8 @@
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:seed": "prisma db seed",
+    "db:seed:staging": "ALLOW_DESTRUCTIVE_SEED=1 tsx prisma/seed-staging.ts",
+    "setup:staging": "tsx scripts/setup-staging.ts",
     "check:strings": "node scripts/check-strings.mjs",
     "check": "for f in scripts/check-*.ts; do npx tsx \"$f\" || exit 1; done && node scripts/check-strings.mjs"
   },
