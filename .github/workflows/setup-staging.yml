@@ -39,7 +39,8 @@ jobs:
         run: npm ci
 
       - name: Install Vercel CLI
-        run: npm install --global vercel@latest
+        timeout-minutes: 10
+        run: npm install --global vercel@58.1.0 --no-audit --no-fund
 
       # Writes .vercel/project.json, which tells the scripts which project and
       # team to configure. Auto-detects from the git remote, as deploy.yml does.
