@@ -67,6 +67,16 @@ postgresql://postgres.<ref>:<pw>@aws-1-<region>.pooler.supabase.com:5432/postgre
 - Port **6543** is the transaction pooler and **cannot run DDL**. Migrations need
   5432 (session mode). The app's runtime `DATABASE_URL` uses 6543, which is correct.
 
+### Before setup has run
+
+The pipeline degrades instead of blocking. With `STAGING_DIRECT_URL` and
+`PROD_DIRECT_URL` unset, both migration steps emit a warning and skip, the
+staging deploy still produces `test.deltechmun.in`, and production deploys
+exactly as it did before. The PR comment says plainly that the preview is still
+on the production database. Nothing is gated on the staging environment
+existing, so this could be merged without freezing deployments; run the setup
+below to turn the warnings into real gates.
+
 ## Setup
 
 `npm run setup:staging` does almost all of it, and is safe to re-run:

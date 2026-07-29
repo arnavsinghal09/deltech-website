@@ -31,15 +31,6 @@ jobs:
       - name: Install
         run: npm ci
 
-      # Turns a cryptic Prisma connection error into something actionable.
-      # Previews genuinely are not ready until the staging database exists.
-      - name: Require staging database secret
-        run: |
-          if [ -z "${{ secrets.STAGING_DIRECT_URL }}" ]; then
-            echo "::error::STAGING_DIRECT_URL is not set. Run 'npm run setup:staging' first (see docs/CI.md)."
-            exit 1
-          fi
-
       # A preview of a branch that adds a column is useless if the database
       # does not have it. Staging is shared, so this applies the PR's
       # migrations there; reset-staging.yml is the cleanup valve for
@@ -49,9 +40,17 @@ jobs:
       # pooler.supabase.com). db.<ref>.supabase.co is IPv6-only and GitHub
       # runners have no IPv6, so it fails with P1001.
       - name: Migrate staging
-        run: npx prisma migrate deploy
+        id: migrate
         env:
           DIRECT_URL: ${{ secrets.STAGING_DIRECT_URL }}
+        run: |
+          if [ -z "$DIRECT_URL" ]; then
+            echo "staging=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::STAGING_DIRECT_URL is not set, so this preview still runs against whatever the Preview env scope points at, which today is PRODUCTION. Run 'npm run setup:staging'."
+            exit 0
+          fi
+          echo "staging=true" >> "$GITHUB_OUTPUT"
+          npx prisma migrate deploy
 
       - name: Install Vercel CLI
         run: npm install --global vercel@latest
@@ -76,14 +75,20 @@ jobs:
           script: |
             const url = "${{ steps.deploy.outputs.url }}";
             const marker = "<!-- preview-url -->";
+            // Tell the truth about which database this is on: before
+            // `npm run setup:staging` has been run there is no staging DB, and
+            // the Preview env scope still resolves to production.
+            const onStaging = "${{ steps.migrate.outputs.staging }}" === "true";
             const body = [
               marker,
               `🔍 **Preview:** ${url}`,
               "",
-              "Runs against the **staging** database, not production. Break whatever you like.",
+              onStaging
+                ? "Runs against the **staging** database, not production. Break whatever you like."
+                : "⚠️ **Still on the production database.** `npm run setup:staging` has not been run yet, so treat this as live data.",
               "Email and Razorpay are live here, so links in any mail this sends point back at this preview.",
-              "Messy state? Run the **Reset staging** workflow.",
-            ].join("\n");
+              onStaging ? "Messy state? Run the **Reset staging** workflow." : "",
+            ].filter(Boolean).join("\n");
             const { data: comments } = await github.rest.issues.listComments({
               ...context.repo,
               issue_number: context.issue.number,
