@@ -591,6 +591,7 @@ export const STRINGS = {
     passwordTooShort: "Password must be at least 8 characters.",
     accountExists: "An account with this email already exists. Sign in instead.",
     nonDelegateAccount: "This email is reserved for an admin or author account.",
+    tooManyRequests: "Too many attempts. Wait a few minutes and try again.",
   },
 
   dashboard: {

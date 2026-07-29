@@ -30,6 +30,17 @@ export async function createOrGetSession(presentationId: string): Promise<string
   return session.id
 }
 
+// Records which slide is live and when it went live, so scoring does not have
+// to trust the participant's clock. The presenter broadcasts GOTO over
+// Realtime for latency; this is the authoritative record.
+export async function startSlide(sessionId: string, slideId: string): Promise<void> {
+  await requireStaff()
+  await prisma.quizSession.update({
+    where: { id: sessionId },
+    data: { currentSlideId: slideId, currentSlideStartedAt: new Date(), status: "active" },
+  })
+}
+
 export async function endSession(sessionId: string): Promise<void> {
   await requireStaff()
   await prisma.quizSession.update({

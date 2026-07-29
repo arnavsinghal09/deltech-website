@@ -5,6 +5,7 @@ import { signIn } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { hashPassword } from "@/lib/password";
 import { AuthError } from "next-auth";
+import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 
 export async function signupWithPassword(
   _prev: { error?: string } | null,
@@ -15,6 +16,9 @@ export async function signupWithPassword(
   const confirm = formData.get("confirmPassword") as string;
 
   if (!email || !password) return { error: "passwordTooShort" };
+
+  const limit = await rateLimit(RATE_LIMITS.signup, email);
+  if (!limit.ok) return { error: "tooManyRequests" };
   if (password.length < 8) return { error: "passwordTooShort" };
   if (password !== confirm) return { error: "passwordMismatch" };
 
@@ -41,6 +45,9 @@ export async function signupWithMagicLink(
 ): Promise<{ error?: string }> {
   const email = (formData.get("email") as string)?.trim().toLowerCase();
   if (!email) return { error: "errorDefault" };
+
+  const limit = await rateLimit(RATE_LIMITS.magicLink, email);
+  if (!limit.ok) return { error: "tooManyRequests" };
 
   const existing = await prisma.user.findUnique({ where: { email } });
   if (existing) {
