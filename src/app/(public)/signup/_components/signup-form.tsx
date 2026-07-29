@@ -14,6 +14,7 @@ const ERROR_MESSAGES: Record<string, string> = {
   accountExists: "An account with this email already exists. Sign in instead.",
   nonDelegateAccount: "This email is reserved for an admin or author account.",
   invalidCredentials: "Could not sign in after account creation. Please sign in manually.",
+  tooManyRequests: "Too many attempts. Wait a few minutes and try again.",
   errorDefault: "Something went wrong. Please try again.",
 };
 

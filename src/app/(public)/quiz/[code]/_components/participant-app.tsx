@@ -166,7 +166,6 @@ export function ParticipantApp({ sessionId, roomCode, initialStatus, presentatio
     submittedRef.current = true
     setSubmitting(true)
 
-    const elapsed = Date.now() - slideStartMs
     const res = await fetch("/api/quiz/responses", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -176,7 +175,6 @@ export function ParticipantApp({ sessionId, roomCode, initialStatus, presentatio
         nickname,
         avatar,
         answer,
-        submittedAt: elapsed,
       }),
     })
 

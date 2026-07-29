@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { hashPassword } from "@/lib/password";
 import { validatePassword } from "@/lib/schemas/password";
 import { AuthError } from "next-auth";
+import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 
 function isUniqueViolation(err: unknown): boolean {
   return (
@@ -27,6 +28,9 @@ export async function signupWithPassword(
   if (!email) return { error: "emailRequired" };
   const invalid = validatePassword(password, confirm);
   if (invalid) return { error: invalid };
+
+  const limit = await rateLimit(RATE_LIMITS.signup, email);
+  if (!limit.ok) return { error: "tooManyRequests" };
 
   const existing = await prisma.user.findUnique({ where: { email } });
   if (existing) {
@@ -59,6 +63,9 @@ export async function signupWithMagicLink(
 ): Promise<{ error?: string }> {
   const email = (formData.get("email") as string)?.trim().toLowerCase();
   if (!email) return { error: "errorDefault" };
+
+  const limit = await rateLimit(RATE_LIMITS.magicLink, email);
+  if (!limit.ok) return { error: "tooManyRequests" };
 
   const existing = await prisma.user.findUnique({ where: { email } });
   if (existing) {

@@ -50,7 +50,11 @@ export function SignInForm({
             />
           </div>
           {mlState?.error && (
-            <p className="text-sm text-destructive">{t("auth.errorDefault")}</p>
+            <p className="text-sm text-destructive">
+              {mlState.error === "tooManyRequests"
+                ? t("auth.tooManyRequests")
+                : t("auth.errorDefault")}
+            </p>
           )}
           <Button type="submit" disabled={mlPending} className="h-14 w-full rounded-none text-base">
             {mlPending ? t("common.sending") : t("auth.sendLinkButton")}
@@ -91,7 +95,9 @@ export function SignInForm({
             <p className="text-sm text-destructive">
               {pwState.error === "invalidCredentials"
                 ? t("auth.invalidCredentials")
-                : t("auth.errorDefault")}
+                : pwState.error === "tooManyRequests"
+                  ? t("auth.tooManyRequests")
+                  : t("auth.errorDefault")}
             </p>
           )}
           <Button type="submit" disabled={pwPending} className="h-14 w-full rounded-none text-base">

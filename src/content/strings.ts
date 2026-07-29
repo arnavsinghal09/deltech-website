@@ -597,6 +597,7 @@ export const STRINGS = {
     forgotPassword: "Forgot your password?",
     noPasswordYetHint:
       "Invited by an admin? You will not have a password yet. Use the magic link tab, then set one from your account page.",
+    tooManyRequests: "Too many attempts. Wait a few minutes and try again.",
   },
 
   account: {

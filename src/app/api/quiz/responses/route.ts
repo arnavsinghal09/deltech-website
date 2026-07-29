@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
+import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit"
 import { parseConfig } from "@/lib/quiz-types"
 import type { MCQConfig, SlideType } from "@/lib/quiz-types"
 
@@ -11,17 +12,35 @@ export async function POST(request: Request) {
     nickname: string
     avatar: string
     answer: unknown
-    submittedAt: number   // unix ms — for speed scoring
   }
 
-  const { sessionId, slideId, nickname, avatar, answer, submittedAt } = body
+  // NOTE: the body used to carry `submittedAt`, which fed the speed bonus
+  // directly. Anyone could POST 0 and score full marks on every correct
+  // answer regardless of how long they actually took. Elapsed time is now
+  // derived from QuizSession.currentSlideStartedAt and the request body's
+  // clock is ignored entirely.
+  const { sessionId, slideId, nickname, answer } = body
+
+  const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown"
+  const limit = await rateLimit(RATE_LIMITS.quizAnswer, `${sessionId}:${ip}`)
+  if (!limit.ok) {
+    return NextResponse.json(
+      { error: "rate_limited" },
+      { status: 429, headers: { "Retry-After": String(limit.retryAfter) } },
+    )
+  }
 
   // These three are independent, so one round trip instead of three. On a
   // phone at the venue that is most of the perceived latency of answering.
   const [session, slide, existing] = await Promise.all([
     prisma.quizSession.findUnique({
       where: { id: sessionId },
-      select: { status: true, presentationId: true },
+      select: {
+        status: true,
+        presentationId: true,
+        currentSlideId: true,
+        currentSlideStartedAt: true,
+      },
     }),
     prisma.slide.findUnique({
       where: { id: slideId },
@@ -29,11 +48,18 @@ export async function POST(request: Request) {
     }),
     prisma.response.findFirst({ where: { sessionId, slideId, nickname } }),
   ])
-
   if (!session || session.status === "ended") {
     return NextResponse.json({ error: "session_not_active" }, { status: 400 })
   }
   if (!slide) return NextResponse.json({ error: "slide_not_found" }, { status: 404 })
+
+  // Answers are only accepted for the slide the presenter has actually put on
+  // screen. Without this, any slide could be answered at any time, including
+  // ones already past.
+  if (session.currentSlideId && session.currentSlideId !== slideId) {
+    return NextResponse.json({ error: "slide_not_active" }, { status: 409 })
+  }
+
   // Friendly path only; the unique index is the actual guard on the create.
   if (existing) {
     return NextResponse.json({ error: "already_submitted" }, { status: 409 })
@@ -57,10 +83,15 @@ export async function POST(request: Request) {
         [...submittedSet].every((i) => correctSet.has(i))
 
       if (correct) {
-        // Speed bonus: max 1000, scales by how quickly answered relative to timer
-        if (mcqConfig.timerSeconds) {
-          const elapsed = Math.min(submittedAt / 1000, mcqConfig.timerSeconds)
-          points = Math.round(1000 * (1 - (elapsed / mcqConfig.timerSeconds) * 0.5))
+        // Speed bonus: max 1000, scaling with how quickly they answered
+        // relative to the timer. Measured against the server's own record of
+        // when the slide went live, clamped into range so a missing or skewed
+        // start time degrades to the no-bonus score rather than a free 1000.
+        const startedAt = session.currentSlideStartedAt
+        if (mcqConfig.timerSeconds && startedAt) {
+          const elapsedS = (Date.now() - startedAt.getTime()) / 1000
+          const clamped = Math.min(Math.max(elapsedS, 0), mcqConfig.timerSeconds)
+          points = Math.round(1000 * (1 - (clamped / mcqConfig.timerSeconds) * 0.5))
         } else {
           points = 1000
         }

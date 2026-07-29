@@ -2,12 +2,24 @@ import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { auth } from "@/lib/auth"
 import { createOrGetQuizSession } from "@/lib/quiz-session"
+import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit"
 
 // GET ?code=123456  — participant lookup (public)
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
   const code = searchParams.get("code")
   if (!code) return NextResponse.json({ error: "code required" }, { status: 400 })
+
+  // Unauthenticated oracle over a 6-digit (900k) space: without a throttle,
+  // live sessions can be enumerated and then targeted.
+  const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown"
+  const limit = await rateLimit(RATE_LIMITS.quizLookup, ip)
+  if (!limit.ok) {
+    return NextResponse.json(
+      { error: "rate_limited" },
+      { status: 429, headers: { "Retry-After": String(limit.retryAfter) } },
+    )
+  }
 
   const session = await prisma.quizSession.findFirst({
     where: { roomCode: code },

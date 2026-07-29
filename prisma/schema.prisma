@@ -346,6 +346,19 @@ model AuditLog {
   @@index([at])
 }
 
+// ---- Rate limiting ----
+
+// DB-backed rather than in-memory: serverless instances do not share memory,
+// so a Map would reset on every cold start and be per-instance besides. One
+// row per (key, window); old rows are pruned opportunistically.
+model RateLimit {
+  key         String   @id
+  count       Int      @default(0)
+  windowStart DateTime @default(now())
+
+  @@index([windowStart])
+}
+
 // ---- Intake quarantine ----
 
 model QuarantinedRow {
@@ -433,6 +446,11 @@ model QuizSession {
   roomCode       String    @unique
   status         String    @default("lobby")
   currentSlideId String?
+  // Server-side clock for speed scoring. The presenter used to only broadcast
+  // GOTO over Realtime, so the server had no idea which slide was live or when
+  // it started, and had to take the participant's word for how fast they
+  // answered. Both columns are written by startSlide().
+  currentSlideStartedAt DateTime?
   startedAt      DateTime?
   endedAt        DateTime?
 }
