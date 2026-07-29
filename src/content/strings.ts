@@ -591,6 +591,29 @@ export const STRINGS = {
     passwordTooShort: "Password must be at least 8 characters.",
     accountExists: "An account with this email already exists. Sign in instead.",
     nonDelegateAccount: "This email is reserved for an admin or author account.",
+    passwordTooLong: "Password is too long.",
+    emailRequired: "Enter your email address.",
+    forgotPassword: "Forgot your password?",
+    noPasswordYetHint:
+      "Invited by an admin? You will not have a password yet. Use the magic link tab, then set one from your account page.",
+  },
+
+  account: {
+    title: "Your account",
+    setPasswordTitle: "Set a password",
+    changePasswordTitle: "Change your password",
+    setPasswordNote:
+      "You signed in with a magic link. Set a password and you can use it to sign in from now on.",
+    changePasswordNote: "You will need your current password to change it.",
+    currentPasswordLabel: "Current password",
+    newPasswordLabel: "New password",
+    savePasswordButton: "Save password",
+    passwordSaved: "Password saved. Use it next time you sign in.",
+    currentPasswordRequired: "Enter your current password.",
+    currentPasswordWrong: "That current password is not right.",
+    notSignedIn: "Your session expired. Sign in again.",
+    backLink: "Back to your dashboard",
+    navLabel: "Account",
   },
 
   dashboard: {

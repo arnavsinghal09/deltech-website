@@ -53,4 +53,16 @@ assert.equal(safeLanding("https://app.example.com/blog", "REGISTERER"), "/dashbo
 assert.equal(safeLanding("javascript:alert(1)", "ADMIN", ORIGIN), "/admin")
 assert.equal(safeLanding("//evil.com", "ADMIN", ORIGIN), "/admin")
 
+// /account is reachable by every signed-in role. The account page bounces an
+// anonymous visitor to /signin?callbackUrl=/account, so if safeLanding refused
+// to honour that path they would sign in and land on their home instead, with
+// no way to reach the page they asked for.
+assert.equal(safeLanding("/account", "ADMIN", ORIGIN), "/account")
+assert.equal(safeLanding("/account", "MAINTAINER", ORIGIN), "/account")
+assert.equal(safeLanding("/account", "AUTHOR", ORIGIN), "/account")
+assert.equal(safeLanding("/account", "REGISTERER", ORIGIN), "/account")
+assert.equal(safeLanding("https://app.example.com/account", "REGISTERER", ORIGIN), "/account")
+// ...but an unauthenticated caller still gets the public home, not /account.
+assert.equal(safeLanding("/account", undefined, ORIGIN), "/")
+
 console.log("nav checks passed")
