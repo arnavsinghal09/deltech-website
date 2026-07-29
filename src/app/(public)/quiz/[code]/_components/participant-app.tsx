@@ -1,7 +1,6 @@
 "use client"
 
 import { useCallback, useEffect, useRef, useState } from "react"
-import { motion, useReducedMotion } from "framer-motion"
 import { supabase } from "@/lib/supabase"
 import { t } from "@/content/strings"
 import { Input } from "@/components/ui/input"
@@ -106,6 +105,25 @@ export function ParticipantApp({ sessionId, roomCode, initialStatus, presentatio
           setAppState("ended")
         }
       })
+      // Two people typing the same name used to merge into one leaderboard
+      // row, and the second one's genuine answer came back 409 "already
+      // submitted" while the UI told them it was received. Presence already
+      // knows who is in the room, so catch it at the door instead.
+      .on("presence", { event: "sync" }, () => {
+        const taken = Object.values(channel.presenceState())
+          .flat()
+          .some(
+            (p) =>
+              (p as { nickname?: string; userId?: string }).nickname === nick &&
+              (p as { userId?: string }).userId !== userIdRef.current,
+          )
+        if (taken) {
+          supabase.removeChannel(channel)
+          channelRef.current = null
+          setNicknameError(t("quiz.nicknameTaken"))
+          setAppState("nickname")
+        }
+      })
       .subscribe(() => {
         channel.track({ nickname: nick, avatar: ava, userId: userIdRef.current })
       })
@@ -148,7 +166,6 @@ export function ParticipantApp({ sessionId, roomCode, initialStatus, presentatio
     submittedRef.current = true
     setSubmitting(true)
 
-    const elapsed = Date.now() - slideStartMs
     const res = await fetch("/api/quiz/responses", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -158,7 +175,6 @@ export function ParticipantApp({ sessionId, roomCode, initialStatus, presentatio
         nickname,
         avatar,
         answer,
-        submittedAt: elapsed,
       }),
     })
 
@@ -167,6 +183,13 @@ export function ParticipantApp({ sessionId, roomCode, initialStatus, presentatio
       const data = (await res.json()) as ResultData
       setResult(data)
       setAppState("result")
+    } else if (res.status === 409) {
+      // Someone else already answered under this nickname. Saying "answer
+      // received" here is what let a collided participant score zero for a
+      // whole quiz without ever seeing an error.
+      submittedRef.current = false
+      setNicknameError(t("quiz.nicknameTaken"))
+      setAppState("nickname")
     } else {
       setAppState("submitted")
     }
@@ -539,31 +562,32 @@ export function ParticipantApp({ sessionId, roomCode, initialStatus, presentatio
 
 // k remounts the inner motion wrapper on phase change so the entrance replays —
 // hard cuts between phases become a quick fade/rise.
+// Both animations here are decorative, and this is the one route that has to
+// load fast on a few hundred phones on venue wifi. Doing them in CSS keeps
+// framer-motion out of the bundle entirely rather than merely deferring it.
+// motion-reduce: preserves what useReducedMotion() was doing.
 function Screen({ children, padding, k }: { children: React.ReactNode; padding?: boolean; k?: string }) {
-  const reduce = useReducedMotion()
   return (
     <div className={`overscroll-dark relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-[#07100d] ${padding ? "px-4 py-10" : "px-4 py-8"}`}>
       <div className="paper-grid absolute inset-0 opacity-[0.1]" aria-hidden />
-      <motion.div
+      <div
         aria-hidden
-        className="absolute -right-36 -top-36 size-[28rem] rounded-full border border-teal-300/25"
-        animate={reduce ? undefined : { rotate: 360 }}
-        transition={{ duration: 28, repeat: Infinity, ease: "linear" }}
+        className="absolute -right-36 -top-36 size-[28rem] animate-[spin_28s_linear_infinite] rounded-full border border-teal-300/25 motion-reduce:animate-none"
       >
         <div className="absolute inset-16 rounded-full border border-dashed border-teal-300/20" />
-      </motion.div>
+      </div>
       <div className="absolute left-5 top-5 flex items-center gap-2 font-mono text-xs font-bold uppercase tracking-[0.2em] text-white/45">
         <span className="size-2 animate-pulse bg-teal-300" /> Audience live
       </div>
-      <motion.div
+      {/* key remounts this on phase change so the entrance replays. */}
+      <div
         key={k}
-        initial={reduce || k === undefined ? false : { opacity: 0, y: 18, scale: 0.98 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
-        className="relative z-10 flex w-full max-w-3xl flex-col items-center bg-[#f3eee2] p-6 text-[#111614] shadow-[14px_14px_0_#14b8a6] sm:p-10"
+        className={`relative z-10 flex w-full max-w-3xl flex-col items-center bg-[#f3eee2] p-6 text-[#111614] shadow-[14px_14px_0_#14b8a6] sm:p-10 motion-reduce:animate-none ${
+          k === undefined ? "" : "animate-in fade-in zoom-in-95 slide-in-from-bottom-4 duration-300"
+        }`}
       >
         {children}
-      </motion.div>
+      </div>
     </div>
   )
 }

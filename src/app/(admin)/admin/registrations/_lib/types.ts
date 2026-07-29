@@ -1,10 +1,13 @@
 import type { Prisma } from "@/generated/prisma/client"
 
+// emailLogs deliberately absent. It had no take and no select, so every page
+// of 25 delegates dragged in every email ever sent to those 25 (including the
+// `error` text column) for a table that renders none of it. Only the drawer
+// uses them, one delegate at a time, so it fetches them on open instead.
 export const delegateInclude = {
   coDelegate: true,
   allotment: { include: { portfolio: { select: { name: true } } } },
   payment: true,
-  emailLogs: { orderBy: { sentAt: "desc" as const } },
 } as const
 
 export type DelegateRaw = Prisma.DelegateGetPayload<{ include: typeof delegateInclude }>
@@ -62,14 +65,15 @@ export interface SerializedDelegate {
     confirmedAt: string | null
     createdAt: string
   } | null
-  emailLogs: {
-    id: string
-    template: string
-    toEmail: string
-    status: string
-    error: string | null
-    sentAt: string
-  }[]
+}
+
+/** Fetched on demand when the drawer opens, not with the table. */
+export interface EmailLogEntry {
+  id: string
+  template: string
+  status: string
+  error: string | null
+  sentAt: string
 }
 
 export function serializeDelegate(d: DelegateRaw): SerializedDelegate {
@@ -90,9 +94,5 @@ export function serializeDelegate(d: DelegateRaw): SerializedDelegate {
           confirmedAt: d.payment.confirmedAt?.toISOString() ?? null,
         }
       : null,
-    emailLogs: d.emailLogs.map((l) => ({
-      ...l,
-      sentAt: l.sentAt.toISOString(),
-    })),
   }
 }

@@ -2,32 +2,23 @@
 
 import { prisma } from "@/lib/prisma"
 import { requireStaff } from "@/lib/authz"
-
-function generateRoomCode(): string {
-  return Math.floor(100000 + Math.random() * 900000).toString()
-}
+import { createOrGetQuizSession } from "@/lib/quiz-session"
 
 export async function createOrGetSession(presentationId: string): Promise<string> {
   await requireStaff()
-
-  const existing = await prisma.quizSession.findFirst({
-    where: { presentationId, status: { in: ["lobby", "active"] } },
-    select: { id: true },
-  })
-  if (existing) return existing.id
-
-  let roomCode = generateRoomCode()
-  for (let i = 0; i < 5; i++) {
-    const clash = await prisma.quizSession.findFirst({ where: { roomCode }, select: { id: true } })
-    if (!clash) break
-    roomCode = generateRoomCode()
-  }
-
-  const session = await prisma.quizSession.create({
-    data: { presentationId, roomCode, status: "lobby" },
-    select: { id: true },
-  })
+  const session = await createOrGetQuizSession(presentationId)
   return session.id
+}
+
+// Records which slide is live and when it went live, so scoring does not have
+// to trust the participant's clock. The presenter broadcasts GOTO over
+// Realtime for latency; this is the authoritative record.
+export async function startSlide(sessionId: string, slideId: string): Promise<void> {
+  await requireStaff()
+  await prisma.quizSession.update({
+    where: { id: sessionId },
+    data: { currentSlideId: slideId, currentSlideStartedAt: new Date(), status: "active" },
+  })
 }
 
 export async function endSession(sessionId: string): Promise<void> {

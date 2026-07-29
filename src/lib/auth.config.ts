@@ -34,6 +34,9 @@ export const authConfig = {
         return role === "AUTHOR" || role === "ADMIN" || role === "MAINTAINER";
       }
 
+      // Any signed-in role may manage their own account.
+      if (pathname.startsWith("/account")) return !!role
+
       if (pathname.startsWith("/dashboard")) {
         if (role === "REGISTERER") return true;
         // Any other authenticated role (staff, author) belongs elsewhere —

@@ -14,7 +14,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { cn } from "@/lib/utils"
-import { holdPortfolio, allotPortfolio } from "../actions"
+import { holdPortfolio, releaseHold, allotPortfolio } from "../actions"
 import { preferenceRank } from "../_lib/balance"
 import type { SerializedPortfolio, SerializedCommittee, SerializedDelegate, Fee } from "./allotment-board"
 
@@ -25,7 +25,7 @@ interface Props {
   fees: Fee[]
   paymentsRequired: boolean
   onClose: () => void
-  onAllotted: () => void
+  onAllotted: (hadWarning?: boolean) => void
 }
 
 interface RankedDelegate extends SerializedDelegate {
@@ -96,7 +96,10 @@ export function AllotDialog({
       })
       if (result.success) {
         setOpen(false)
-        onAllotted()
+        // Allotted, but something after the commit did not land. Surface it
+        // rather than letting the generic success toast paper over it.
+        if (result.warning) toast.warning(result.warning, { duration: 10000 })
+        onAllotted(!!result.warning)
       } else {
         toast.error(result.error ?? "Allotment failed.")
         if (result.code === "ALREADY_ALLOTTED") {
@@ -110,6 +113,9 @@ export function AllotDialog({
   const handleOpenChange = (o: boolean) => {
     if (!o && !isPending) {
       setOpen(false)
+      // Only give back a hold we actually took, so closing this dialog can
+      // never free a portfolio another admin is holding.
+      if (heldByUs) void releaseHold(portfolio.id).catch(() => {})
       onClose()
     }
   }
