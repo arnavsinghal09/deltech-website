@@ -1,50 +1,158 @@
-# CI & deployments
+# CI, deployments and the staging environment
+
+## Three environments, one Vercel project
+
+| | Vercel env scope | Database | URL |
+|---|---|---|---|
+| Production | Production | prod Supabase | `deltechmun.in` |
+| Staging (tracks `main`) | Preview | **staging** Supabase | `test.deltechmun.in` |
+| Per-PR preview | Preview | **staging** Supabase | unique `*.vercel.app`, commented on the PR |
+
+Staging and production are separated by Vercel's env scopes rather than by two
+projects: no second project to keep in sync, no extra project-ID secrets, and
+`preview.yml` needs no special targeting. The one failure mode is a variable
+added as "All Environments", which silently re-points every preview at
+production. That is exactly how this used to be broken, so
+`scripts/check-env-isolation.ts` fails the build if Preview and Production ever
+resolve to the same `DATABASE_URL`.
+
+**Nothing on staging can reach production.** Different database, different
+`AUTH_SECRET`, its own Resend key, and `CRON_SECRET`/`SHEET_SYNC_SECRET`
+deliberately unset so the cron routes and the Google Sheet mirror fail closed.
+
+Email and Razorpay are **live** on staging, on purpose: you cannot test a
+registration flow whose emails are stubbed out. The containment is the data, not
+a kill switch, so the staging seed only ever uses `staging+*@deltechmun.in`
+addresses. **Never copy production data into staging.**
 
 ## Workflows
 
 | Workflow | Trigger | Does |
-|----------|---------|------|
-| `check.yml` (CI) | PR + push to `main` | `tsc --noEmit`, `npm run check` (assert scripts), `next build`. The merge gate. |
-| `preview.yml` (Preview) | PR | Deploys a Vercel **preview** via the CLI and comments a unique URL on the PR. |
-| `deploy.yml` (Deploy) | push to `main` | Deploys **production** via the Vercel CLI. Unchanged. |
+|---|---|---|
+| `check.yml` (CI) | PR, and called by `deploy.yml` | `tsc --noEmit`, `npm run check`, `next build`. The gate. |
+| `preview.yml` | PR | Migrates staging, deploys a preview, comments the URL. |
+| `deploy.yml` | push `main` | `ci` → then `staging` → then `production`. |
+| `reset-staging.yml` | manual | Wipes and reseeds the staging database. |
 
-`npm run check` globs every `scripts/check-*.ts`, so new assert checks are picked up automatically — no workflow edit needed.
+```
+push main
+  └─ ci            reuses check.yml
+      └─ staging      migrate staging → deploy → alias test.deltechmun.in
+          └─ production  migrate prod → deploy --prod
+```
 
-`check:strings` (`check-strings.mjs`) is part of the gate: it fails the build on hardcoded user-facing literals. Add copy to `src/content/strings.ts` and read it via `t()` instead.
+Production depends on staging, so a migration that is going to fail does so
+against the scratch database first. `deploy.yml` has a `concurrency` group, so
+two quick merges queue rather than racing two migrations at the same database.
 
-## Why the preview is CLI-based
+`check.yml` has no `push: [main]` trigger. `deploy.yml` calls it instead;
+adding both would run CI twice per merge and, because they share a concurrency
+group, the two runs would cancel each other.
 
-The Vercel project has an **Ignored Build Step** that cancels Vercel's own git-triggered builds (that's why PRs previously showed "Canceled by Ignored Build Step" and no preview). Production ships via `deploy.yml` instead. CLI `vercel deploy --prebuilt` uploads a runner-built output, so it **bypasses** the Ignored Build Step — the same mechanism `deploy.yml` already relies on. `preview.yml` reuses the existing `VERCEL_TOKEN` secret; no new secrets.
+`npm run check` globs `scripts/check-*.ts`, so new assert scripts are picked up
+with no workflow edit.
 
-## One-time / occasional setup
+## The IPv6 trap
 
-- **Deployment Protection must be off** for reviewers to open preview links. Vercel enables **Vercel Authentication** by default, which 302s every preview to `vercel.com/sso-api` — only the account owner can view it. Turn it off at Project → Settings → **Deployment Protection → Vercel Authentication → Disabled** (free on Hobby), or via the API with the project token:
+Migrations run `prisma migrate deploy` against `DIRECT_URL`
+(`prisma.config.ts:8`). Both `*_DIRECT_URL` secrets **must** be the Supabase
+**session pooler**:
 
-  ```bash
-  curl -X PATCH "https://api.vercel.com/v9/projects/<projectId>?teamId=<orgId>" \
-    -H "Authorization: Bearer $VERCEL_TOKEN" -H "Content-Type: application/json" \
-    -d '{"ssoProtection":null}'
-  ```
+```
+postgresql://postgres.<ref>:<pw>@aws-1-<region>.pooler.supabase.com:5432/postgres
+```
 
-  Deployments made before the change stay protected; redeploy to get an open URL. Note this makes preview URLs **public** — see the risk note below.
-- **Preview env vars**: the runtime env vars must be enabled for the **Preview** environment in Vercel, or a preview 500s at runtime. If they were added as "All Environments" (Vercel default) this is already true; otherwise tick **Preview** on each var. Values are the same as Production — **previews share the production database** (accepted; treat preview data as live).
-- **`CRON_SECRET`** must be set in the Production env, or the cron routes return 401 (they fail closed).
-- **`NEXT_PUBLIC_APP_URL`** on Preview should stay the production URL, so emails a preview sends link to prod, not the ephemeral preview.
-- **Branch protection (optional, recommended)**: GitHub → Settings → Branches → protect `main` → require the `check` status + a review before merge.
+- `db.<ref>.supabase.co:5432` is **IPv6-only**, and GitHub runners have no IPv6.
+  Using it fails with `P1001 Can't reach database server`.
+- Port **6543** is the transaction pooler and **cannot run DDL**. Migrations need
+  5432 (session mode). The app's runtime `DATABASE_URL` uses 6543, which is correct.
+
+### Before setup has run
+
+The pipeline degrades instead of blocking. With `STAGING_DIRECT_URL` and
+`PROD_DIRECT_URL` unset, both migration steps emit a warning and skip, the
+staging deploy still produces `test.deltechmun.in`, and production deploys
+exactly as it did before. The PR comment says plainly that the preview is still
+on the production database. Nothing is gated on the staging environment
+existing, so this could be merged without freezing deployments; run the setup
+below to turn the warnings into real gates.
+
+## Setup
+
+`npm run setup:staging` does almost all of it, and is safe to re-run:
+
+creates the staging Supabase project, writes the Preview-scoped env vars
+(copying what it can from Production), mints a separate Resend key, adds
+`test.deltechmun.in`, deletes the stray `test-deltech-website` project, sets the
+`STAGING_*` GitHub secrets, and turns on branch protection requiring `check`.
+
+It needs `VERCEL_TOKEN`, an authenticated `gh`, and a Supabase personal access
+token from <https://supabase.com/dashboard/account/tokens>. It prints what it
+changed, what was already in place, and what still needs you.
+
+Then run **Reset staging** once to migrate and seed the new database.
+
+### What it cannot do
+
+- **DNS.** Point `test.deltechmun.in` at Vercel yourself.
+- **`PROD_DIRECT_URL`.** Your local `DIRECT_URL` is the IPv6-only host, so the
+  script will not use it. Set the secret to the production *session pooler* URL.
+- **Razorpay test keys**, and only when you want them. Staging does not need
+  them on day one: `paymentProvider` seeds to `upi_qr`, so nothing calls
+  Razorpay until you flip that setting. When you do, add `rzp_test_…` keys and a
+  test-mode webhook at `https://test.deltechmun.in/api/webhooks/razorpay`; test
+  cards then drive the real webhook, the real status transition and the real
+  confirmation email, with no money moving.
+
+## Staging data
+
+`prisma/seed-staging.ts` runs the base seed, then adds what makes the product
+exercisable, because `prisma/seed.ts` creates **no portfolios and no
+delegates**: five empty committees, with allotment, payment and check-in
+untestable. It adds portfolios across all committees, delegates in every
+`AppStatus`, a UNHRC double-delegation pair, payments in three states,
+quarantined rows, blog posts in every status, and a quiz.
+
+It truncates, so it refuses to run without `ALLOW_DESTRUCTIVE_SEED=1` **and**
+refuses outright if `DATABASE_URL` matches the production project ref.
+
+Run it via the **Reset staging** workflow (type `reset staging` to confirm), or
+locally with `npm run db:seed:staging`.
+
+Staging is shared, so PR branches apply their own migrations to it. Migrations
+from PRs that are never merged accumulate; `migrate deploy` ignores
+applied-but-absent migrations so nothing breaks, but the schema drifts. Reset
+when it gets untidy.
+
+## Deployment protection
+
+Preview URLs must be publicly reachable for reviewers, so Vercel Authentication
+is off (Project → Settings → **Deployment Protection**). Previews now run
+against staging, so a public preview URL no longer exposes the production
+database, which was the standing risk this whole setup removes.
+
+## Link URLs in emails
+
+`src/lib/app-url.ts` resolves `NEXT_PUBLIC_APP_URL || NEXT_PUBLIC_VERCEL_URL`.
+Set it to the production origin on Production and leave it **unset on Preview**,
+so each PR preview's emails link back to that preview rather than to production.
+`scripts/check-app-url.ts` pins the fallback order and stops any consumer going
+back to reading the env directly.
 
 ## Dependency updates (Dependabot)
 
-- **Minor + patch are grouped** into one weekly PR; **majors come individually**. An earlier `patterns: ["*"]` group put 30 updates in one PR that failed CI purely because of the TypeScript major — one bad bump blocked 29 good ones.
-- **`typescript` majors are ignored.** Next.js requires the TypeScript 6 compiler API; TS 7 (the Go rewrite) fails `next build` with *"does not provide the compiler API required by Next.js"*. Revisit when Next.js supports it.
-- **`@types/node` majors are ignored.** Keep it on the major matching the runtime (Node 20 in CI and on Vercel); bump it deliberately with the runtime.
-- **The `preview` job is skipped for Dependabot and fork PRs.** GitHub does not expose repository Actions secrets to them, so `vercel --token=` would be empty and the job would always fail. `check` still gates those PRs. (Not exposing secrets to fork PRs is also the correct security posture for a public repo.)
-
-## Risk note: open previews on the production database
-
-With Vercel Authentication off, a preview URL is reachable by anyone who has it, and this repo is **public** — preview URLs are posted in PR comments. Each preview runs **unreviewed code against the production database**. App auth still gates admin/staff routes, but public flows (e.g. the registration form) will write real rows.
-
-Accepted for now. If it bites, the fix is env-only, no code: point Preview's `DATABASE_URL`/`DIRECT_URL` at a separate database (a second Supabase project) in Vercel's Preview scope.
+- **Minor + patch grouped** weekly; **majors individually**. An earlier
+  `patterns: ["*"]` group put 30 updates in one PR that failed CI purely because
+  of the TypeScript major, blocking 29 good ones.
+- **`typescript` majors ignored.** Next.js needs the TS 6 compiler API; TS 7 (the
+  Go rewrite) fails `next build`. Revisit when Next.js supports it.
+- **`@types/node` majors ignored.** Keep it on the major matching the runtime.
+- **`preview` is skipped for Dependabot and fork PRs.** GitHub does not expose
+  repository secrets to them, so `vercel --token=` would be empty. `check` still
+  gates them, and `check-env-isolation` skips itself for the same reason.
 
 ## Moving to a society-owned Vercel account later
 
-Re-import the repo on the new account, copy the env vars, delete the project on the old account, and update the `VERCEL_TOKEN` secret. These workflow files are account-agnostic and carry over unchanged.
+Re-import the repo, copy the env vars **keeping the Preview/Production split**,
+delete the old project, and update `VERCEL_TOKEN`. These workflows are
+account-agnostic and carry over unchanged.
