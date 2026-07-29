@@ -208,6 +208,35 @@ async function setPreviewEnv(projectId: string, orgId: string) {
 
   for (const [key, value] of Object.entries(desired)) {
     const existing = envs.find((e) => e.key === key && (e.target ?? []).includes("preview"))
+
+    // A row shared with Production must NEVER be PATCHed here. Vercel replaces
+    // the target list rather than merging it, so writing target: ["preview"]
+    // strips Production off the row and it silently loses the variable. That
+    // happened: production lost DATABASE_URL, DIRECT_URL, AUTH_SECRET and
+    // EMAIL_FROM in one go, and the next deploy would have shipped with no
+    // database. Narrow the shared row to Production, then add a separate
+    // Preview row alongside it.
+    if (existing && (existing.target ?? []).includes("production")) {
+      const others = (existing.target ?? []).filter((t) => t !== "preview")
+      const narrow = await vercel(`/v9/projects/${projectId}/env/${existing.id}${qs}`, {
+        method: "PATCH",
+        body: JSON.stringify({ target: others }),
+      })
+      if (!narrow.ok) {
+        console.error(`  ! ${key}: could not narrow shared row (${narrow.status})`, narrow.body)
+        manual.push(`${key}: narrow to Production by hand, then re-run`)
+        continue
+      }
+      changed.push(`${key} narrowed to ${others.join("+")} (was shared with Preview)`)
+      const add = await vercel(`/v10/projects/${projectId}/env${qs}`, {
+        method: "POST",
+        body: JSON.stringify({ key, value, type: "encrypted", target: ["preview"] }),
+      })
+      if (add.ok) changed.push(`Preview env ${key} added`)
+      else console.error(`  ! ${key}: ${add.status}`, add.body)
+      continue
+    }
+
     if (existing) {
       const upd = await vercel(`/v9/projects/${projectId}/env/${existing.id}${qs}`, {
         method: "PATCH",
@@ -222,20 +251,6 @@ async function setPreviewEnv(projectId: string, orgId: string) {
       })
       if (add.ok) changed.push(`Preview env ${key} added`)
       else console.error(`  ! ${key}: ${add.status}`, add.body)
-    }
-  }
-
-  // Anything scoped to all three environments would override the Preview value
-  // we just set. That is the exact failure this whole change exists to prevent.
-  const leaky = envs.filter(
-    (e) => (e.target ?? []).includes("preview") && (e.target ?? []).includes("production"),
-  )
-  for (const e of leaky) {
-    if (e.key in desired) {
-      manual.push(
-        `${e.key} is scoped to BOTH Preview and Production. Narrow it to Production in the ` +
-          `Vercel dashboard, or previews will keep reading the production value.`,
-      )
     }
   }
 

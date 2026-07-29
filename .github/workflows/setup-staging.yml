@@ -8,9 +8,9 @@ name: Set up staging (Vercel side)
 # 404. The token that can is the VERCEL_TOKEN repo secret, and secrets are only
 # readable from inside Actions.
 #
-# The GitHub half (setting STAGING_* / PROD_DIRECT_URL, branch protection) is
-# skipped here, because GITHUB_TOKEN cannot write Actions secrets. Those are
-# set from a maintainer's machine with `gh`.
+# The GitHub half (setting STAGING_* / PROD_* secrets, branch protection) is
+# skipped here, because GITHUB_TOKEN cannot write Actions secrets. Those are set
+# from a maintainer's machine with `gh`.
 on:
   workflow_dispatch:
 
@@ -35,28 +35,24 @@ jobs:
       - name: Install Vercel CLI
         run: npm install --global vercel@latest
 
-      # Writes .vercel/project.json, which tells the script which project and
+      # Writes .vercel/project.json, which tells the scripts which project and
       # team to configure. Auto-detects from the git remote, as deploy.yml does.
       - name: Link Vercel project
         run: vercel pull --yes --environment=preview --token=${{ secrets.VERCEL_TOKEN }}
 
-      - name: Report env scoping (no values)
+      # Restores Production-scoped vars if an earlier run narrowed rows that
+      # were shared between Production and Preview down to preview-only. No-op
+      # once they are correct, and it prints the resulting scoping either way.
+      - name: Repair production env
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-        run: |
-          node -e '
-            const fs=require("fs");
-            const {projectId,orgId}=JSON.parse(fs.readFileSync(".vercel/project.json","utf8"));
-            fetch(`https://api.vercel.com/v9/projects/${projectId}/env?teamId=${orgId}`,{headers:{Authorization:`Bearer ${process.env.VERCEL_TOKEN}`}})
-              .then(r=>r.json()).then(d=>{
-                console.log("KEY".padEnd(40)+"TARGETS");
-                for(const e of d.envs.sort((a,b)=>a.key.localeCompare(b.key)))
-                  console.log(e.key.padEnd(40)+JSON.stringify(e.target));
-              }).catch(e=>{console.error(e);process.exit(1)});
-          '
+          PROD_DATABASE_URL: ${{ secrets.PROD_DATABASE_URL }}
+          PROD_DIRECT_URL: ${{ secrets.PROD_DIRECT_URL }}
+          PROD_AUTH_SECRET: ${{ secrets.PROD_AUTH_SECRET }}
+          PROD_EMAIL_FROM: ${{ secrets.PROD_EMAIL_FROM }}
+        run: node scripts/repair-prod-env.mjs
 
       - name: Configure staging
-        if: ${{ false }}
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           STAGING_DIRECT_URL: ${{ secrets.STAGING_DIRECT_URL }}
@@ -69,5 +65,5 @@ jobs:
           {
             echo "### Staging configured"
             echo ""
-            echo "Now run **Reset staging** to migrate and seed, then check <https://test.deltechmun.in>."
+            echo "Run **Reset staging** to migrate and seed, then check <https://test.deltechmun.in>."
           } >> "$GITHUB_STEP_SUMMARY"
