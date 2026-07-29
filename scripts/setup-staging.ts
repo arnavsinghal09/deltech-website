@@ -121,15 +121,29 @@ async function api(
 const vercel = (path: string, init?: RequestInit) =>
   api(`https://api.vercel.com${path}`, VERCEL_TOKEN, init)
 
-/** Written by `vercel pull` / `vercel link`. */
+/**
+ * Written by `vercel pull` / `vercel link`, or passed explicitly.
+ *
+ * The env override matters: the production Vercel project lives on a different
+ * account from most contributors', so a local CLI login cannot see it and the
+ * API returns 404. The usable token is the VERCEL_TOKEN repo secret, which is
+ * only readable inside Actions, so this also runs from setup-staging.yml.
+ */
 function linkedProject(): { projectId: string; orgId: string } {
+  const projectId = process.env.VERCEL_PROJECT_ID?.trim()
+  const orgId = process.env.VERCEL_ORG_ID?.trim()
+  if (projectId && orgId) return { projectId, orgId }
+
   try {
     return JSON.parse(readFileSync(".vercel/project.json", "utf8")) as {
       projectId: string
       orgId: string
     }
   } catch {
-    console.error("\nNo .vercel/project.json. Run `npx vercel link` first.\n")
+    console.error(
+      "\nNo Vercel project. Either run `npx vercel link`, or set VERCEL_PROJECT_ID " +
+        "and VERCEL_ORG_ID.\n",
+    )
     process.exit(1)
   }
 }
@@ -268,6 +282,12 @@ async function removeOldProject(orgId: string) {
 }
 
 function setSecret(name: string, value: string) {
+  // GITHUB_TOKEN cannot write Actions secrets, so inside a workflow this is
+  // expected to fail; the secrets are set from a maintainer's machine instead.
+  if (process.env.SKIP_GH_SECRETS === "1") {
+    skipped.push(`GitHub secret ${name} (SKIP_GH_SECRETS=1)`)
+    return
+  }
   try {
     execFileSync("gh", ["secret", "set", name, "--body", value], { stdio: "ignore" })
     changed.push(`GitHub secret ${name} set`)
@@ -277,6 +297,10 @@ function setSecret(name: string, value: string) {
 }
 
 function protectMain() {
+  if (process.env.SKIP_GH_SECRETS === "1") {
+    skipped.push("Branch protection (SKIP_GH_SECRETS=1)")
+    return
+  }
   try {
     const repo = sh("gh", ["repo", "view", "--json", "nameWithOwner", "-q", ".nameWithOwner"])
     execFileSync(

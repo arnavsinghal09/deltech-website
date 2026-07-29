@@ -40,16 +40,13 @@ jobs:
       # pooler.supabase.com). db.<ref>.supabase.co is IPv6-only and GitHub
       # runners have no IPv6, so it fails with P1001.
       - name: Migrate staging
-        id: migrate
         env:
           DIRECT_URL: ${{ secrets.STAGING_DIRECT_URL }}
         run: |
           if [ -z "$DIRECT_URL" ]; then
-            echo "staging=false" >> "$GITHUB_OUTPUT"
-            echo "::warning::STAGING_DIRECT_URL is not set, so this preview still runs against whatever the Preview env scope points at, which today is PRODUCTION. Run 'npm run setup:staging'."
+            echo "::warning::STAGING_DIRECT_URL is not set, so the staging migration was skipped."
             exit 0
           fi
-          echo "staging=true" >> "$GITHUB_OUTPUT"
           npx prisma migrate deploy
 
       - name: Install Vercel CLI
@@ -61,6 +58,22 @@ jobs:
       # carries the staging database and staging credentials.
       - name: Pull Vercel preview env
         run: vercel pull --yes --environment=preview --token=${{ secrets.VERCEL_TOKEN }}
+
+      # `vercel pull` above wrote the Preview-scoped env to
+      # .vercel/.env.preview.local. That, not the migration, is what the
+      # deployed app reads, so it is what the PR comment must report.
+      - name: Check which database this preview will use
+        id: db
+        env:
+          STAGING_DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
+        run: |
+          PULLED=$(grep -m1 '^DATABASE_URL=' .vercel/.env.preview.local 2>/dev/null | cut -d= -f2- | tr -d '"' || true)
+          if [ -n "$STAGING_DATABASE_URL" ] && [ "$PULLED" = "$STAGING_DATABASE_URL" ]; then
+            echo "staging=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "staging=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::The Preview env scope does not point at the staging database, so this preview runs against PRODUCTION. Run the 'Set up staging (Vercel side)' workflow."
+          fi
 
       - name: Build
         run: vercel build --token=${{ secrets.VERCEL_TOKEN }}
@@ -78,14 +91,14 @@ jobs:
             // Tell the truth about which database this is on: before
             // `npm run setup:staging` has been run there is no staging DB, and
             // the Preview env scope still resolves to production.
-            const onStaging = "${{ steps.migrate.outputs.staging }}" === "true";
+            const onStaging = "${{ steps.db.outputs.staging }}" === "true";
             const body = [
               marker,
               `🔍 **Preview:** ${url}`,
               "",
               onStaging
                 ? "Runs against the **staging** database, not production. Break whatever you like."
-                : "⚠️ **Still on the production database.** `npm run setup:staging` has not been run yet, so treat this as live data.",
+                : "⚠️ **Still on the production database.** The Preview env scope has not been repointed yet, so treat this as live data.",
               "Email and Razorpay are live here, so links in any mail this sends point back at this preview.",
               onStaging ? "Messy state? Run the **Reset staging** workflow." : "",
             ].filter(Boolean).join("\n");
