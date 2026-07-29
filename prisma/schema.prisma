@@ -112,6 +112,7 @@ model Portfolio {
   allotment   Allotment?
 
   @@unique([committeeId, name])
+  @@index([status])
 }
 
 enum PortfolioStatus {
@@ -160,6 +161,10 @@ model Delegate {
   createdAt          DateTime   @default(now())
   checkedInAt        DateTime?
   checkedInBy        String?
+
+  @@index([status])
+  @@index([createdAt])
+  @@index([status, checkedInAt])
 }
 
 enum Source {
@@ -200,6 +205,8 @@ model Allotment {
   allottedAt  DateTime  @default(now())
   allottedBy  String
   emailSentAt DateTime?
+
+  @@index([committeeId])
 }
 
 // ---- Payments ----
@@ -217,6 +224,8 @@ model Payment {
   method            String?
   confirmedAt       DateTime?
   createdAt         DateTime  @default(now())
+
+  @@index([status])
 }
 
 model ImportPreset {
@@ -237,6 +246,9 @@ model EmailLog {
   error      String?
   sentAt     DateTime  @default(now())
   delegate   Delegate? @relation(fields: [delegateId], references: [id])
+
+  @@index([delegateId])
+  @@index([status, sentAt])
 }
 
 enum PayStatus {
@@ -342,6 +354,8 @@ model QuarantinedRow {
   errors     String[]
   resolvedAt DateTime?
   createdAt  DateTime  @default(now())
+
+  @@index([resolvedAt])
 }
 
 // ---- Blog ----
@@ -361,6 +375,9 @@ model Post {
   reviewNote  String?
   submittedAt DateTime?
   publishedAt DateTime?
+
+  @@index([authorId])
+  @@index([status, publishedAt])
 }
 
 enum PostStatus {
@@ -396,6 +413,8 @@ model Slide {
   type           SlideType
   prompt         String
   config         Json
+
+  @@index([presentationId, order])
 }
 
 enum SlideType {

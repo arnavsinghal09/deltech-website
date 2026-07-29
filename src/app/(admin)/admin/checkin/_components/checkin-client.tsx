@@ -40,6 +40,7 @@ interface Filters {
 interface Props {
   delegates: CheckinDelegate[]
   filters: Filters
+  capped?: boolean
 }
 
 const STATUS_OPTIONS = ["REGISTERED", "ALLOTTED", "PAYMENT_SENT", "CONFIRMED", "CANCELLED", "WAITLISTED"]
@@ -71,7 +72,7 @@ function buildUrl(filters: Filters) {
   return `/admin/checkin${qs ? `?${qs}` : ""}`
 }
 
-export function CheckinClient({ delegates, filters }: Props) {
+export function CheckinClient({ delegates, filters, capped }: Props) {
   const router = useRouter()
   const [, startTransition] = useTransition()
   const [searchValue, setSearchValue] = useState(filters.q)
@@ -146,6 +147,13 @@ export function CheckinClient({ delegates, filters }: Props) {
           </SelectContent>
         </Select>
       </div>
+
+      {capped && (
+        <p className="rounded-md border border-amber-500/40 bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:bg-amber-950/30 dark:text-amber-300">
+          Showing the first {delegates.length} matches. Search by name, email or institution to
+          narrow it down.
+        </p>
+      )}
 
       {/* Table */}
       <div className="editorial-card overflow-x-auto">

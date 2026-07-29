@@ -16,7 +16,7 @@ const TYPE_LABEL: Record<string, string> = {
 };
 
 export default async function LandingPage() {
-  const [content, committees, memberCount, postCount] = await Promise.all([
+  const [content, committees, portfolioCounts, memberCount, postCount] = await Promise.all([
     getContent(),
     prisma.committee.findMany({
       where: { isActive: true },
@@ -27,18 +27,24 @@ export default async function LandingPage() {
         agenda: true,
         type: true,
         doubleDelegation: true,
-        portfolios: { select: { status: true } },
       },
+    }),
+    // The public homepage is force-dynamic, so this ran on every visit. A
+    // grouped count is a handful of rows instead of one per seat.
+    prisma.portfolio.groupBy({
+      by: ["committeeId", "status"],
+      _count: { _all: true },
     }),
     prisma.member.count({ where: { isActive: true } }),
     prisma.post.count({ where: { status: "PUBLISHED" } }),
   ]);
 
-  const openPortfolioCount = committees.reduce(
-    (total, committee) =>
-      total + committee.portfolios.filter((portfolio) => portfolio.status === "AVAILABLE").length,
-    0,
-  );
+  const openByCommittee = new Map<string, number>();
+  for (const g of portfolioCounts) {
+    if (g.status !== "AVAILABLE") continue;
+    openByCommittee.set(g.committeeId, (openByCommittee.get(g.committeeId) ?? 0) + g._count._all);
+  }
+  const openPortfolioCount = [...openByCommittee.values()].reduce((a, b) => a + b, 0);
   const ctaHref = content.registrationOpen ? "/register" : "/register/closed";
 
   return (
@@ -96,7 +102,7 @@ export default async function LandingPage() {
 
           <div>
             {committees.map((committee, index) => {
-              const open = committee.portfolios.filter((portfolio) => portfolio.status === "AVAILABLE").length;
+              const open = openByCommittee.get(committee.id) ?? 0;
               return (
                 <Link
                   key={committee.id}

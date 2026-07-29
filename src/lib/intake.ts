@@ -1,3 +1,4 @@
+import { cache } from "react"
 import { prisma } from "@/lib/prisma"
 import { mappedRowSchema, type MappedRow } from "@/lib/schemas/import"
 import type { Source, Prisma } from "@/generated/prisma/client"
@@ -102,13 +103,15 @@ export function normalizeRow(input: MappedRow, committees: CommitteeRef[]): Norm
   }
 }
 
-export async function getCommitteeRefs(): Promise<CommitteeRef[]> {
-  const committees = await prisma.committee.findMany({
+// Deduped per request. createDelegateFromRow calls this as its first line, and
+// its callers loop: a 300-row import fired 300 identical committee queries, and
+// the nightly gform sync did the same for every row of every sheet.
+export const getCommitteeRefs = cache(async (): Promise<CommitteeRef[]> => {
+  return prisma.committee.findMany({
     where: { isActive: true },
     select: { id: true, name: true, slug: true, aliases: true },
   })
-  return committees
-}
+})
 
 // ---------------------------------------------------------------------------
 // Row → Delegate (single write path for every intake channel)

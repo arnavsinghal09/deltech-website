@@ -16,24 +16,25 @@ export async function POST(request: Request) {
 
   const { sessionId, slideId, nickname, avatar, answer, submittedAt } = body
 
-  // Verify session is active
-  const session = await prisma.quizSession.findUnique({
-    where: { id: sessionId },
-    select: { status: true, presentationId: true },
-  })
+  // These three are independent, so one round trip instead of three. On a
+  // phone at the venue that is most of the perceived latency of answering.
+  const [session, slide, existing] = await Promise.all([
+    prisma.quizSession.findUnique({
+      where: { id: sessionId },
+      select: { status: true, presentationId: true },
+    }),
+    prisma.slide.findUnique({
+      where: { id: slideId },
+      select: { type: true, config: true },
+    }),
+    prisma.response.findFirst({ where: { sessionId, slideId, nickname } }),
+  ])
+
   if (!session || session.status === "ended") {
     return NextResponse.json({ error: "session_not_active" }, { status: 400 })
   }
-
-  // Get slide for scoring
-  const slide = await prisma.slide.findUnique({
-    where: { id: slideId },
-    select: { type: true, config: true },
-  })
   if (!slide) return NextResponse.json({ error: "slide_not_found" }, { status: 404 })
-
-  // Prevent double submission
-  const existing = await prisma.response.findFirst({ where: { sessionId, slideId, nickname } })
+  // Friendly path only; the unique index is the actual guard on the create.
   if (existing) {
     return NextResponse.json({ error: "already_submitted" }, { status: 409 })
   }
@@ -77,17 +78,27 @@ export async function POST(request: Request) {
     },
   })
 
-  // Current rank for this participant (total points)
+  // Current rank for this participant (total points).
+  //
+  // This used to groupBy every nickname in the session and filter in JS, so a
+  // 200-person 20-slide quiz aggregated over a table growing to 4000 rows on
+  // every single submission, all to show one number the participant sees again
+  // on the real leaderboard 15 seconds later. Two aggregates instead.
   let rank: number | null = null
   if (correct !== null) {
-    const allNicknames = await prisma.response.groupBy({
+    const mine = await prisma.response.aggregate({
+      where: { sessionId, nickname },
+      _sum: { points: true },
+    })
+    const myTotal = mine._sum.points ?? points
+
+    const ahead = await prisma.response.groupBy({
       by: ["nickname"],
       where: { sessionId },
       _sum: { points: true },
+      having: { points: { _sum: { gt: myTotal } } },
     })
-    const myTotal = allNicknames.find((r) => r.nickname === nickname)?._sum.points ?? points
-    const aheadOf = allNicknames.filter((r) => (r._sum.points ?? 0) > myTotal).length
-    rank = aheadOf + 1
+    rank = ahead.length + 1
   }
 
   return NextResponse.json({ correct, points, rank })
