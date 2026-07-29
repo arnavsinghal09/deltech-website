@@ -2,10 +2,10 @@
 
 ## Two environments, one Vercel project
 
-| | Vercel env scope | Database | URL |
-|---|---|---|---|
-| Production | Production | prod Supabase | `deltechmun.in` |
-| Staging (tracks `main`) | Preview | **staging** Supabase | `test.deltechmun.in` |
+|                         | Vercel env scope | Database         | URL                  |
+| ----------------------- | ---------------- | ---------------- | -------------------- |
+| Production              | Production       | prod Supabase    | `deltechmun.in`      |
+| Staging (tracks `main`) | Preview          | **staging Neon** | `test.deltechmun.in` |
 
 Staging and production are separated by Vercel's env scopes rather than by two
 projects: no second project to keep in sync and no extra project-ID secrets.
@@ -31,12 +31,13 @@ into staging.**
 
 ## Workflows
 
-| Workflow | Trigger | Does |
-|---|---|---|
-| `check.yml` (CI) | PR, and called by `deploy.yml` | `tsc --noEmit`, `npm run check`, `next build`. The gate. |
-| `deploy.yml` | push `main` | `ci` → then `staging` → then `production`. |
-| `reset-staging.yml` | manual | Wipes and reseeds Neon, then copies integration configuration. |
-| `staging-cron.yml` | daily/manual | Invokes both protected cron routes on staging. |
+| Workflow            | Trigger                        | Does                                                                                      |
+| ------------------- | ------------------------------ | ----------------------------------------------------------------------------------------- |
+| `check.yml` (CI)    | PR, and called by `deploy.yml` | `tsc --noEmit`, `npm run check`, `next build`. The gate.                                  |
+| `deploy.yml`        | push `main`; manual            | Push: `ci` → `staging` → `production`. Manual: `ci` → `staging` only.                     |
+| `setup-staging.yml` | manual                         | Repairs/configures Vercel env; can optionally deploy and smoke-test staging before merge. |
+| `reset-staging.yml` | manual                         | Wipes and reseeds Neon, then copies integration configuration.                            |
+| `staging-cron.yml`  | daily/manual                   | Invokes both protected cron routes on staging.                                            |
 
 ```
 push main
@@ -82,10 +83,10 @@ serve its database-backed homepage and availability routes.
 ## Setup
 
 **Staging Postgres lives on Neon, not Supabase.** Supabase's free tier caps a
-*user* at 2 active projects across all organisations, and this account is at the
+_user_ at 2 active projects across all organisations, and this account is at the
 limit (`deltech-mun` + `health-care-optimization`), so no third project can be
 created anywhere. Neon's free tier has no such cap, and its endpoints are
-IPv4-reachable, which sidesteps the IPv6 problem below entirely.
+IPv4-reachable, which sidesteps the IPv6 problem above entirely.
 
 Supabase is still used by staging for **Realtime** (the quiz) and **Storage**
 (blog images): `NEXT_PUBLIC_SUPABASE_*` are not database credentials. Staging
@@ -124,7 +125,7 @@ records.
   strings are on the Connect panel.
 - **DNS.** Point `test.deltechmun.in` at Vercel yourself.
 - **`PROD_DIRECT_URL`.** Your local `DIRECT_URL` is the IPv6-only host, so the
-  script will not use it. Set the secret to the production *session pooler* URL.
+  script will not use it. Set the secret to the production _session pooler_ URL.
 - **Google Apps Script deployment.** Copy the updated
   `docs/apps-script/gform-webhook.gs` into the live form's linked sheet so new
   submissions fan out to both Production and staging. The daily staging sync
