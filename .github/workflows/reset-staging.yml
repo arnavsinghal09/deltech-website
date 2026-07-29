@@ -41,7 +41,7 @@ jobs:
       # STAGING_DIRECT_URL only; the seed itself refuses to run against the
       # production project ref as a second line of defence.
       - name: Reset schema
-        run: npx prisma migrate reset --force --skip-seed
+        run: npx prisma migrate reset --force
         env:
           DIRECT_URL: ${{ secrets.STAGING_DIRECT_URL }}
 

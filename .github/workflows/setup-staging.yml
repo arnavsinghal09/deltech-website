@@ -50,6 +50,18 @@ jobs:
           PROD_DIRECT_URL: ${{ secrets.PROD_DIRECT_URL }}
           PROD_AUTH_SECRET: ${{ secrets.PROD_AUTH_SECRET }}
           PROD_EMAIL_FROM: ${{ secrets.PROD_EMAIL_FROM }}
+          PROD_ADMIN_EMAIL: ${{ secrets.PROD_ADMIN_EMAIL }}
+          PROD_AUTH_RESEND_KEY: ${{ secrets.PROD_AUTH_RESEND_KEY }}
+          PROD_RAZORPAY_KEY_ID: ${{ secrets.PROD_RAZORPAY_KEY_ID }}
+          PROD_RAZORPAY_KEY_SECRET: ${{ secrets.PROD_RAZORPAY_KEY_SECRET }}
+          PROD_RAZORPAY_WEBHOOK_SECRET: ${{ secrets.PROD_RAZORPAY_WEBHOOK_SECRET }}
+          PROD_GFORM_SHARED_SECRET: ${{ secrets.PROD_GFORM_SHARED_SECRET }}
+          PROD_CRON_SECRET: ${{ secrets.PROD_CRON_SECRET }}
+          PROD_SHEET_SYNC_SECRET: ${{ secrets.PROD_SHEET_SYNC_SECRET }}
+          PROD_NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.PROD_NEXT_PUBLIC_SUPABASE_URL }}
+          PROD_NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.PROD_NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}
+          PROD_GROQ_API_KEY: ${{ secrets.PROD_GROQ_API_KEY }}
+          PROD_GROQ_MODEL: ${{ secrets.PROD_GROQ_MODEL }}
         run: node scripts/repair-prod-env.mjs
 
       - name: Configure staging
@@ -57,6 +69,19 @@ jobs:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           STAGING_DIRECT_URL: ${{ secrets.STAGING_DIRECT_URL }}
           STAGING_DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
+          PROD_DIRECT_URL: ${{ secrets.PROD_DIRECT_URL }}
+          PROD_ADMIN_EMAIL: ${{ secrets.PROD_ADMIN_EMAIL }}
+          PROD_AUTH_RESEND_KEY: ${{ secrets.PROD_AUTH_RESEND_KEY }}
+          PROD_RAZORPAY_KEY_ID: ${{ secrets.PROD_RAZORPAY_KEY_ID }}
+          PROD_RAZORPAY_KEY_SECRET: ${{ secrets.PROD_RAZORPAY_KEY_SECRET }}
+          PROD_RAZORPAY_WEBHOOK_SECRET: ${{ secrets.PROD_RAZORPAY_WEBHOOK_SECRET }}
+          PROD_GFORM_SHARED_SECRET: ${{ secrets.PROD_GFORM_SHARED_SECRET }}
+          PROD_CRON_SECRET: ${{ secrets.PROD_CRON_SECRET }}
+          PROD_SHEET_SYNC_SECRET: ${{ secrets.PROD_SHEET_SYNC_SECRET }}
+          PROD_NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.PROD_NEXT_PUBLIC_SUPABASE_URL }}
+          PROD_NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.PROD_NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}
+          PROD_GROQ_API_KEY: ${{ secrets.PROD_GROQ_API_KEY }}
+          PROD_GROQ_MODEL: ${{ secrets.PROD_GROQ_MODEL }}
           SKIP_GH_SECRETS: "1"
         run: npm run setup:staging
 

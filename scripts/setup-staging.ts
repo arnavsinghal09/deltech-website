@@ -169,6 +169,7 @@ async function setPreviewEnv(projectId: string, orgId: string) {
   const envs = (current.body as { envs: VercelEnv[] }).envs
 
   const prodValue = (key: string) =>
+    process.env[`PROD_${key}`]?.trim() ||
     envs.find((e) => e.key === key && (e.target ?? []).includes("production"))?.value
   const previewOnlyValue = (key: string) =>
     envs.find(

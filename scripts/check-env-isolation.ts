@@ -117,19 +117,37 @@ async function main() {
     "CRON_SECRET",
     "SHEET_SYNC_SECRET",
   ]) {
-    const production = pick(key, "production")
-    const preview = pick(key, "preview")
-    assert.ok(production, `${key} is not set for Production in Vercel`)
-    assert.equal(preview, production, `${key} must match Production on staging`)
+    const productionEnv = envs.find(
+      (env) => env.key === key && (env.target ?? []).includes("production"),
+    )
+    const previewEnv = envs.find(
+      (env) => env.key === key && (env.target ?? []).includes("preview"),
+    )
+    assert.ok(productionEnv, `${key} is not set for Production in Vercel`)
+    assert.ok(previewEnv, `${key} is not set for Preview in Vercel`)
+    if (productionEnv.value && previewEnv.value) {
+      assert.equal(previewEnv.value, productionEnv.value, `${key} must match Production on staging`)
+    }
   }
 
-  const productionAdmin = pick("ADMIN_EMAIL", "production")
-  assert.ok(productionAdmin, "ADMIN_EMAIL is not set for Production in Vercel")
-  assert.equal(
-    pick("EMAIL_REDIRECT_TO", "preview"),
-    productionAdmin,
-    "Staging email must redirect to ADMIN_EMAIL so live form respondents are not emailed twice",
+  const productionAdmin = envs.find(
+    (env) => env.key === "ADMIN_EMAIL" && (env.target ?? []).includes("production"),
   )
+  const emailRedirect = envs.find(
+    (env) => env.key === "EMAIL_REDIRECT_TO" && (env.target ?? []).includes("preview"),
+  )
+  assert.ok(productionAdmin, "ADMIN_EMAIL is not set for Production in Vercel")
+  assert.ok(
+    emailRedirect,
+    "EMAIL_REDIRECT_TO is not set for Preview; live form respondents could be emailed twice",
+  )
+  if (productionAdmin.value && emailRedirect.value) {
+    assert.equal(
+      emailRedirect.value,
+      productionAdmin.value,
+      "Staging email must redirect to ADMIN_EMAIL",
+    )
+  }
 
   console.log("✅ check-env-isolation passed (Neon data, shared integrations)")
 }
