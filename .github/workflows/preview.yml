@@ -31,6 +31,15 @@ jobs:
       - name: Install
         run: npm ci
 
+      # Turns a cryptic Prisma connection error into something actionable.
+      # Previews genuinely are not ready until the staging database exists.
+      - name: Require staging database secret
+        run: |
+          if [ -z "${{ secrets.STAGING_DIRECT_URL }}" ]; then
+            echo "::error::STAGING_DIRECT_URL is not set. Run 'npm run setup:staging' first (see docs/CI.md)."
+            exit 1
+          fi
+
       # A preview of a branch that adds a column is useless if the database
       # does not have it. Staging is shared, so this applies the PR's
       # migrations there; reset-staging.yml is the cleanup valve for
