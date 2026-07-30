@@ -2,6 +2,8 @@ name: CI
 
 on:
   pull_request:
+  # Allows CI to be rerun on main without deploying staging or Production.
+  workflow_dispatch:
   # deploy.yml calls this on pushes to main, so the main pipeline gates on this
   # job instead of duplicating its steps. Before this, deploy.yml ran in
   # parallel with CI on the same push and a red build still shipped to
