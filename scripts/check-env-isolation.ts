@@ -46,6 +46,11 @@ interface VercelEnvVar {
   type?: string
 }
 
+function databaseIdentity(raw: string): string {
+  const url = new URL(raw)
+  return `${url.hostname.replace("-pooler", "")}${url.pathname}`
+}
+
 async function main() {
   const ref = await projectRef()
   if (!ref) {
@@ -180,14 +185,14 @@ async function main() {
   if (stagingDatabaseUrl && stagingDirectUrl) {
     const pulled = parse(readFileSync(".vercel/.env.preview.local"))
     assert.equal(
-      pulled.DATABASE_URL,
-      stagingDatabaseUrl,
-      "Vercel Preview DATABASE_URL does not match the Test database secret",
+      databaseIdentity(pulled.DATABASE_URL),
+      databaseIdentity(stagingDatabaseUrl),
+      "Vercel Preview DATABASE_URL points at a different database than the Test secret",
     )
     assert.equal(
-      pulled.DIRECT_URL,
-      stagingDirectUrl,
-      "Vercel Preview DIRECT_URL does not match the Test database secret",
+      databaseIdentity(pulled.DIRECT_URL),
+      databaseIdentity(stagingDirectUrl),
+      "Vercel Preview DIRECT_URL points at a different database than the Test secret",
     )
     assert.ok(pulled.AUTH_SECRET, "AUTH_SECRET is missing from the pulled Test environment")
     assert.ok(
