@@ -6,6 +6,7 @@ import { requireAdmin } from "@/lib/authz"
 import { audit } from "@/lib/audit"
 import { deleteBlockReason } from "@/lib/user-admin"
 import type { Prisma, Role } from "@/generated/prisma/client"
+import { detailedChangeMeta } from "@/lib/audit-change"
 
 const ASSIGNABLE: Role[] = ["ADMIN", "MAINTAINER", "AUTHOR", "REGISTERER"]
 
@@ -121,10 +122,17 @@ export async function setUserRole(userId: string, role: Role): Promise<Result> {
     throw err
   }
 
-  await audit(session.user?.email ?? "unknown", "user.setRole", "User", userId, {
-    email: target.email,
-    role,
-  })
+  await audit(
+    session.user?.email ?? "unknown",
+    "user.setRole",
+    "User",
+    userId,
+    detailedChangeMeta({
+      summary: `Changed ${target.email}'s role.`,
+      before: { role: target.role },
+      after: { role },
+    }),
+  )
   revalidatePath("/admin/users")
   return { success: true }
 }
@@ -154,9 +162,17 @@ export async function setUserDisabled(userId: string, disabled: boolean): Promis
     throw err
   }
 
-  await audit(session.user?.email ?? "unknown", disabled ? "user.disable" : "user.enable", "User", userId, {
-    email: target.email,
-  })
+  await audit(
+    session.user?.email ?? "unknown",
+    disabled ? "user.disable" : "user.enable",
+    "User",
+    userId,
+    detailedChangeMeta({
+      summary: disabled ? `Disabled ${target.email}.` : `Enabled ${target.email}.`,
+      before: { disabled: !!target.disabledAt },
+      after: { disabled },
+    }),
+  )
   revalidatePath("/admin/users")
   return { success: true }
 }

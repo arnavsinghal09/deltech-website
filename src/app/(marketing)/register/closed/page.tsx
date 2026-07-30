@@ -4,11 +4,12 @@ import { getContent } from "@/lib/settings";
 import { t } from "@/content/strings";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { deriveEventState } from "@/lib/event-state";
 
 export default async function RegistrationClosedPage() {
   const content = await getContent();
 
-  if (content.registrationOpen) redirect("/register");
+  if (deriveEventState(content).acceptsRegistrations) redirect("/register");
 
   return (
     <div className="noise-wash grid min-h-[calc(100svh-5rem)] place-items-center px-4 py-20">

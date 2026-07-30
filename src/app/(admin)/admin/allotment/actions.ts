@@ -1,5 +1,6 @@
 "use server"
 
+import { randomUUID } from "node:crypto"
 import { prisma } from "@/lib/prisma"
 import { requireStaff, requireAdmin } from "@/lib/authz"
 import { audit } from "@/lib/audit"
@@ -7,6 +8,7 @@ import { getActiveProvider } from "@/lib/payments"
 import { sendAllotmentEmail, sendCoDelegateNotice } from "@/lib/resend"
 import { syncSheetCell, syncSheetForDelegate } from "@/lib/sheet-sync"
 import { getContent } from "@/lib/settings"
+import { deriveEventState } from "@/lib/event-state"
 
 function isPrismaP2002(err: unknown): boolean {
   // Prisma unique constraint violation
@@ -25,22 +27,33 @@ function isPrismaP2002(err: unknown): boolean {
 // updateMany count and always report success, so the dialog's `heldByUs` was
 // always true, so `onHoldByOther` was always false and the "on hold by another
 // admin" warning could never render. The soft-lock existed but never fired.
-export async function holdPortfolio(portfolioId: string): Promise<{ success: boolean }> {
+export async function holdPortfolio(
+  portfolioId: string,
+): Promise<{ success: boolean; holdToken?: string }> {
   await requireStaff()
+  const now = new Date()
+  const holdToken = randomUUID()
+  const holdExpiresAt = new Date(now.getTime() + 2 * 60 * 1000)
   const { count } = await prisma.portfolio.updateMany({
-    where: { id: portfolioId, status: "AVAILABLE" },
-    data: { status: "ON_HOLD" },
+    where: {
+      id: portfolioId,
+      OR: [
+        { status: "AVAILABLE" },
+        { status: "ON_HOLD", holdExpiresAt: { lt: now } },
+      ],
+    },
+    data: { status: "ON_HOLD", holdToken, holdExpiresAt },
   })
-  return { success: count === 1 }
+  return count === 1 ? { success: true, holdToken } : { success: false }
 }
 
 // ── releaseHold ────────────────────────────────────────────────────────────────
 // Releases ON_HOLD back to AVAILABLE (called when dialog closes without confirming).
-export async function releaseHold(portfolioId: string): Promise<void> {
+export async function releaseHold(portfolioId: string, holdToken: string): Promise<void> {
   await requireStaff()
   await prisma.portfolio.updateMany({
-    where: { id: portfolioId, status: "ON_HOLD" },
-    data: { status: "AVAILABLE" },
+    where: { id: portfolioId, status: "ON_HOLD", holdToken },
+    data: { status: "AVAILABLE", holdToken: null, holdExpiresAt: null },
   })
 }
 
@@ -52,27 +65,39 @@ export async function allotPortfolio(input: {
   portfolioId: string
   committeeId: string
   delegateId: string
+  holdToken: string
 }): Promise<{
   success: boolean
   error?: string
   warning?: string
-  code?: "ALREADY_ALLOTTED" | "DELEGATE_UNAVAILABLE"
+  code?: "ALREADY_ALLOTTED" | "DELEGATE_UNAVAILABLE" | "HOLD_LOST" | "FEE_MISSING"
 }> {
   const session = await requireStaff()
   const adminEmail = session.user?.email ?? "admin"
   const content = await getContent()
-  const paymentsEnabled = content.eventMode !== "INTRA_MUN" && content.paymentsEnabled
+  const paymentsEnabled = deriveEventState(content).paymentsRequired
 
   try {
     const txResult = await prisma.$transaction(async (tx) => {
       // 1. Re-check portfolio has not already been allotted inside the transaction
       const portfolio = await tx.portfolio.findUnique({
         where: { id: input.portfolioId },
-        select: { status: true },
+        select: { status: true, committeeId: true, holdToken: true, holdExpiresAt: true },
       })
       if (!portfolio || portfolio.status === "ALLOTTED") {
         const e = new Error("Already allotted") as Error & { code: string }
         e.code = "ALREADY_ALLOTTED"
+        throw e
+      }
+      if (
+        portfolio.committeeId !== input.committeeId ||
+        portfolio.status !== "ON_HOLD" ||
+        portfolio.holdToken !== input.holdToken ||
+        !portfolio.holdExpiresAt ||
+        portfolio.holdExpiresAt <= new Date()
+      ) {
+        const e = new Error("Hold lost") as Error & { code: string }
+        e.code = "HOLD_LOST"
         throw e
       }
 
@@ -100,6 +125,11 @@ export async function allotPortfolio(input: {
           isDtu: delegate.isDtu,
         },
       }) : null
+      if (paymentsEnabled && !fee) {
+        const e = new Error("Fee missing") as Error & { code: string }
+        e.code = "FEE_MISSING"
+        throw e
+      }
 
       // 5. Payment provider from settings
       const providerSetting = await tx.setting.findUnique({ where: { key: "paymentProvider" } })
@@ -119,7 +149,7 @@ export async function allotPortfolio(input: {
       // 7. Portfolio → ALLOTTED
       await tx.portfolio.update({
         where: { id: input.portfolioId },
-        data: { status: "ALLOTTED" },
+        data: { status: "ALLOTTED", holdToken: null, holdExpiresAt: null },
       })
 
       // 8. Delegate → ALLOTTED
@@ -232,6 +262,20 @@ export async function allotPortfolio(input: {
         code: "DELEGATE_UNAVAILABLE",
       }
     }
+    if (e.code === "HOLD_LOST") {
+      return {
+        success: false,
+        error: "Your hold expired or another organiser took this portfolio. Reopen it and try again.",
+        code: "HOLD_LOST",
+      }
+    }
+    if (e.code === "FEE_MISSING") {
+      return {
+        success: false,
+        error: "Add the matching fee before allotting this paid event.",
+        code: "FEE_MISSING",
+      }
+    }
     return { success: false, error: "Allotment failed. Please try again." }
   }
 }
@@ -253,6 +297,14 @@ export async function revokeAllotment(input: {
 
   try {
     await prisma.$transaction(async (tx) => {
+      const payment = await tx.payment.findUnique({
+        where: { delegateId: input.delegateId },
+        select: { status: true },
+      })
+      if (payment?.status === "SENT") throw new Error("LIVE_PAYMENT_LINK")
+      if (payment && ["PAID", "OFFLINE", "COMPED"].includes(payment.status)) {
+        throw new Error("PAYMENT_FINAL")
+      }
       await tx.allotment.delete({ where: { id: input.allotmentId } })
 
       await tx.portfolio.update({
@@ -266,7 +318,7 @@ export async function revokeAllotment(input: {
       })
 
       await tx.payment.deleteMany({
-        where: { delegateId: input.delegateId, status: "PENDING" },
+        where: { delegateId: input.delegateId, status: { in: ["PENDING", "FAILED"] } },
       })
     })
 
@@ -278,7 +330,13 @@ export async function revokeAllotment(input: {
     }
 
     return { success: true }
-  } catch {
+  } catch (error) {
+    if (error instanceof Error && error.message === "LIVE_PAYMENT_LINK") {
+      return { success: false, error: "This allotment has a live payment link. Disable that link before revoking it." }
+    }
+    if (error instanceof Error && error.message === "PAYMENT_FINAL") {
+      return { success: false, error: "A confirmed payment cannot be undone by revoking the allotment." }
+    }
     return { success: false, error: "Revoke failed. Please try again." }
   }
 }

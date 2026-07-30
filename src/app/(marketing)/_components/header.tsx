@@ -70,7 +70,7 @@ export function Header({ sections, registrationOpen }: { sections: Content["publ
             href={registrationOpen ? "/register" : "/register/closed"}
             className={cn(buttonVariants({ size: "sm" }), "hidden px-5 lg:inline-flex")}
           >
-            {t("nav.register")}
+            {registrationOpen ? t("nav.register") : "Registration status"}
           </Link>}
 
           {/* Mobile menu toggle */}
@@ -127,7 +127,7 @@ export function Header({ sections, registrationOpen }: { sections: Content["publ
                 onClick={() => setOpen(false)}
                 className={cn(buttonVariants({ size: "lg" }), "mt-8 w-full")}
               >
-                {t("nav.register")}
+                {registrationOpen ? t("nav.register") : "Registration status"}
               </Link>}
               <p className="mt-auto pt-12 text-sm leading-relaxed text-muted-foreground">
                 {t("brand.tagline")}

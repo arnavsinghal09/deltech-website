@@ -1,5 +1,5 @@
 import type { PaymentProvider } from "./index"
-import { appUrl } from "@/lib/app-url"
+import { absoluteAppUrl } from "@/lib/app-url"
 
 export class UpiProvider implements PaymentProvider {
   async createPaymentLink({
@@ -10,6 +10,6 @@ export class UpiProvider implements PaymentProvider {
     amountInr: number
     email: string
   }): Promise<{ link: string }> {
-    return { link: appUrl(`/pay/${publicToken}`) }
+    return { link: absoluteAppUrl(`/pay/${publicToken}`) }
   }
 }

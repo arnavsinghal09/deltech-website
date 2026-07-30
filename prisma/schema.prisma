@@ -111,10 +111,13 @@ model Portfolio {
   tag         String?
   priority    Int             @default(0)
   status      PortfolioStatus @default(AVAILABLE)
+  holdToken   String?
+  holdExpiresAt DateTime?
   allotment   Allotment?
 
   @@unique([committeeId, name])
   @@index([status])
+  @@index([holdExpiresAt])
 }
 
 enum PortfolioStatus {

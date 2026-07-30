@@ -8,9 +8,11 @@ type Props = {
   venue: string;
   sections: Content["publicSections"];
   activeEventName: string;
+  registrationOpen: boolean;
+  showActiveEvent: boolean;
 };
 
-export function Footer({ contacts, conferenceDates, venue, sections, activeEventName }: Props) {
+export function Footer({ contacts, conferenceDates, venue, sections, activeEventName, registrationOpen, showActiveEvent }: Props) {
   return (
     <footer className="mt-auto border-t border-border/70 bg-foreground text-background">
       <div className="section-shell py-16 sm:py-20">
@@ -58,8 +60,8 @@ export function Footer({ contacts, conferenceDates, venue, sections, activeEvent
             <p className="data-label mb-5 text-gold-300">{t("marketing.footerOperations")}</p>
             <ul className="space-y-3 text-[0.9375rem]">
               {sections.registration && <li>
-                <Link href="/register" className="text-background/68 transition-colors hover:text-background">
-                  {t("nav.register")}
+                <Link href={registrationOpen ? "/register" : "/register/closed"} className="text-background/68 transition-colors hover:text-background">
+                  {registrationOpen ? t("nav.register") : "Registration status"}
                 </Link>
               </li>}
               {sections.quiz && <li>
@@ -76,8 +78,8 @@ export function Footer({ contacts, conferenceDates, venue, sections, activeEvent
           </div>
 
           <div>
-            <p className="data-label mb-5 text-gold-300">{sections.activeEvent ? activeEventName || t("marketing.footerBrief") : "Society contact"}</p>
-            {sections.activeEvent && <>
+            <p className="data-label mb-5 text-gold-300">{showActiveEvent ? activeEventName || t("marketing.footerBrief") : "Society contact"}</p>
+            {showActiveEvent && <>
             <p className="text-[0.9375rem] text-background/68">
               {conferenceDates || t("marketing.datesPending")}
             </p>

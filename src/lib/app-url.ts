@@ -17,27 +17,55 @@
 export function resolveAppUrl(
   explicit: string | undefined,
   vercelUrl: string | undefined,
+  productionUrl?: string,
+  hostedProduction = false,
 ): string {
   const set = explicit?.trim()
-  if (set) return stripTrailingSlash(set)
+  const localExplicit = set ? isLoopback(set) : false
+  if (set && !(hostedProduction && localExplicit)) return stripTrailingSlash(set)
+
+  const production = productionUrl?.trim()
+  if (production) {
+    return `https://${stripTrailingSlash(production.replace(/^https?:\/\//, ""))}`
+  }
 
   const vercel = vercelUrl?.trim()
   if (vercel) return `https://${stripTrailingSlash(vercel.replace(/^https?:\/\//, ""))}`
 
-  // Local dev, or a build with neither set. Callers already tolerated "".
-  return ""
+  // Keep localhost useful in local development even when no Vercel variables
+  // exist. Hosted Production is never allowed to emit a loopback link.
+  return set && !hostedProduction ? stripTrailingSlash(set) : ""
 }
 
 function stripTrailingSlash(s: string): string {
   return s.replace(/\/+$/, "")
 }
 
+function isLoopback(value: string): boolean {
+  try {
+    const url = new URL(value)
+    return ["localhost", "127.0.0.1", "::1"].includes(url.hostname)
+  } catch {
+    return /^https?:\/\/(?:localhost|127\.0\.0\.1|\[::1\])(?::|\/|$)/i.test(value)
+  }
+}
+
 export const APP_URL: string = resolveAppUrl(
   process.env.NEXT_PUBLIC_APP_URL,
   process.env.NEXT_PUBLIC_VERCEL_URL,
+  process.env.VERCEL_PROJECT_PRODUCTION_URL,
+  process.env.NODE_ENV === "production" && process.env.VERCEL === "1",
 )
 
 /** Join a path onto the deployment origin. Returns the bare path when unset. */
 export function appUrl(path: string): string {
   return `${APP_URL}${path.startsWith("/") ? path : `/${path}`}`
+}
+
+export function absoluteAppUrl(path: string): string {
+  const value = appUrl(path)
+  if (!/^https?:\/\//.test(value)) {
+    throw new Error("The public app URL is not configured.")
+  }
+  return value
 }

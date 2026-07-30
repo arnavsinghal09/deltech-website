@@ -1,6 +1,7 @@
 import { Users, IndianRupee, BedDouble, CheckCircle2, Building2 } from "lucide-react"
 import { prisma } from "@/lib/prisma"
 import { getContent } from "@/lib/settings"
+import { deriveEventState } from "@/lib/event-state"
 import { requireStaff } from "@/lib/authz"
 import { t, type StringKey } from "@/content/strings"
 import { PageHeader } from "../_components/page-header"
@@ -82,7 +83,7 @@ export default async function AdminOverviewPage() {
   ])
 
   const eventActive = content.publicSections.activeEvent
-  const paymentsActive = content.eventMode !== "INTRA_MUN" && content.paymentsEnabled
+  const paymentsActive = deriveEventState(content).paymentsRequired
   const checklist: ChecklistItem[] = [
     { done: true, label: `Operating mode: ${content.eventMode.replace("_", " ")}`, href: "/admin/config" },
     ...(eventActive ? [{

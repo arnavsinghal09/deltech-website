@@ -77,13 +77,14 @@ export function DelegateDrawer({ delegate, committees, onClose, onUpdated }: Pro
   }, [loadLogs])
 
   const runAction = (
-    fn: () => Promise<{ success: boolean; error?: string; delegate?: SerializedDelegate }>,
+    fn: () => Promise<{ success: boolean; error?: string; warning?: string; delegate?: SerializedDelegate }>,
     successMsg: string,
   ) => {
     startTransition(async () => {
       const result = await fn()
       if (result.success && result.delegate) {
-        toast.success(successMsg)
+        if (result.warning) toast.warning(result.warning, { duration: 10000 })
+        else toast.success(successMsg)
         onUpdated(result.delegate)
       } else {
         toast.error(result.error ?? "Action failed.")
@@ -175,7 +176,7 @@ export function DelegateDrawer({ delegate, committees, onClose, onUpdated }: Pro
                       {delegate.status === "REGISTERED" ? "Waitlist" : "Un-waitlist"}
                     </Button>
                   )}
-                  {delegate.status === "ALLOTTED" && (
+                  {(delegate.status === "ALLOTTED" || delegate.status === "PAYMENT_SENT") && (
                     <Button
                       variant="outline"
                       size="sm"
@@ -185,10 +186,10 @@ export function DelegateDrawer({ delegate, committees, onClose, onUpdated }: Pro
                         runAction(() => regeneratePaymentLink(delegate.id), "Payment link regenerated.")
                       }
                     >
-                      <Link2 className="size-3.5" /> Regenerate pay link
+                      <Link2 className="size-3.5" /> Replace pay link
                     </Button>
                   )}
-                  {delegate.status !== "CONFIRMED" && delegate.status !== "CANCELLED" && (
+                  {delegate.allotment && delegate.status !== "CONFIRMED" && delegate.status !== "CANCELLED" && (
                     <Button
                       variant="outline"
                       size="sm"

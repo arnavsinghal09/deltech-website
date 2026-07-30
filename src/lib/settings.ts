@@ -26,14 +26,16 @@ export async function getSetting(key: string): Promise<unknown> {
 }
 
 export async function setContent(partial: Partial<Record<string, unknown>>): Promise<void> {
-  await Promise.all(
-    Object.entries(partial).map(([key, value]) =>
+  const entries = Object.entries(partial).sort(([a], [b]) => a.localeCompare(b));
+  await prisma.$transaction(
+    entries.map(([key, value]) =>
       prisma.setting.upsert({
         where: { key },
         update: { value: value as never },
         create: { key, value: value as never },
       }),
     ),
+    { isolationLevel: "Serializable" },
   );
 }
 
