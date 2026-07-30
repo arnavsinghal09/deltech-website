@@ -117,21 +117,36 @@ async function main() {
     "Staging and Production must not share AUTH_SECRET",
   )
 
-  // These integrations are deliberately shared. Their application writes
-  // still go through Preview's Neon DATABASE_URL.
-  for (const key of [
-    "AUTH_RESEND_KEY",
+  // Resend is already in use and is required in both environments. Other
+  // integrations are mirrored when Production has been configured, but they
+  // must not block an otherwise healthy deployment before the organisation
+  // starts using them.
+  const requiredShared = ["AUTH_RESEND_KEY"]
+  const optionalShared = [
     "RAZORPAY_KEY_ID",
     "RAZORPAY_KEY_SECRET",
     "RAZORPAY_WEBHOOK_SECRET",
     "GFORM_SHARED_SECRET",
     "CRON_SECRET",
     "SHEET_SYNC_SECRET",
-  ]) {
+  ]
+
+  for (const key of requiredShared) {
     const productionEnv = pick(key, "production")
     const previewEnv = pick(key, "preview")
     assert.ok(productionEnv, `${key} is not set for Production in Vercel`)
     assert.ok(previewEnv, `${key} is not set for Preview in Vercel`)
+    if (productionEnv.value && previewEnv.value) {
+      assert.equal(previewEnv.value, productionEnv.value, `${key} must match Production on staging`)
+    }
+  }
+
+  for (const key of optionalShared) {
+    const productionEnv = pick(key, "production")
+    const previewEnv = pick(key, "preview")
+    if (!productionEnv && !previewEnv) continue
+    assert.ok(productionEnv, `${key} exists in Test but not Production`)
+    assert.ok(previewEnv, `${key} is configured in Production but missing from Test`)
     if (productionEnv.value && previewEnv.value) {
       assert.equal(previewEnv.value, productionEnv.value, `${key} must match Production on staging`)
     }
@@ -179,24 +194,25 @@ async function main() {
       pulled.EMAIL_REDIRECT_TO,
       "EMAIL_REDIRECT_TO is missing from Test; real recipients could receive Test mail",
     )
-    for (const key of [
-      "AUTH_RESEND_KEY",
-      "RAZORPAY_KEY_ID",
-      "RAZORPAY_KEY_SECRET",
-      "RAZORPAY_WEBHOOK_SECRET",
-      "GFORM_SHARED_SECRET",
-      "CRON_SECRET",
-      "SHEET_SYNC_SECRET",
-    ]) {
+    for (const key of requiredShared) {
       assert.ok(pulled[key], `${key} is missing from the pulled Test environment`)
       const expected = process.env[`PROD_${key}`]?.trim()
       if (expected) {
         assert.equal(pulled[key], expected, `${key} does not match Production`)
       }
     }
+    for (const key of optionalShared) {
+      const configuredInProduction = Boolean(pick(key, "production"))
+      const expected = process.env[`PROD_${key}`]?.trim()
+      if (!configuredInProduction && !expected) continue
+      assert.ok(pulled[key], `${key} is configured in Production but missing from Test`)
+      if (expected) {
+        assert.equal(pulled[key], expected, `${key} does not match Production`)
+      }
+    }
   }
 
-  console.log("✅ check-env-isolation passed (Neon data, shared integrations)")
+  console.log("✅ check-env-isolation passed (Neon data, configured integrations mirrored)")
 }
 
 main().catch((err) => {
