@@ -12,6 +12,8 @@
 // Dependabot PRs. This must not turn `npm run check` red for a contributor who
 // has no way to satisfy it.
 import assert from "node:assert"
+import { readFileSync } from "node:fs"
+import { parse } from "dotenv"
 
 const token = process.env.VERCEL_TOKEN
 if (!token) {
@@ -37,6 +39,7 @@ async function projectRef(): Promise<{ projectId: string; teamId?: string } | nu
 }
 
 interface VercelEnvVar {
+  id: string
   key: string
   target?: string[]
   value?: string
@@ -64,7 +67,7 @@ async function main() {
   const { envs } = (await res.json()) as { envs: VercelEnvVar[] }
 
   const pick = (key: string, target: string) =>
-    envs.find((e) => e.key === key && (e.target ?? []).includes(target))?.value
+    envs.find((e) => e.key === key && (e.target ?? []).includes(target))
 
   const prodDb = pick("DATABASE_URL", "production")
   const previewDb = pick("DATABASE_URL", "preview")
@@ -76,35 +79,43 @@ async function main() {
       "an 'All Environments' value, which is almost certainly production. Run `npm run setup:staging`.",
   )
   assert.notEqual(
-    previewDb,
-    prodDb,
+    previewDb.id,
+    prodDb.id,
     "Preview and Production share a DATABASE_URL. test.deltechmun.in would be writing to the " +
       "live conference database. Run `npm run setup:staging` to repoint Preview.",
   )
-  assert.match(
-    previewDb,
-    /neon\.tech/i,
-    "Preview DATABASE_URL must point at Neon, not a production service",
-  )
+  if (previewDb.value) {
+    assert.match(
+      previewDb.value,
+      /neon\.tech/i,
+      "Preview DATABASE_URL must point at Neon, not a production service",
+    )
+  }
 
   // Same trap for the Prisma CLI datasource used by migrations.
   const prodDirect = pick("DIRECT_URL", "production")
   const previewDirect = pick("DIRECT_URL", "preview")
   assert.ok(previewDirect, "DIRECT_URL is not set for the Preview environment in Vercel")
   if (prodDirect) {
-    assert.notEqual(previewDirect, prodDirect, "Preview and Production share a DIRECT_URL")
+    assert.notEqual(previewDirect.id, prodDirect.id, "Preview and Production share a DIRECT_URL")
   }
-  assert.match(
-    previewDirect,
-    /neon\.tech/i,
-    "Preview DIRECT_URL must point at Neon, not a production service",
-  )
+  if (previewDirect.value) {
+    assert.match(
+      previewDirect.value,
+      /neon\.tech/i,
+      "Preview DIRECT_URL must point at Neon, not a production service",
+    )
+  }
 
   const productionAuth = pick("AUTH_SECRET", "production")
   const previewAuth = pick("AUTH_SECRET", "preview")
   assert.ok(productionAuth, "AUTH_SECRET is not set for Production in Vercel")
   assert.ok(previewAuth, "AUTH_SECRET is not set for Preview in Vercel")
-  assert.notEqual(previewAuth, productionAuth, "Staging and Production must not share AUTH_SECRET")
+  assert.notEqual(
+    previewAuth.id,
+    productionAuth.id,
+    "Staging and Production must not share AUTH_SECRET",
+  )
 
   // These integrations are deliberately shared. Their application writes
   // still go through Preview's Neon DATABASE_URL.
@@ -117,12 +128,8 @@ async function main() {
     "CRON_SECRET",
     "SHEET_SYNC_SECRET",
   ]) {
-    const productionEnv = envs.find(
-      (env) => env.key === key && (env.target ?? []).includes("production"),
-    )
-    const previewEnv = envs.find(
-      (env) => env.key === key && (env.target ?? []).includes("preview"),
-    )
+    const productionEnv = pick(key, "production")
+    const previewEnv = pick(key, "preview")
     assert.ok(productionEnv, `${key} is not set for Production in Vercel`)
     assert.ok(previewEnv, `${key} is not set for Preview in Vercel`)
     if (productionEnv.value && previewEnv.value) {
@@ -147,6 +154,46 @@ async function main() {
       productionAdmin.value,
       "Staging email must redirect to ADMIN_EMAIL",
     )
+  }
+
+  // Vercel's API may redact encrypted values even with decrypt=true. The
+  // environment file written by `vercel pull` is the actual input to
+  // `vercel build`, so compare that directly with the isolated GitHub Test
+  // database secrets and require every shared integration there.
+  const stagingDatabaseUrl = process.env.STAGING_DATABASE_URL?.trim()
+  const stagingDirectUrl = process.env.STAGING_DIRECT_URL?.trim()
+  if (stagingDatabaseUrl && stagingDirectUrl) {
+    const pulled = parse(readFileSync(".vercel/.env.preview.local"))
+    assert.equal(
+      pulled.DATABASE_URL,
+      stagingDatabaseUrl,
+      "Vercel Preview DATABASE_URL does not match the Test database secret",
+    )
+    assert.equal(
+      pulled.DIRECT_URL,
+      stagingDirectUrl,
+      "Vercel Preview DIRECT_URL does not match the Test database secret",
+    )
+    assert.ok(pulled.AUTH_SECRET, "AUTH_SECRET is missing from the pulled Test environment")
+    assert.ok(
+      pulled.EMAIL_REDIRECT_TO,
+      "EMAIL_REDIRECT_TO is missing from Test; real recipients could receive Test mail",
+    )
+    for (const key of [
+      "AUTH_RESEND_KEY",
+      "RAZORPAY_KEY_ID",
+      "RAZORPAY_KEY_SECRET",
+      "RAZORPAY_WEBHOOK_SECRET",
+      "GFORM_SHARED_SECRET",
+      "CRON_SECRET",
+      "SHEET_SYNC_SECRET",
+    ]) {
+      assert.ok(pulled[key], `${key} is missing from the pulled Test environment`)
+      const expected = process.env[`PROD_${key}`]?.trim()
+      if (expected) {
+        assert.equal(pulled[key], expected, `${key} does not match Production`)
+      }
+    }
   }
 
   console.log("✅ check-env-isolation passed (Neon data, shared integrations)")

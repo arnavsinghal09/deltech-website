@@ -41,6 +41,16 @@ jobs:
       - name: Link Vercel project
         run: vercel pull --yes --environment=preview --token=${{ secrets.VERCEL_TOKEN }}
 
+      # The Vercel API deliberately redacts encrypted values. Pulling them to
+      # this ephemeral runner lets setup copy the existing Production
+      # integration values to Test without exposing them in GitHub or logs.
+      - name: Read production integration configuration
+        run: |
+          vercel env pull .vercel/.env.production.local \
+            --yes \
+            --environment=production \
+            --token=${{ secrets.VERCEL_TOKEN }}
+
       # Restores Production-scoped vars if an earlier run narrowed rows that
       # were shared between Production and Preview down to preview-only. No-op
       # once they are correct, and it prints the resulting scoping either way.
@@ -83,6 +93,7 @@ jobs:
           PROD_NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.PROD_NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}
           PROD_GROQ_API_KEY: ${{ secrets.PROD_GROQ_API_KEY }}
           PROD_GROQ_MODEL: ${{ secrets.PROD_GROQ_MODEL }}
+          PROD_ENV_FILE: .vercel/.env.production.local
           SKIP_GH_SECRETS: "1"
         run: npm run setup:staging
 
