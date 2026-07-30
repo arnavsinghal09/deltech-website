@@ -188,6 +188,11 @@ async function setPreviewEnv(projectId: string, orgId: string) {
   const desired: Record<string, string> = {
     DATABASE_URL: STAGING_DATABASE_URL,
     DIRECT_URL: STAGING_DIRECT_URL,
+    // Auth.js prefers AUTH_URL/NEXTAUTH_URL over the incoming request host.
+    // Keep this in the always-repaired set: a Production-scoped/shared value
+    // otherwise turns every Test magic link into a deltechmun.in link.
+    AUTH_URL: `https://${STAGING_DOMAIN}`,
+    NEXT_PUBLIC_APP_URL: `https://${STAGING_DOMAIN}`,
   }
 
   if (!DATABASE_ONLY) {
@@ -202,7 +207,6 @@ async function setPreviewEnv(projectId: string, orgId: string) {
       AUTH_SECRET: previewOnlyValue("AUTH_SECRET") ?? randomBytes(32).toString("base64"),
       EMAIL_FROM: STAGING_EMAIL_FROM,
       ...(stagingEmailRecipient ? { EMAIL_REDIRECT_TO: stagingEmailRecipient } : {}),
-      NEXT_PUBLIC_APP_URL: `https://${STAGING_DOMAIN}`,
     })
 
     // Application data stays on Neon, while configured integrations use the
