@@ -24,8 +24,10 @@ const H = { Authorization: `Bearer ${token}`, "Content-Type": "application/json"
 const WANT = {
   DATABASE_URL: process.env.PROD_DATABASE_URL,
   DIRECT_URL: process.env.PROD_DIRECT_URL,
+  AUTH_URL: "https://deltechmun.in",
   AUTH_SECRET: process.env.PROD_AUTH_SECRET,
   EMAIL_FROM: process.env.PROD_EMAIL_FROM,
+  NEXT_PUBLIC_APP_URL: "https://deltechmun.in",
   ADMIN_EMAIL: process.env.PROD_ADMIN_EMAIL,
   AUTH_RESEND_KEY: process.env.PROD_AUTH_RESEND_KEY,
   RAZORPAY_KEY_ID: process.env.PROD_RAZORPAY_KEY_ID,

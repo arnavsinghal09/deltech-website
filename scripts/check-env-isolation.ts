@@ -105,6 +105,32 @@ async function main() {
     )
   }
 
+  const previewAuthUrl = pick("AUTH_URL", "preview")
+  assert.ok(
+    previewAuthUrl,
+    "AUTH_URL is not set for Preview; Test magic links could open Production",
+  )
+  if (previewAuthUrl.value) {
+    assert.equal(
+      previewAuthUrl.value.replace(/\/+$/, ""),
+      "https://test.deltechmun.in",
+      "Preview AUTH_URL must generate magic links for test.deltechmun.in",
+    )
+  }
+
+  const previewAppUrl = pick("NEXT_PUBLIC_APP_URL", "preview")
+  assert.ok(
+    previewAppUrl,
+    "NEXT_PUBLIC_APP_URL is not set for Preview; Test emails could link to Production",
+  )
+  if (previewAppUrl.value) {
+    assert.equal(
+      previewAppUrl.value.replace(/\/+$/, ""),
+      "https://test.deltechmun.in",
+      "Preview NEXT_PUBLIC_APP_URL must point at test.deltechmun.in",
+    )
+  }
+
   const productionAuth = pick("AUTH_SECRET", "production")
   const previewAuth = pick("AUTH_SECRET", "preview")
   assert.ok(productionAuth, "AUTH_SECRET is not set for Production in Vercel")
