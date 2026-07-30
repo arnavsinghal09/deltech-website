@@ -6,9 +6,11 @@
 // empty committees, which means allotment, payment, check-in and every email
 // that depends on them cannot be tested at all. This fills that in.
 //
-// Email is deliberately live on staging so it can be tested, which makes this
-// data the blast radius. Every address here is on a domain we control. Never
-// copy production data into staging.
+// Email is deliberately live on staging so it can be tested. Delegate,
+// applicant, and co-delegate fixtures use a domain we control, and Vercel
+// Preview redirects every outbound message to ADMIN_EMAIL. The staff addresses
+// below are the explicit test accounts requested by the owner. Never copy
+// production application data into staging.
 //
 //   ALLOW_DESTRUCTIVE_SEED=1 npx tsx prisma/seed-staging.ts
 import "dotenv/config"
@@ -23,6 +25,9 @@ import {
   QuizMode,
   SlideType,
   Role,
+  ApplicantStatus,
+  InterviewRound,
+  Verdict,
   Prisma,
 } from "../src/generated/prisma/client"
 import { PrismaPg } from "@prisma/adapter-pg"
@@ -65,6 +70,18 @@ const prisma = new PrismaClient({ adapter: new PrismaPg(pool) })
 
 const DOMAIN = "deltechmun.in"
 const addr = (local: string) => `staging+${local}@${DOMAIN}`
+const OWNER_EMAIL = "arnavsinghal06@gmail.com"
+
+const TEST_USERS: Array<{ email: string; name: string; role: Role }> = [
+  { email: OWNER_EMAIL, name: "Arnav Singhal", role: Role.ADMIN },
+  { email: "nikunjsharma4218@gmail.com", name: "Nikunj Sharma", role: Role.ADMIN },
+  { email: "samir.gupta987@gmail.com", name: "Samir Gupta", role: Role.ADMIN },
+  { email: "enile.puqo249@gmail.com", name: "Test Registerer One", role: Role.REGISTERER },
+  { email: "mikebenoit@google.com", name: "Test Registerer Two", role: Role.REGISTERER },
+  { email: "arnavsinghal0903@gmail.com", name: "Arnav Maintainer", role: Role.MAINTAINER },
+  { email: "nikunjgarcade@gmail.com", name: "Nikunj Maintainer", role: Role.MAINTAINER },
+  { email: addr("author"), name: "Test Dispatch Author", role: Role.AUTHOR },
+]
 
 const PORTFOLIOS: Record<string, string[]> = {
   "unga-disec": ["France", "India", "Brazil", "Japan", "Kenya", "Norway", "Egypt", "Peru"],
@@ -91,29 +108,110 @@ async function main() {
   await prisma.coDelegate.deleteMany()
   await prisma.delegate.deleteMany()
   await prisma.quarantinedRow.deleteMany()
+  await prisma.applicant.deleteMany()
+  await prisma.interviewSlot.deleteMany()
   await prisma.post.deleteMany()
+  await prisma.member.deleteMany()
+  await prisma.rateLimit.deleteMany()
+  await prisma.stringOverride.deleteMany()
+  await prisma.importPreset.deleteMany()
   await prisma.portfolio.deleteMany()
   await prisma.auditLog.deleteMany()
 
-  // Staging wants the public form open so it can be tested.
-  await prisma.setting.upsert({
-    where: { key: "registrationOpen" },
-    update: { value: true },
-    create: { key: "registrationOpen", value: true },
+  console.log("Creating test staff accounts…")
+  for (const user of TEST_USERS) {
+    await prisma.user.upsert({
+      where: { email: user.email },
+      update: { name: user.name, role: user.role, disabledAt: null },
+      create: user,
+    })
+  }
+
+  // Use a complete Conference configuration so public registration, payments,
+  // committees, matrix, recruitment, and Event Control can all be exercised.
+  const testSettings: Array<{ key: string; value: Prisma.InputJsonValue }> = [
+    { key: "eventMode", value: "CONFERENCE" },
+    { key: "activeEventName", value: "DelTech MUN Test Conference" },
+    { key: "activeEventLabel", value: "Test environment" },
+    { key: "paymentsEnabled", value: true },
+    {
+      key: "publicSections",
+      value: {
+        activeEvent: true,
+        registration: true,
+        committees: true,
+        matrix: true,
+        dispatch: true,
+        team: true,
+        quiz: true,
+        recruitment: true,
+      },
+    },
+    { key: "registrationOpen", value: true },
+    { key: "registrationClosedMessage", value: "Test registration is currently closed." },
+    { key: "conferenceDates", value: "12 to 13 September 2026" },
+    { key: "venue", value: "Delhi Technological University, Rohini" },
+    {
+      key: "landingHero",
+      value: {
+        title: "DelTech MUN Test Conference",
+        subtitle: "A safe environment for testing the complete delegate and organiser journey.",
+        ctaLabel: "Test registration",
+      },
+    },
+    { key: "agendasBlurb", value: "Test every committee format with deterministic seeded data." },
+    { key: "awards", value: ["Best Delegate", "High Commendation", "Special Mention"] },
+    {
+      key: "queryContacts",
+      value: [{ name: "Test Secretariat", role: "Testing support", phone: "919000000000" }],
+    },
+    { key: "paymentProvider", value: "razorpay" },
+    { key: "matrixPublic", value: true },
+    { key: "accommodationNote", value: "Fixture: accommodation requested for selected delegates." },
+    { key: "blogIntro", value: "Seeded dispatches covering every editorial state." },
+  ]
+  for (const setting of testSettings) {
+    await prisma.setting.upsert({
+      where: { key: setting.key },
+      update: { value: setting.value },
+      create: setting,
+    })
+  }
+
+  await prisma.stringOverride.create({
+    data: { key: "marketing.registrationEyebrow", value: "Test registration" },
   })
-  await prisma.setting.upsert({
-    where: { key: "conferenceDates" },
-    update: { value: "12 to 13 September 2026" },
-    create: { key: "conferenceDates", value: "12 to 13 September 2026" },
-  })
-  await prisma.setting.upsert({
-    where: { key: "venue" },
-    update: { value: "Delhi Technological University, Rohini" },
-    create: { key: "venue", value: "Delhi Technological University, Rohini" },
+  await prisma.importPreset.create({
+    data: {
+      name: "Test CSV import",
+      partner: "Fixture partner",
+      mapping: {
+        fullName: "Name",
+        email: "Email",
+        whatsapp: "Phone",
+        pref1Committee: "First committee",
+        pref1Portfolio: "First portfolio",
+      },
+    },
   })
 
   const committees = await prisma.committee.findMany({ select: { id: true, slug: true, name: true } })
   const bySlug = new Map(committees.map((c) => [c.slug, c]))
+
+  for (const committee of committees) {
+    await prisma.committee.update({
+      where: { id: committee.id },
+      data: {
+        agenda: `Fixture agenda for ${committee.name}`,
+        ebMembers: [
+          { name: "Test Chair", role: "Chairperson" },
+          { name: "Test Vice Chair", role: "Vice Chairperson" },
+        ],
+        matrixBrief: `Seeded availability for ${committee.name}.`,
+        portfolioTagLabel: committee.slug === "unhrc" ? "Membership" : "Category",
+      },
+    })
+  }
 
   console.log("Creating portfolios…")
   for (const [slug, names] of Object.entries(PORTFOLIOS)) {
@@ -147,7 +245,14 @@ async function main() {
     institution: n % 3 === 0 ? "Delhi Technological University" : `Institution ${n}`,
     isDtu: n % 3 === 0,
     munExperience: n % 2 === 0 ? "Two previous conferences" : null,
-    source: Source.SELF,
+    source: [
+      Source.SELF,
+      Source.CROSS_DEL,
+      Source.SPONSORED,
+      Source.INTERNAL,
+      Source.MANUAL,
+    ][(n - 1) % 5],
+    sourceNote: n % 5 === 1 ? null : `Fixture source for delegate ${n}`,
     status,
     pref1CommitteeId: disec.id,
     pref1Portfolio: "France",
@@ -225,6 +330,60 @@ async function main() {
     },
   })
 
+  async function createFinalPaymentFixture(
+    n: number,
+    status: PayStatus,
+    committeeId: string,
+    committeeType: string,
+    provider: string,
+  ) {
+    const delegate = await prisma.delegate.create({
+      data: mkDelegate(
+        n,
+        status === PayStatus.FAILED ? AppStatus.PAYMENT_SENT : AppStatus.CONFIRMED,
+      ),
+    })
+    const portfolio = await prisma.portfolio.findFirstOrThrow({
+      where: { committeeId, status: PortfolioStatus.AVAILABLE },
+    })
+    await prisma.allotment.create({
+      data: {
+        delegateId: delegate.id,
+        committeeId,
+        portfolioId: portfolio.id,
+        allottedBy: OWNER_EMAIL,
+        emailSentAt: new Date(),
+      },
+    })
+    await prisma.portfolio.update({
+      where: { id: portfolio.id },
+      data: { status: PortfolioStatus.ALLOTTED },
+    })
+    await prisma.payment.create({
+      data: {
+        delegateId: delegate.id,
+        provider,
+        amountInr: feeFor(committeeType, delegate.isDtu),
+        status,
+        method: status === PayStatus.OFFLINE ? "cash" : null,
+        paymentLink: status === PayStatus.FAILED ? `/pay/${delegate.publicToken}` : null,
+        confirmedAt: status === PayStatus.FAILED ? null : new Date(),
+      },
+    })
+    return delegate
+  }
+
+  const aippm = bySlug.get("aippm")!
+  const lokSabha = bySlug.get("lok-sabha")!
+  const failed = await createFinalPaymentFixture(13, PayStatus.FAILED, disec.id, "STANDARD", "razorpay")
+  const comped = await createFinalPaymentFixture(14, PayStatus.COMPED, aippm.id, "STANDARD", "manual")
+  const offline = await createFinalPaymentFixture(15, PayStatus.OFFLINE, lokSabha.id, "STANDARD", "manual")
+
+  await prisma.delegate.update({
+    where: { id: confirmed.id },
+    data: { checkedInAt: new Date(), checkedInBy: OWNER_EMAIL },
+  })
+
   // UNHRC double delegation: its own allotment branch and its own emails.
   const primary = await prisma.delegate.create({
     data: {
@@ -246,6 +405,62 @@ async function main() {
   })
   console.log(`  double-delegation primary: ${primary.email}`)
 
+  const blockedPortfolio = await prisma.portfolio.findFirstOrThrow({
+    where: { committeeId: ip.id, status: PortfolioStatus.AVAILABLE },
+  })
+  await prisma.portfolio.update({
+    where: { id: blockedPortfolio.id },
+    data: { status: PortfolioStatus.BLOCKED },
+  })
+  const heldPortfolio = await prisma.portfolio.findFirstOrThrow({
+    where: { committeeId: unhrc.id, status: PortfolioStatus.AVAILABLE },
+  })
+  await prisma.portfolio.update({
+    where: { id: heldPortfolio.id },
+    data: {
+      status: PortfolioStatus.ON_HOLD,
+      holdToken: "staging-fixture-hold",
+      holdExpiresAt: new Date(Date.now() + 60 * 60 * 1000),
+    },
+  })
+
+  console.log("Creating email history…")
+  await prisma.emailLog.createMany({
+    data: [
+      {
+        delegateId: allotted.id,
+        template: "allotment",
+        toEmail: allotted.email,
+        status: "SENT",
+      },
+      {
+        delegateId: paying.id,
+        template: "payment-link",
+        toEmail: paying.email,
+        status: "SENT",
+      },
+      {
+        delegateId: failed.id,
+        template: "payment-reminder",
+        toEmail: failed.email,
+        status: "FAILED",
+        error: "Fixture delivery failure for retry testing.",
+      },
+      {
+        delegateId: comped.id,
+        template: "confirmation",
+        toEmail: comped.email,
+        status: "SENT",
+      },
+      {
+        delegateId: offline.id,
+        template: "confirmation",
+        toEmail: offline.email,
+        status: "SENT",
+      },
+    ],
+  })
+
   console.log("Creating quarantined rows…")
   await prisma.quarantinedRow.createMany({
     data: [
@@ -264,8 +479,180 @@ async function main() {
     ],
   })
 
+  console.log("Creating recruitment pipeline…")
+  const gdSlot = await prisma.interviewSlot.create({
+    data: {
+      round: InterviewRound.GD,
+      startsAt: new Date("2026-08-05T10:00:00+05:30"),
+      venue: "SPS 10",
+      capacity: 8,
+      panel: ["Arnav Singhal", "Test Panelist"],
+    },
+  })
+  const piSlot = await prisma.interviewSlot.create({
+    data: {
+      round: InterviewRound.PI,
+      startsAt: new Date("2026-08-06T10:00:00+05:30"),
+      venue: "SPS 11",
+      capacity: 6,
+      panel: ["Nikunj Sharma", "Test Panelist"],
+    },
+  })
+  const applicantFixtures: Array<Prisma.ApplicantCreateManyInput> = [
+    {
+      fullName: "Test Applicant Applied",
+      email: addr("applicant-applied"),
+      phone: "919100000001",
+      year: "First",
+      branch: "Software Engineering",
+      answers: { why: "Fixture awaiting group discussion." },
+      status: ApplicantStatus.APPLIED,
+    },
+    {
+      fullName: "Test Applicant GD Scheduled",
+      email: addr("applicant-gd-scheduled"),
+      phone: "919100000002",
+      year: "Second",
+      branch: "Mechanical Engineering",
+      answers: { why: "Fixture with a GD slot." },
+      status: ApplicantStatus.GD_SCHEDULED,
+      gdSlotId: gdSlot.id,
+    },
+    {
+      fullName: "Test Applicant GD Done",
+      email: addr("applicant-gd-done"),
+      phone: "919100000003",
+      year: "First",
+      branch: "Electrical Engineering",
+      answers: { why: "Fixture ready for PI scoring." },
+      status: ApplicantStatus.GD_DONE,
+      gdScore: 8,
+      gdVerdict: Verdict.SHORTLIST,
+    },
+    {
+      fullName: "Test Applicant PI Scheduled",
+      email: addr("applicant-pi-scheduled"),
+      phone: "919100000004",
+      year: "Third",
+      branch: "Civil Engineering",
+      answers: { why: "Fixture with a PI slot." },
+      status: ApplicantStatus.PI_SCHEDULED,
+      gdScore: 9,
+      gdVerdict: Verdict.SHORTLIST,
+      piSlotId: piSlot.id,
+    },
+    {
+      fullName: "Test Applicant PI Done",
+      email: addr("applicant-pi-done"),
+      phone: "919100000005",
+      year: "Second",
+      branch: "Engineering Physics",
+      answers: { why: "Fixture awaiting final outcome." },
+      status: ApplicantStatus.PI_DONE,
+      gdScore: 8,
+      gdVerdict: Verdict.SHORTLIST,
+      piScore: 9,
+      piVerdict: Verdict.SELECT,
+    },
+    {
+      fullName: "Test Applicant Selected",
+      email: addr("applicant-selected"),
+      phone: "919100000006",
+      year: "First",
+      branch: "Mathematics and Computing",
+      answers: { why: "Fixture selected for the society." },
+      status: ApplicantStatus.SELECTED,
+      gdScore: 9,
+      gdVerdict: Verdict.SHORTLIST,
+      piScore: 9,
+      piVerdict: Verdict.SELECT,
+    },
+    {
+      fullName: "Test Applicant Rejected",
+      email: addr("applicant-rejected"),
+      phone: "919100000007",
+      year: "Second",
+      branch: "Biotechnology",
+      answers: { why: "Fixture rejected after assessment." },
+      status: ApplicantStatus.REJECTED,
+      gdScore: 4,
+      gdVerdict: Verdict.REJECT,
+    },
+  ]
+  await prisma.applicant.createMany({ data: applicantFixtures })
+
+  console.log("Creating team members…")
+  await prisma.member.createMany({
+    data: [
+      {
+        name: "Test Secretary-General",
+        designation: "Secretary-General",
+        order: 1,
+        socials: { linkedin: "https://www.linkedin.com" },
+      },
+      {
+        name: "Test Director-General",
+        designation: "Director-General",
+        order: 2,
+        socials: { instagram: "https://www.instagram.com" },
+      },
+      {
+        name: "Archived Test Member",
+        designation: "Former Secretariat",
+        order: 3,
+        isActive: false,
+      },
+    ],
+  })
+
+  console.log("Creating audit and rate-limit fixtures…")
+  await prisma.auditLog.createMany({
+    data: [
+      {
+        actorEmail: OWNER_EMAIL,
+        action: "settings.update",
+        entity: "Setting",
+        entityId: "registration",
+        meta: {
+          summary: "Fixture reversible registration change",
+          rollback: {
+            kind: "settings",
+            before: { registrationClosedMessage: "Fixture closed" },
+            after: { registrationClosedMessage: "Test registration is currently closed." },
+          },
+        },
+      },
+      {
+        actorEmail: "arnavsinghal0903@gmail.com",
+        action: "delegate.update",
+        entity: "Delegate",
+        entityId: allotted.id,
+        meta: {
+          summary: "Fixture delegate edit",
+          before: { status: "REGISTERED" },
+          after: { status: "ALLOTTED" },
+        },
+      },
+      {
+        actorEmail: OWNER_EMAIL,
+        action: "payment.comp",
+        entity: "Delegate",
+        entityId: comped.id,
+        meta: { summary: "Fixture comped payment" },
+      },
+    ],
+  })
+  await prisma.rateLimit.create({
+    data: {
+      key: "staging-fixture:expired-window",
+      count: 2,
+      windowStart: new Date(Date.now() - 2 * 60 * 60 * 1000),
+    },
+  })
+
   console.log("Creating blog posts…")
-  const admin = await prisma.user.findFirstOrThrow({ where: { role: Role.ADMIN } })
+  const admin = await prisma.user.findUniqueOrThrow({ where: { email: OWNER_EMAIL } })
+  const dispatchAuthor = await prisma.user.findUniqueOrThrow({ where: { email: addr("author") } })
   const body = (text: string) => ({
     type: "doc",
     content: [{ type: "paragraph", content: [{ type: "text", text }] }],
@@ -280,7 +667,7 @@ async function main() {
   for (const [status, title, reviewNote] of posts) {
     await prisma.post.create({
       data: {
-        authorId: admin.id,
+        authorId: dispatchAuthor.id,
         title,
         slug: title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/-$/, ""),
         contentJson: body(`Staging fixture for the ${status} state.`),
@@ -321,12 +708,64 @@ async function main() {
     ],
   })
 
+  const quizSlides = await prisma.slide.findMany({
+    where: { presentationId: presentation.id },
+    orderBy: { order: "asc" },
+  })
+  const quizSession = await prisma.quizSession.create({
+    data: {
+      presentationId: presentation.id,
+      roomCode: "TEST01",
+      status: "active",
+      currentSlideId: quizSlides[0].id,
+      currentSlideStartedAt: new Date(),
+      startedAt: new Date(),
+    },
+  })
+  await prisma.response.createMany({
+    data: [
+      {
+        sessionId: quizSession.id,
+        slideId: quizSlides[0].id,
+        nickname: "Fixture Alpha",
+        answer: 1,
+        points: 980,
+      },
+      {
+        sessionId: quizSession.id,
+        slideId: quizSlides[0].id,
+        nickname: "Fixture Beta",
+        answer: 0,
+        points: 0,
+      },
+      {
+        sessionId: quizSession.id,
+        slideId: quizSlides[1].id,
+        nickname: "Fixture Gamma",
+        answer: "diplomacy",
+        points: 0,
+      },
+    ],
+  })
+
   const counts = {
+    users: await prisma.user.count(),
+    settings: await prisma.setting.count(),
+    committees: await prisma.committee.count(),
     delegates: await prisma.delegate.count(),
     portfolios: await prisma.portfolio.count(),
     allotments: await prisma.allotment.count(),
     payments: await prisma.payment.count(),
+    emailLogs: await prisma.emailLog.count(),
+    applicants: await prisma.applicant.count(),
+    interviewSlots: await prisma.interviewSlot.count(),
+    members: await prisma.member.count(),
+    auditLogs: await prisma.auditLog.count(),
     posts: await prisma.post.count(),
+    presentations: await prisma.presentation.count(),
+    quizSessions: await prisma.quizSession.count(),
+    responses: await prisma.response.count(),
+    importPresets: await prisma.importPreset.count(),
     quarantined: await prisma.quarantinedRow.count(),
   }
   console.log("\nStaging seed complete:", counts)

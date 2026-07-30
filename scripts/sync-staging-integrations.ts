@@ -71,7 +71,8 @@ async function main() {
       const presetNames = presets.rows.map((preset) => preset.name)
       await client.query(
         `DELETE FROM "ImportPreset"
-          WHERE NOT ("name" = ANY($1::text[]))`,
+          WHERE "name" <> 'Test CSV import'
+            AND NOT ("name" = ANY($1::text[]))`,
         [presetNames],
       )
       for (const preset of presets.rows) {

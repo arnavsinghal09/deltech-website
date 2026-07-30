@@ -1,4 +1,4 @@
-name: Run staging crons
+name: Run Test Crons
 
 # Vercel ignores cron definitions on Preview deployments. Invoke the stable
 # staging URL from Actions so the same jobs run against Neon once per day.

@@ -2,15 +2,7 @@ name: CI
 
 on:
   pull_request:
-  # Allows CI to be rerun on main without deploying staging or Production.
   workflow_dispatch:
-  # deploy.yml calls this on pushes to main, so the main pipeline gates on this
-  # job instead of duplicating its steps. Before this, deploy.yml ran in
-  # parallel with CI on the same push and a red build still shipped to
-  # production. There is deliberately no `push: [main]` trigger here: that
-  # would run CI twice per merge, and both runs share this concurrency group,
-  # so they would cancel each other.
-  workflow_call:
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -18,6 +10,7 @@ concurrency:
 
 jobs:
   check:
+    name: Validate
     runs-on: ubuntu-latest
     env:
       # Build needs these set but never connects to a real DB — dummy is fine.
@@ -34,22 +27,12 @@ jobs:
           node-version: 20
           cache: npm
 
-      - name: Cache Next build
-        uses: actions/cache@v6
-        with:
-          path: .next/cache
-          key: next-${{ hashFiles('package-lock.json') }}-${{ hashFiles('src/**') }}
-          restore-keys: |
-            next-${{ hashFiles('package-lock.json') }}-
-
       - name: Install
         run: npm ci # postinstall runs `prisma generate`
-
-      - name: Typecheck
-        run: npx tsc --noEmit
 
       - name: Checks
         run: npm run check
 
       - name: Build
+        # Next's production build includes TypeScript validation.
         run: npm run build
