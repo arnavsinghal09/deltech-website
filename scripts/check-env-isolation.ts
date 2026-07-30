@@ -12,6 +12,8 @@
 // Dependabot PRs. This must not turn `npm run check` red for a contributor who
 // has no way to satisfy it.
 import assert from "node:assert"
+import { readFileSync } from "node:fs"
+import { parse } from "dotenv"
 
 const token = process.env.VERCEL_TOKEN
 if (!token) {
@@ -46,6 +48,14 @@ interface VercelEnvVar {
 
 function origin(value: string): string {
   return new URL(value.trim()).origin
+}
+
+function pulledPreviewValue(key: string): string | undefined {
+  try {
+    return parse(readFileSync(".vercel/.env.preview.local"))[key]?.trim()
+  } catch {
+    return undefined
+  }
 }
 
 async function main() {
@@ -114,8 +124,10 @@ async function main() {
     previewAuthUrl,
     "AUTH_URL is not set for Preview; Test magic links could open Production",
   )
-  if (previewAuthUrl.value) {
-    const authOrigin = origin(previewAuthUrl.value)
+  const effectiveAuthUrl = pulledPreviewValue("AUTH_URL")
+  assert.ok(effectiveAuthUrl, "AUTH_URL is missing from the pulled Preview runtime environment")
+  if (effectiveAuthUrl) {
+    const authOrigin = origin(effectiveAuthUrl)
     console.log(`  Preview magic-link origin: ${authOrigin}`)
     assert.equal(
       authOrigin,
@@ -129,8 +141,13 @@ async function main() {
     previewAppUrl,
     "NEXT_PUBLIC_APP_URL is not set for Preview; Test emails could link to Production",
   )
-  if (previewAppUrl.value) {
-    const appOrigin = origin(previewAppUrl.value)
+  const effectiveAppUrl = pulledPreviewValue("NEXT_PUBLIC_APP_URL")
+  assert.ok(
+    effectiveAppUrl,
+    "NEXT_PUBLIC_APP_URL is missing from the pulled Preview runtime environment",
+  )
+  if (effectiveAppUrl) {
+    const appOrigin = origin(effectiveAppUrl)
     console.log(`  Preview application origin: ${appOrigin}`)
     assert.equal(
       appOrigin,
