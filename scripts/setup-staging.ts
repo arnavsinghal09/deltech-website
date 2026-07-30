@@ -24,6 +24,7 @@ import "dotenv/config"
 import { execFileSync } from "node:child_process"
 import { randomBytes } from "node:crypto"
 import { readFileSync } from "node:fs"
+import { parse } from "dotenv"
 
 const STAGING_DOMAIN = "test.deltechmun.in"
 const OLD_PROJECT_NAME = "test-deltech-website"
@@ -168,8 +169,13 @@ async function setPreviewEnv(projectId: string, orgId: string) {
   }
   const envs = (current.body as { envs: VercelEnv[] }).envs
 
+  const productionEnvFile = process.env.PROD_ENV_FILE?.trim()
+  const pulledProduction = productionEnvFile
+    ? parse(readFileSync(productionEnvFile))
+    : {}
   const prodValue = (key: string) =>
     process.env[`PROD_${key}`]?.trim() ||
+    pulledProduction[key]?.trim() ||
     envs.find((e) => e.key === key && (e.target ?? []).includes("production"))?.value
   const previewOnlyValue = (key: string) =>
     envs.find(
