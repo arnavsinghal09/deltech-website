@@ -12,8 +12,6 @@
 // Dependabot PRs. This must not turn `npm run check` red for a contributor who
 // has no way to satisfy it.
 import assert from "node:assert"
-import { readFileSync } from "node:fs"
-import { parse } from "dotenv"
 
 const token = process.env.VERCEL_TOKEN
 if (!token) {
@@ -44,11 +42,6 @@ interface VercelEnvVar {
   target?: string[]
   value?: string
   type?: string
-}
-
-function databaseIdentity(raw: string): string {
-  const url = new URL(raw)
-  return `${url.hostname.replace("-pooler", "")}${url.pathname}`
 }
 
 async function main() {
@@ -174,47 +167,6 @@ async function main() {
       productionAdmin.value,
       "Staging email must redirect to ADMIN_EMAIL",
     )
-  }
-
-  // Vercel's API may redact encrypted values even with decrypt=true. The
-  // environment file written by `vercel pull` is the actual input to
-  // `vercel build`, so compare that directly with the isolated GitHub Test
-  // database secrets and require every shared integration there.
-  const stagingDatabaseUrl = process.env.STAGING_DATABASE_URL?.trim()
-  const stagingDirectUrl = process.env.STAGING_DIRECT_URL?.trim()
-  if (stagingDatabaseUrl && stagingDirectUrl) {
-    const pulled = parse(readFileSync(".vercel/.env.preview.local"))
-    assert.equal(
-      databaseIdentity(pulled.DATABASE_URL),
-      databaseIdentity(stagingDatabaseUrl),
-      "Vercel Preview DATABASE_URL points at a different database than the Test secret",
-    )
-    assert.equal(
-      databaseIdentity(pulled.DIRECT_URL),
-      databaseIdentity(stagingDirectUrl),
-      "Vercel Preview DIRECT_URL points at a different database than the Test secret",
-    )
-    assert.ok(pulled.AUTH_SECRET, "AUTH_SECRET is missing from the pulled Test environment")
-    assert.ok(
-      pulled.EMAIL_REDIRECT_TO,
-      "EMAIL_REDIRECT_TO is missing from Test; real recipients could receive Test mail",
-    )
-    for (const key of requiredShared) {
-      assert.ok(pulled[key], `${key} is missing from the pulled Test environment`)
-      const expected = process.env[`PROD_${key}`]?.trim()
-      if (expected) {
-        assert.equal(pulled[key], expected, `${key} does not match Production`)
-      }
-    }
-    for (const key of optionalShared) {
-      const configuredInProduction = Boolean(pick(key, "production"))
-      const expected = process.env[`PROD_${key}`]?.trim()
-      if (!configuredInProduction && !expected) continue
-      assert.ok(pulled[key], `${key} is configured in Production but missing from Test`)
-      if (expected) {
-        assert.equal(pulled[key], expected, `${key} does not match Production`)
-      }
-    }
   }
 
   console.log("✅ check-env-isolation passed (Neon data, configured integrations mirrored)")

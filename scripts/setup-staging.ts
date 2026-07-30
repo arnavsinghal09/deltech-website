@@ -29,6 +29,7 @@ import { parse } from "dotenv"
 const STAGING_DOMAIN = "test.deltechmun.in"
 const OLD_PROJECT_NAME = "test-deltech-website"
 const STAGING_EMAIL_FROM = "staging@deltechmun.in"
+const DATABASE_ONLY = process.env.DATABASE_ONLY === "1"
 
 // Refuse outright if a "staging" URL is actually the production database.
 const PROD_DB_REF = "hktvvxtiobeaphzfmpbf"
@@ -184,60 +185,48 @@ async function setPreviewEnv(projectId: string, orgId: string) {
         (e.target ?? []).includes("preview") &&
         !(e.target ?? []).includes("production"),
     )?.value
-  const stagingEmailRecipient = prodValue("ADMIN_EMAIL")
-  if (!stagingEmailRecipient) {
-    manual.push("ADMIN_EMAIL: required to redirect staging mail away from real form respondents")
-  }
-
   const desired: Record<string, string> = {
     DATABASE_URL: STAGING_DATABASE_URL,
     DIRECT_URL: STAGING_DIRECT_URL,
-    // Distinct from production so a staging session cannot be replayed there.
-    // Preserve it on re-runs so configuring staging does not sign everyone out.
-    AUTH_SECRET: previewOnlyValue("AUTH_SECRET") ?? randomBytes(32).toString("base64"),
-    // Makes staging mail obvious in an inbox.
-    EMAIL_FROM: STAGING_EMAIL_FROM,
-    ...(stagingEmailRecipient ? { EMAIL_REDIRECT_TO: stagingEmailRecipient } : {}),
-    // PRs do not deploy; Preview scope is the stable staging environment.
-    NEXT_PUBLIC_APP_URL: `https://${STAGING_DOMAIN}`,
   }
 
-  // Application data stays on Neon, while integrations deliberately use the
-  // same credentials as Production so their complete flows can be exercised.
-  // The staging cron routes still read and write through Neon via DATABASE_URL.
-  // NEXT_PUBLIC_SUPABASE_* are copied deliberately. They are NOT the database:
-  // they drive Supabase Realtime (the quiz) and Storage (blog images), which
-  // staging shares with production. Consequence worth knowing: blog images
-  // uploaded on staging land in the production `blog-images` bucket, and a
-  // quiz room code colliding across environments would share a channel.
-  const copyFromProd = [
-    "NEXT_PUBLIC_SUPABASE_URL",
-    "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY",
-    "AUTH_RESEND_KEY",
-    "RAZORPAY_KEY_ID",
-    "RAZORPAY_KEY_SECRET",
-    "RAZORPAY_WEBHOOK_SECRET",
-    "GFORM_SHARED_SECRET",
-    "CRON_SECRET",
-    "SHEET_SYNC_SECRET",
-    "GROQ_API_KEY",
-    "GROQ_MODEL",
-    "ADMIN_EMAIL",
-  ]
-  const requiredShared = new Set([
-    "AUTH_RESEND_KEY",
-    "RAZORPAY_KEY_ID",
-    "RAZORPAY_KEY_SECRET",
-    "RAZORPAY_WEBHOOK_SECRET",
-    "GFORM_SHARED_SECRET",
-    "CRON_SECRET",
-    "SHEET_SYNC_SECRET",
-  ])
-  for (const key of copyFromProd) {
-    const v = prodValue(key)
-    if (v) desired[key] = v
-    else if (requiredShared.has(key)) {
-      manual.push(`${key}: missing from Production, so staging cannot copy it`)
+  if (!DATABASE_ONLY) {
+    const stagingEmailRecipient = prodValue("ADMIN_EMAIL")
+    if (!stagingEmailRecipient) {
+      manual.push("ADMIN_EMAIL: required to redirect staging mail away from real form respondents")
+    }
+
+    Object.assign(desired, {
+      // Distinct from production so a staging session cannot be replayed there.
+      // Preserve it on re-runs so configuring staging does not sign everyone out.
+      AUTH_SECRET: previewOnlyValue("AUTH_SECRET") ?? randomBytes(32).toString("base64"),
+      EMAIL_FROM: STAGING_EMAIL_FROM,
+      ...(stagingEmailRecipient ? { EMAIL_REDIRECT_TO: stagingEmailRecipient } : {}),
+      NEXT_PUBLIC_APP_URL: `https://${STAGING_DOMAIN}`,
+    })
+
+    // Application data stays on Neon, while configured integrations use the
+    // same credentials as Production so their complete flows can be exercised.
+    const copyFromProd = [
+      "NEXT_PUBLIC_SUPABASE_URL",
+      "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY",
+      "AUTH_RESEND_KEY",
+      "RAZORPAY_KEY_ID",
+      "RAZORPAY_KEY_SECRET",
+      "RAZORPAY_WEBHOOK_SECRET",
+      "GFORM_SHARED_SECRET",
+      "CRON_SECRET",
+      "SHEET_SYNC_SECRET",
+      "GROQ_API_KEY",
+      "GROQ_MODEL",
+      "ADMIN_EMAIL",
+    ]
+    for (const key of copyFromProd) {
+      const v = prodValue(key)
+      if (v) desired[key] = v
+      else if (key === "AUTH_RESEND_KEY") {
+        manual.push(`${key}: missing from Production, so staging cannot copy it`)
+      }
     }
   }
 
@@ -259,6 +248,7 @@ async function setPreviewEnv(projectId: string, orgId: string) {
       })
       if (!narrow.ok) {
         console.error(`  ! ${key}: could not narrow shared row (${narrow.status})`, narrow.body)
+        if (DATABASE_ONLY) throw new Error(`Could not isolate Preview ${key}`)
         manual.push(`${key}: narrow to Production by hand, then re-run`)
         continue
       }
@@ -268,7 +258,10 @@ async function setPreviewEnv(projectId: string, orgId: string) {
         body: JSON.stringify({ key, value, type: "encrypted", target: ["preview"] }),
       })
       if (add.ok) changed.push(`Preview env ${key} added`)
-      else console.error(`  ! ${key}: ${add.status}`, add.body)
+      else {
+        console.error(`  ! ${key}: ${add.status}`, add.body)
+        if (DATABASE_ONLY) throw new Error(`Could not add Preview ${key}`)
+      }
       continue
     }
 
@@ -278,14 +271,20 @@ async function setPreviewEnv(projectId: string, orgId: string) {
         body: JSON.stringify({ value, target: ["preview"] }),
       })
       if (upd.ok) changed.push(`Preview env ${key} updated`)
-      else console.error(`  ! ${key}: ${upd.status}`, upd.body)
+      else {
+        console.error(`  ! ${key}: ${upd.status}`, upd.body)
+        if (DATABASE_ONLY) throw new Error(`Could not update Preview ${key}`)
+      }
     } else {
       const add = await vercel(`/v10/projects/${projectId}/env${qs}`, {
         method: "POST",
         body: JSON.stringify({ key, value, type: "encrypted", target: ["preview"] }),
       })
       if (add.ok) changed.push(`Preview env ${key} added`)
-      else console.error(`  ! ${key}: ${add.status}`, add.body)
+      else {
+        console.error(`  ! ${key}: ${add.status}`, add.body)
+        if (DATABASE_ONLY) throw new Error(`Could not add Preview ${key}`)
+      }
     }
   }
 
@@ -383,6 +382,10 @@ async function main() {
   console.log(`Vercel project ${projectId}\n`)
 
   await setPreviewEnv(projectId, orgId)
+  if (DATABASE_ONLY) {
+    changed.forEach((item) => console.log(`  ${item}`))
+    return
+  }
   await ensureDomain(projectId, orgId)
   await removeOldProject(orgId)
 
