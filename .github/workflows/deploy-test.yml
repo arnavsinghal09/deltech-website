@@ -78,12 +78,23 @@ jobs:
 
       - name: Build Test
         run: vercel build --token="$VERCEL_TOKEN"
+        env:
+          DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
+          DIRECT_URL: ${{ secrets.STAGING_DIRECT_URL }}
 
       - name: Deploy Test
         id: deploy
+        env:
+          STAGING_DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
+          STAGING_DIRECT_URL: ${{ secrets.STAGING_DIRECT_URL }}
         run: |
           set -o pipefail
-          URL=$(vercel deploy --prebuilt --archive=tgz --token="$VERCEL_TOKEN")
+          URL=$(vercel deploy \
+            --prebuilt \
+            --archive=tgz \
+            --env DATABASE_URL="$STAGING_DATABASE_URL" \
+            --env DIRECT_URL="$STAGING_DIRECT_URL" \
+            --token="$VERCEL_TOKEN")
           if [ -z "$URL" ]; then
             echo "::error::Vercel returned no deployment URL."
             exit 1
