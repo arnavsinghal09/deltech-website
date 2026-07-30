@@ -39,21 +39,26 @@ jobs:
         run: vercel pull --yes --environment=preview --token="$VERCEL_TOKEN"
 
       - name: Verify database isolation
-        run: |
-          npx tsx scripts/check-env-isolation.ts
-          npx tsx scripts/verify-database-isolation.ts
+        run: npx tsx scripts/verify-database-isolation.ts
         env:
           STAGING_DIRECT_URL: ${{ secrets.STAGING_DIRECT_URL }}
           STAGING_DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
           PROD_DIRECT_URL: ${{ secrets.PROD_DIRECT_URL }}
           PROD_DATABASE_URL: ${{ secrets.PROD_DATABASE_URL }}
-          PROD_AUTH_RESEND_KEY: ${{ secrets.PROD_AUTH_RESEND_KEY }}
-          PROD_RAZORPAY_KEY_ID: ${{ secrets.PROD_RAZORPAY_KEY_ID }}
-          PROD_RAZORPAY_KEY_SECRET: ${{ secrets.PROD_RAZORPAY_KEY_SECRET }}
-          PROD_RAZORPAY_WEBHOOK_SECRET: ${{ secrets.PROD_RAZORPAY_WEBHOOK_SECRET }}
-          PROD_GFORM_SHARED_SECRET: ${{ secrets.PROD_GFORM_SHARED_SECRET }}
-          PROD_CRON_SECRET: ${{ secrets.PROD_CRON_SECRET }}
-          PROD_SHEET_SYNC_SECRET: ${{ secrets.PROD_SHEET_SYNC_SECRET }}
+
+      - name: Point Vercel Preview at the Test database
+        run: npm run setup:staging
+        env:
+          DATABASE_ONLY: "1"
+          SKIP_GH_SECRETS: "1"
+          STAGING_DIRECT_URL: ${{ secrets.STAGING_DIRECT_URL }}
+          STAGING_DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
+
+      - name: Pull configured Test environment
+        run: vercel pull --yes --environment=preview --token="$VERCEL_TOKEN"
+
+      - name: Verify Vercel environment scopes
+        run: npx tsx scripts/check-env-isolation.ts
 
       - name: Migrate Test database
         env:
