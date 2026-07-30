@@ -1,4 +1,4 @@
-name: Reset staging
+name: Reset Test Data
 
 # Manual only. Wipes the staging database and rebuilds it from
 # prisma/seed-staging.ts.
@@ -9,7 +9,7 @@ on:
   workflow_dispatch:
     inputs:
       confirm:
-        description: 'Type "reset staging" to confirm. This deletes all staging data.'
+        description: 'Type "reset test data" to confirm. This deletes all Test data.'
         required: true
         type: string
 
@@ -22,9 +22,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check confirmation
-        if: inputs.confirm != 'reset staging'
+        if: inputs.confirm != 'reset test data'
         run: |
-          echo "::error::Confirmation text did not match. Type exactly: reset staging"
+          echo "::error::Confirmation text did not match. Type exactly: reset test data"
           exit 1
 
       - uses: actions/checkout@v7
@@ -36,6 +36,14 @@ jobs:
 
       - name: Install
         run: npm ci
+
+      - name: Verify database isolation
+        run: npx tsx scripts/verify-database-isolation.ts
+        env:
+          STAGING_DIRECT_URL: ${{ secrets.STAGING_DIRECT_URL }}
+          STAGING_DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
+          PROD_DIRECT_URL: ${{ secrets.PROD_DIRECT_URL }}
+          PROD_DATABASE_URL: ${{ secrets.PROD_DATABASE_URL }}
 
       # Drops and recreates the schema, then replays every migration. Points at
       # STAGING_DIRECT_URL only; the seed itself refuses to run against the
@@ -62,4 +70,10 @@ jobs:
           STAGING_DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
 
       - name: Summary
-        run: echo "Staging reset and reseeded. https://test.deltechmun.in" >> "$GITHUB_STEP_SUMMARY"
+        run: |
+          {
+            echo "### Test data reset"
+            echo ""
+            echo "Every product area was reseeded at <https://test.deltechmun.in>."
+            echo "Admin sign-in: \`arnavsinghal06@gmail.com\`"
+          } >> "$GITHUB_STEP_SUMMARY"

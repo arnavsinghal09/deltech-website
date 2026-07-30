@@ -404,7 +404,7 @@ async function main() {
   console.log("\n── Still needs you ───────────────────────")
   manual.forEach(line)
   console.log(
-    "\nThen run the 'Reset staging' workflow once to migrate and seed the new database.\n",
+    "\nThen run the 'Reset Test Data' workflow once to migrate and seed the Test database.\n",
   )
 }
 
