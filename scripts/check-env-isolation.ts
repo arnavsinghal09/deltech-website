@@ -44,6 +44,10 @@ interface VercelEnvVar {
   type?: string
 }
 
+function origin(value: string): string {
+  return new URL(value.trim()).origin
+}
+
 async function main() {
   const ref = await projectRef()
   if (!ref) {
@@ -111,8 +115,10 @@ async function main() {
     "AUTH_URL is not set for Preview; Test magic links could open Production",
   )
   if (previewAuthUrl.value) {
+    const authOrigin = origin(previewAuthUrl.value)
+    console.log(`  Preview magic-link origin: ${authOrigin}`)
     assert.equal(
-      previewAuthUrl.value.replace(/\/+$/, ""),
+      authOrigin,
       "https://test.deltechmun.in",
       "Preview AUTH_URL must generate magic links for test.deltechmun.in",
     )
@@ -124,8 +130,10 @@ async function main() {
     "NEXT_PUBLIC_APP_URL is not set for Preview; Test emails could link to Production",
   )
   if (previewAppUrl.value) {
+    const appOrigin = origin(previewAppUrl.value)
+    console.log(`  Preview application origin: ${appOrigin}`)
     assert.equal(
-      previewAppUrl.value.replace(/\/+$/, ""),
+      appOrigin,
       "https://test.deltechmun.in",
       "Preview NEXT_PUBLIC_APP_URL must point at test.deltechmun.in",
     )
