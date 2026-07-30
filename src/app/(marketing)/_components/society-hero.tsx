@@ -8,13 +8,13 @@ export function SocietyHero({ members, dispatches }: { members: number; dispatch
         <div className="flex flex-wrap items-center gap-4">
           <span className="eyebrow">Delhi Technological University</span>
           <span className="h-px w-16 bg-gold-500" />
-          <span className="font-mono text-sm font-semibold uppercase tracking-[0.14em] text-muted-foreground">A student society · not a seasonal microsite</span>
+          <span className="font-mono text-sm font-semibold uppercase tracking-[0.14em] text-muted-foreground">Model United Nations Society</span>
         </div>
         <h1 className="mt-10 max-w-[11ch] font-heading text-[clamp(4.4rem,10.5vw,10rem)] leading-[0.78] tracking-[-0.075em]">
-          Debate the <span className="text-primary">world.</span><br />Build the room.
+          Learn diplomacy<br /><span className="text-primary">by doing it.</span>
         </h1>
         <div className="mt-12 grid gap-8 border-t border-foreground/25 pt-7 md:grid-cols-[1fr_auto] md:items-end">
-          <p className="max-w-2xl text-xl leading-relaxed text-muted-foreground sm:text-2xl">DelTech MUN is a year-round society for diplomacy, research, public speaking, writing, and the controlled chaos of committee.</p>
+          <p className="max-w-2xl text-xl leading-relaxed text-muted-foreground sm:text-2xl">We help DTU students research difficult questions, speak with confidence, negotiate across disagreement, and build the committee rooms where those skills become real.</p>
           <a href="#society-work" className="inline-flex size-16 items-center justify-center rounded-full border border-foreground/30 transition-colors hover:bg-foreground hover:text-background" aria-label="Explore the society"><ArrowDownRight className="size-7" /></a>
         </div>
       </div>

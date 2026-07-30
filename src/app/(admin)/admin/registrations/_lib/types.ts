@@ -1,4 +1,5 @@
 import type { Prisma } from "@/generated/prisma/client"
+import { publicPaymentLink } from "@/lib/payments/public-link"
 
 // emailLogs deliberately absent. It had no take and no select, so every page
 // of 25 delegates dragged in every email ever sent to those 25 (including the
@@ -90,6 +91,9 @@ export function serializeDelegate(d: DelegateRaw): SerializedDelegate {
     payment: d.payment
       ? {
           ...d.payment,
+          paymentLink: d.payment.paymentLink
+            ? publicPaymentLink(d.payment.paymentLink, d.publicToken)
+            : null,
           createdAt: d.payment.createdAt.toISOString(),
           confirmedAt: d.payment.confirmedAt?.toISOString() ?? null,
         }

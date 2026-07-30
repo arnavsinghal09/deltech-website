@@ -11,6 +11,8 @@ import { getContent } from "@/lib/settings"
 import { STATUS_LABEL, STATUS_VARIANT, PAY_STATUS_LABEL } from "@/lib/status-labels"
 import { CheckinQR } from "./_components/checkin-qr"
 import { APP_URL } from "@/lib/app-url"
+import { deriveEventState } from "@/lib/event-state"
+import { publicPaymentLink } from "@/lib/payments/public-link"
 
 
 
@@ -47,7 +49,7 @@ export default async function StatusPage(props: {
 
   if (!delegate) notFound()
   const content = await getContent()
-  const paymentsRequired = content.eventMode !== "INTRA_MUN" && content.paymentsEnabled
+  const paymentsRequired = deriveEventState(content).paymentsRequired
 
   const session = await auth()
   const isOwner = session?.user?.email?.toLowerCase() === delegate.email.toLowerCase()
@@ -55,6 +57,9 @@ export default async function StatusPage(props: {
   const { payment, allotment } = delegate
   const needsPayment =
     paymentsRequired && payment && (payment.status === "PENDING" || payment.status === "SENT") && payment.paymentLink
+  const payLink = payment?.paymentLink
+    ? publicPaymentLink(payment.paymentLink, delegate.publicToken)
+    : null
   const isConfirmed = delegate.status === "CONFIRMED"
 
   return (
@@ -134,7 +139,7 @@ export default async function StatusPage(props: {
 
               {needsPayment && (
                 <Link
-                  href={payment.paymentLink!}
+                  href={payLink!}
                   className={cn(buttonVariants({ size: "lg" }), "w-full")}
                 >
                   Pay Now · ₹{payment.amountInr.toLocaleString("en-IN")}

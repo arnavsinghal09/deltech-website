@@ -34,6 +34,8 @@ export interface SerializedPortfolio {
   committeeId: string
   name: string
   status: PortfolioStatus
+  holdToken: string | null
+  holdExpiresAt: string | null
   allotment: SerializedAllotment | null
 }
 

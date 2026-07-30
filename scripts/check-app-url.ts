@@ -42,12 +42,29 @@ assert.equal(
 // Local dev and dummy CI builds: "" is what every caller already tolerated.
 assert.equal(resolveAppUrl(undefined, undefined), "")
 
+// A stale local value in Vercel must never leak into delegate emails or
+// payment rows. Prefer Vercel's project Production URL when hosted.
+assert.equal(
+  resolveAppUrl(
+    "http://localhost:3000",
+    "deployment-abc.vercel.app",
+    "deltechmun.in",
+    true,
+  ),
+  "https://deltechmun.in",
+)
+assert.equal(
+  resolveAppUrl("http://127.0.0.1:3000", "deployment-abc.vercel.app", undefined, true),
+  "https://deployment-abc.vercel.app",
+)
+
 // No consumer may go back to reading the env directly. app-url.ts is the only
 // place either variable is allowed to appear.
 const CONSUMERS = [
   "src/lib/resend.ts",
   "src/lib/payments/razorpay.ts",
   "src/lib/payments/upi.ts",
+  "src/lib/payments/public-link.ts",
   "src/app/(public)/status/[token]/page.tsx",
   "src/app/(admin)/admin/quiz/[id]/present/_components/presenter-app.tsx",
 ]

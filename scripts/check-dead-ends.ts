@@ -82,6 +82,26 @@ for (const route of [
   const src = read("src/app/(admin)/admin/logs/page.tsx")
   assert.match(src, /skip: \(pageNum - 1\) \* PAGE_SIZE/, "logs must paginate")
   assert.doesNotMatch(src, /Latest 100 shown/, "the copy must not still claim a hard cap")
+  const client = read("src/app/(admin)/admin/logs/_components/logs-client.tsx")
+  assert.match(client, /Activity detail/, "clicking a log needs a real detail sheet")
+  assert.match(client, /Confirm rollback/, "rollback needs an explicit confirmation step")
+  assert.match(
+    read("src/app/(admin)/admin/logs/actions.ts"),
+    /STALE_STATE/,
+    "rollback must refuse to overwrite a newer change",
+  )
+}
+
+// --- payment links cannot point delegates at localhost --------------------
+{
+  const link = read("src/lib/payments/public-link.ts")
+  assert.match(link, /localhost/, "persisted loopback payment links need a repair path")
+  for (const page of [
+    "src/app/(public)/status/[token]/page.tsx",
+    "src/app/(registerer)/dashboard/page.tsx",
+  ]) {
+    assert.match(read(page), /publicPaymentLink/, `${page} must repair legacy payment links`)
+  }
 }
 
 // --- a quiz nickname collision is caught, not silently absorbed -----------

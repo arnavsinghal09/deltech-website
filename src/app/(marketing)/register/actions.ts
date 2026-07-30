@@ -5,6 +5,7 @@ import { getContent } from "@/lib/settings"
 import { registerSchema, type RegisterFormValues } from "@/lib/schemas/register"
 import { sendRegistrationEmails } from "@/lib/resend"
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit"
+import { deriveEventState } from "@/lib/event-state"
 
 type ActionResult =
   | { success: true; delegateId: string; publicToken: string }
@@ -13,7 +14,7 @@ type ActionResult =
 export async function registerDelegate(data: RegisterFormValues): Promise<ActionResult> {
   // Server-side registration guard
   const content = await getContent()
-  if (!content.registrationOpen) {
+  if (!deriveEventState(content).acceptsRegistrations) {
     return { success: false, error: "Registrations are currently closed." }
   }
 
@@ -61,45 +62,59 @@ export async function registerDelegate(data: RegisterFormValues): Promise<Action
 
   let delegate
   try {
-    delegate = await prisma.delegate.create({
-    data: {
-      fullName: vals.fullName,
-      email: vals.email,
-      whatsapp: vals.whatsapp,
-      altPhone: vals.altPhone ?? null,
-      institution: vals.institution,
-      isDtu: vals.isDtu,
-      munExperience: vals.munExperience || null,
-      source: "SELF",
-      pref1CommitteeId: vals.pref1CommitteeId,
-      pref1Portfolio: vals.pref1Portfolio,
-      // For double-delegation committees, clear pref2, it is not applicable
-      pref2CommitteeId: isDoubleDelegation ? null : (vals.pref2CommitteeId ?? null),
-      pref2Portfolio: isDoubleDelegation ? null : (vals.pref2Portfolio ?? null),
-      needsAccommodation: vals.needsAccommodation,
-      outsideNcr: vals.outsideNcr,
-      reference: vals.reference || null,
-      status: "REGISTERED",
-      ...(isDoubleDelegation && vals.coDelegate
-        ? {
-            coDelegate: {
-              create: {
-                fullName: vals.coDelegate.fullName,
-                email: vals.coDelegate.email,
-                phone: vals.coDelegate.phone,
-                institution: vals.coDelegate.institution ?? null,
-                munExperience: vals.coDelegate.munExperience || null,
-              },
-            },
-          }
-        : {}),
-      },
-    })
+    delegate = await prisma.$transaction(async (tx) => {
+      const settings = await tx.setting.findMany({
+        where: { key: { in: ["eventMode", "registrationOpen"] } },
+      })
+      const current = Object.fromEntries(settings.map(({ key, value }) => [key, value]))
+      const mode = current.eventMode ?? content.eventMode
+      const registrationOpen = current.registrationOpen ?? content.registrationOpen
+      if (mode === "SOCIETY" || registrationOpen !== true) return null
+
+      return tx.delegate.create({
+        data: {
+          fullName: vals.fullName,
+          email: vals.email,
+          whatsapp: vals.whatsapp,
+          altPhone: vals.altPhone ?? null,
+          institution: vals.institution,
+          isDtu: vals.isDtu,
+          munExperience: vals.munExperience || null,
+          source: "SELF",
+          pref1CommitteeId: vals.pref1CommitteeId,
+          pref1Portfolio: vals.pref1Portfolio,
+          // For double-delegation committees, clear pref2, it is not applicable
+          pref2CommitteeId: isDoubleDelegation ? null : (vals.pref2CommitteeId ?? null),
+          pref2Portfolio: isDoubleDelegation ? null : (vals.pref2Portfolio ?? null),
+          needsAccommodation: vals.needsAccommodation,
+          outsideNcr: vals.outsideNcr,
+          reference: vals.reference || null,
+          status: "REGISTERED",
+          ...(isDoubleDelegation && vals.coDelegate
+            ? {
+                coDelegate: {
+                  create: {
+                    fullName: vals.coDelegate.fullName,
+                    email: vals.coDelegate.email,
+                    phone: vals.coDelegate.phone,
+                    institution: vals.coDelegate.institution ?? null,
+                    munExperience: vals.coDelegate.munExperience || null,
+                  },
+                },
+              }
+            : {}),
+        },
+      })
+    }, { isolationLevel: "Serializable" })
   } catch (err) {
     if (typeof err === "object" && err !== null && "code" in err && (err as { code: unknown }).code === "P2002") {
       return { success: false, error: "This email is already registered. Sign in to view your application status." }
     }
     throw err
+  }
+
+  if (!delegate) {
+    return { success: false, error: "Registrations closed while you were submitting. Your application was not created." }
   }
 
   try {

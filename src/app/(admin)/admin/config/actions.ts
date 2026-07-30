@@ -9,6 +9,7 @@ import { audit } from "@/lib/audit"
 import { callAI, AIRateLimitError } from "@/lib/ai"
 import { revalidatePath } from "next/cache"
 import { ContentSchema, type Content } from "@/content/contentSchema"
+import { pickValues, reversibleSettingsMeta } from "@/lib/audit-change"
 
 // Money/sync config only an ADMIN may touch, kept out of saveContent entirely.
 const PAYMENT_KEYS = new Set([
@@ -34,10 +35,20 @@ export async function saveContent(
     return { success: false, error: "Payment settings must be saved via the payment card (admin only)." }
   }
   try {
+    const before = await getContent()
     await setContent(partial)
-    await audit(session.user?.email ?? "unknown", "content.save", "Setting", undefined, {
-      keys: Object.keys(partial),
-    })
+    const keys = Object.keys(partial)
+    await audit(
+      session.user?.email ?? "unknown",
+      "content.save",
+      "Setting",
+      "site-content",
+      reversibleSettingsMeta({
+        summary: "Updated public site content.",
+        before: pickValues(before, keys),
+        after: partial,
+      }),
+    )
     publishContentChanges()
     return { success: true }
   } catch {
@@ -89,6 +100,9 @@ const EventControlSchema = ContentSchema.pick({
   registrationOpen: true,
   paymentsEnabled: true,
   publicSections: true,
+  conferenceDates: true,
+  venue: true,
+  landingHero: true,
 })
 
 type EventControlInput = Pick<
@@ -99,6 +113,9 @@ type EventControlInput = Pick<
   | "registrationOpen"
   | "paymentsEnabled"
   | "publicSections"
+  | "conferenceDates"
+  | "venue"
+  | "landingHero"
 >
 
 export async function saveEventControl(
@@ -110,25 +127,53 @@ export async function saveEventControl(
 
   const { paymentsEnabled, ...eventState } = parsed.data
   const role = (session.user as { role?: string }).role
+  const before = await getContent()
+  const sections = {
+    ...eventState.publicSections,
+    registration:
+      eventState.registrationOpen || eventState.publicSections.registration,
+    activeEvent:
+      eventState.eventMode === "SOCIETY"
+        ? false
+        : eventState.publicSections.activeEvent,
+  }
+  if (sections.activeEvent && !eventState.activeEventName.trim()) {
+    return { success: false, error: "Name the active event before publishing it." }
+  }
   const partial: Record<string, unknown> = {
     ...eventState,
-    matrixPublic: eventState.publicSections.matrix,
+    activeEventName: eventState.activeEventName.trim(),
+    activeEventLabel: eventState.activeEventLabel.trim(),
+    conferenceDates: eventState.conferenceDates.trim(),
+    venue: eventState.venue.trim(),
+    publicSections: sections,
+    registrationOpen:
+      eventState.eventMode === "SOCIETY" ? false : eventState.registrationOpen,
+    matrixPublic: sections.matrix,
   }
 
   // Intra MUNs are always free. Outside Intra mode, only an admin may change
   // the payment switch; maintainers can still publish every other event state.
-  if (eventState.eventMode === "INTRA_MUN") {
+  if (eventState.eventMode !== "CONFERENCE" || !paymentsEnabled) {
     partial.paymentsEnabled = false
   } else if (role === "ADMIN") {
-    partial.paymentsEnabled = paymentsEnabled
+    partial.paymentsEnabled = true
   }
 
   try {
     await setContent(partial)
-    await audit(session.user?.email ?? "unknown", "eventControl.save", "Setting", undefined, {
-      eventMode: eventState.eventMode,
-      keys: Object.keys(partial),
-    })
+    const keys = Object.keys(partial)
+    await audit(
+      session.user?.email ?? "unknown",
+      "eventControl.save",
+      "Setting",
+      "event-control",
+      reversibleSettingsMeta({
+        summary: `Published ${eventState.eventMode.toLowerCase().replace("_", " ")} mode.`,
+        before: pickValues(before, keys),
+        after: partial,
+      }),
+    )
     publishContentChanges()
     return { success: true }
   } catch {
@@ -151,10 +196,20 @@ export async function savePaymentConfig(partial: {
 }): Promise<{ success: boolean; error?: string }> {
   const session = await requireAdmin()
   try {
+    const before = await getContent()
     await setContent(partial)
-    await audit(session.user?.email ?? "unknown", "content.savePaymentConfig", "Setting", undefined, {
-      keys: Object.keys(partial),
-    })
+    const keys = Object.keys(partial)
+    await audit(
+      session.user?.email ?? "unknown",
+      "content.savePaymentConfig",
+      "Setting",
+      "payment-config",
+      reversibleSettingsMeta({
+        summary: "Updated payment and integration settings.",
+        before: pickValues(before, keys),
+        after: partial,
+      }),
+    )
     publishContentChanges()
     return { success: true }
   } catch {
@@ -167,8 +222,19 @@ export async function setRegistrationOpen(
   open: boolean,
 ): Promise<{ success: boolean }> {
   const session = await requireStaff()
+  const content = await getContent()
   await setContent({ registrationOpen: open })
-  await audit(session.user?.email ?? "unknown", open ? "registration.open" : "registration.close", "Setting")
+  await audit(
+    session.user?.email ?? "unknown",
+    open ? "registration.open" : "registration.close",
+    "Setting",
+    "registration",
+    reversibleSettingsMeta({
+      summary: open ? "Opened delegate registration." : "Closed delegate registration.",
+      before: { registrationOpen: content.registrationOpen },
+      after: { registrationOpen: open },
+    }),
+  )
   publishContentChanges()
   return { success: true }
 }

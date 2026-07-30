@@ -1,5 +1,5 @@
 import type { PaymentProvider } from "./index"
-import { APP_URL } from "@/lib/app-url"
+import { absoluteAppUrl } from "@/lib/app-url"
 
 interface RazorpayPaymentLinkResponse {
   id: string
@@ -41,7 +41,7 @@ export class RazorpayProvider implements PaymentProvider {
         reminder_enable: false,
         notes: { delegateId },
         // After payment, Razorpay redirects back to our pay page
-        callback_url: `${APP_URL}/pay/${publicToken}`,
+        callback_url: absoluteAppUrl(`/pay/${publicToken}`),
         callback_method: "get",
       }),
     })

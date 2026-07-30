@@ -16,6 +16,8 @@ import { BlogRejectedEmail } from "@/emails/blog-rejected"
 import { StaffInviteEmail } from "@/emails/staff-invite"
 import { MagicLinkEmail } from "@/emails/magic-link"
 import { MAGIC_LINK_MAX_AGE_MIN } from "@/lib/magic-link"
+import { deriveEventState } from "@/lib/event-state"
+import { publicPaymentLink } from "@/lib/payments/public-link"
 
 let resendClient: Resend | undefined
 function getResend(): Resend {
@@ -83,7 +85,7 @@ export async function sendRegistrationReceived(delegateId: string): Promise<void
     select: { fullName: true, email: true, publicToken: true },
   })
   const content = await getContent()
-  const paymentsEnabled = content.eventMode !== "INTRA_MUN" && content.paymentsEnabled
+  const paymentsEnabled = deriveEventState(content).paymentsRequired
 
   await loggedSend({
     delegateId,
@@ -128,7 +130,7 @@ export async function sendCoDelegateRegistered(delegateId: string): Promise<void
     : null
 
   const content = await getContent()
-  const paymentsEnabled = content.eventMode !== "INTRA_MUN" && content.paymentsEnabled
+  const paymentsEnabled = deriveEventState(content).paymentsRequired
 
   await loggedSend({
     delegateId,
@@ -194,8 +196,8 @@ export async function sendAllotmentEmail(delegateId: string): Promise<void> {
     .replace("{committee}", committee.name)
     .replace("{portfolio}", portfolio.name)
 
-  const paymentsEnabled = content.eventMode !== "INTRA_MUN" && content.paymentsEnabled
-  const payLink = delegate.payment?.paymentLink ?? `${APP_URL}/pay/${delegate.publicToken}`
+  const paymentsEnabled = deriveEventState(content).paymentsRequired
+  const payLink = publicPaymentLink(delegate.payment?.paymentLink, delegate.publicToken)
 
   await loggedSend({
     delegateId,
@@ -246,7 +248,7 @@ export async function sendCoDelegateNotice(delegateId: string): Promise<void> {
   const committee = delegate.allotment.portfolio.committee
   const portfolio = delegate.allotment.portfolio
   const content = await getContent()
-  const paymentsEnabled = content.eventMode !== "INTRA_MUN" && content.paymentsEnabled
+  const paymentsEnabled = deriveEventState(content).paymentsRequired
   const subject = STRINGS.email.subjects.coDelegateNotice.replace("{committee}", committee.name)
 
   await loggedSend({
@@ -304,7 +306,7 @@ export async function sendPaymentConfirmed(delegateId: string): Promise<void> {
 
 export async function sendPaymentReminder(delegateId: string): Promise<void> {
   const content = await getContent()
-  if (content.eventMode === "INTRA_MUN" || !content.paymentsEnabled) return
+  if (!deriveEventState(content).paymentsRequired) return
 
   const delegate = await prisma.delegate.findUniqueOrThrow({
     where: { id: delegateId },
@@ -323,7 +325,7 @@ export async function sendPaymentReminder(delegateId: string): Promise<void> {
 
   const committee = delegate.allotment.portfolio.committee
   const portfolio = delegate.allotment.portfolio
-  const payLink = delegate.payment.paymentLink ?? `${APP_URL}/pay/${delegate.publicToken}`
+  const payLink = publicPaymentLink(delegate.payment.paymentLink, delegate.publicToken)
 
   await loggedSend({
     delegateId,

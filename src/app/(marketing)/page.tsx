@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 import { FadeUp } from "./_components/motion";
 import { SocietyHero } from "./_components/society-hero";
 import { ActiveEvent } from "./_components/active-event";
+import { deriveEventState } from "@/lib/event-state";
 
 const TYPE_LABEL: Record<string, string> = {
   STANDARD: t("marketing.committeeTypes.standard"),
@@ -45,11 +46,16 @@ export default async function LandingPage() {
     openByCommittee.set(g.committeeId, (openByCommittee.get(g.committeeId) ?? 0) + g._count._all);
   }
   const openPortfolioCount = [...openByCommittee.values()].reduce((a, b) => a + b, 0);
-  const ctaHref = content.registrationOpen ? "/register" : "/register/closed";
+  const eventState = deriveEventState(content);
+  const ctaHref = eventState.acceptsRegistrations ? "/register" : "/register/closed";
 
   return (
     <div className="overflow-hidden">
-      <SocietyHero members={memberCount} dispatches={postCount} />
+      {eventState.showEventHero ? (
+        <ActiveEvent content={content} />
+      ) : (
+        <SocietyHero members={memberCount} dispatches={postCount} />
+      )}
 
       <div className="overflow-hidden border-b border-border/70 bg-foreground py-3 text-background">
         <p className="w-max whitespace-nowrap font-mono text-sm font-semibold uppercase tracking-[0.16em]">
@@ -57,23 +63,21 @@ export default async function LandingPage() {
         </p>
       </div>
 
-      <ActiveEvent content={content} />
-
       <section id="society-work" className="border-b border-border/70 py-24 sm:py-32">
         <div className="section-shell">
           <div className="grid gap-12 lg:grid-cols-[0.9fr_1.1fr] lg:gap-20">
             <div>
-              <p className="eyebrow">The society / all year</p>
-              <h2 className="display-section mt-5 max-w-[10ch]">More than one weekend in January.</h2>
+              <p className="eyebrow">{eventState.showEventHero ? "The society behind the event" : "How the society works"}</p>
+              <h2 className="display-section mt-5 max-w-[11ch]">Start curious. Learn the room. Help build the next one.</h2>
               <p className="body-large mt-7 max-w-xl text-muted-foreground">
-                The conference is an outcome. The society is the engine: training, simulations, research, publishing, and a team that improves the institution every year.
+                DelTech MUN is DTU&apos;s student-run Model United Nations society. Members learn research, procedure, speaking, and negotiation by practising together, then use those skills to run simulations, publish ideas, and organise conferences.
               </p>
             </div>
             <ol className="border-t border-foreground/20">
               {[
-                ["Train the room", "Procedure labs, speaking drills, research sessions, and direct feedback before delegates enter committee."],
-                ["Run free Intras", "Campus simulations where allotments matter, payments do not, and first-timers get a real room."],
-                ["Publish the thinking", "Analysis, opinion, committee research, and field notes through the society Dispatch."],
+                ["Learn", "Workshops turn unfamiliar rules into usable skills: how to research a country, write a position, speak clearly, negotiate, and draft a resolution."],
+                ["Practise", "Free campus simulations give first-timers a real committee room and give experienced delegates harder problems to solve."],
+                ["Build", "Students research agendas, chair committees, write the Dispatch, manage delegate journeys, and leave the society stronger for the next team."],
               ].map(([title, body], index) => (
                 <li key={title} className="grid gap-4 border-b border-foreground/20 py-7 sm:grid-cols-[4rem_1fr] sm:py-9">
                   <span className="font-mono text-sm font-semibold text-primary">0{index + 1}</span>
@@ -223,7 +227,7 @@ export default async function LandingPage() {
           <h2 className="display-section mx-auto mt-6 max-w-[12ch]">{t("marketing.finalTitle")}</h2>
           <div className="mt-10 flex flex-wrap justify-center gap-3">
             {content.publicSections.registration && <Link href={ctaHref} className={buttonVariants({ size: "lg" })}>
-              {content.landingHero.ctaLabel}
+              {eventState.acceptsRegistrations ? content.landingHero.ctaLabel : "Registration status"}
             </Link>}
             <Link href={content.publicSections.dispatch ? "/blog" : "/team"} className={buttonVariants({ variant: "outline", size: "lg" })}>
               {t("marketing.readDispatch")}

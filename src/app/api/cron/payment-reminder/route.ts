@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { sendPaymentReminder } from "@/lib/resend"
 import { getContent } from "@/lib/settings"
+import { deriveEventState } from "@/lib/event-state"
 
 // Called daily by Vercel Cron at 03:00 UTC (vercel.json).
 // Finds allotted delegates with unpaid payments, skips those reminded
@@ -55,7 +56,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
   const content = await getContent()
-  if (content.eventMode === "INTRA_MUN" || !content.paymentsEnabled) {
+  if (!deriveEventState(content).paymentsRequired) {
     return NextResponse.json({ sent: 0, failed: 0, total: 0, disabled: true })
   }
 
