@@ -212,7 +212,7 @@ export function TabCommittees({ committees }: Props) {
                     </Badge>
                   </td>
                   <td className="px-4 py-3 text-center text-xs">
-                    {c.doubleDelegation ? "✓" : "—"}
+                    {c.doubleDelegation ? "✓" : "-"}
                   </td>
                   <td className="px-4 py-3">
                     <Badge variant={c.isActive ? "default" : "outline"} className="text-xs">
@@ -294,7 +294,7 @@ export function TabCommittees({ committees }: Props) {
                 placeholder="e.g. DISEC, GA1, General Assembly 1"
               />
               <p className="text-xs text-muted-foreground">
-                Alternative names partners use in their sheets — matched automatically on import.
+                Alternative names partners use in their sheets, matched automatically on import.
               </p>
             </div>
 

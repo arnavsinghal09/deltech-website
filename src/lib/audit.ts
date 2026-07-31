@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma"
 import type { Prisma } from "@/generated/prisma/client"
 
-// Best-effort audit trail. Never throws — an audit failure must not break the action.
+// Best-effort audit trail. Never throws, an audit failure must not break the action.
 export async function audit(
   actorEmail: string,
   action: string,

@@ -4,17 +4,20 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { buttonVariants } from "@/components/ui/button";
 import { SignOutButton } from "@/app/(admin)/_components/sign-out-button";
+import { AccountLink } from "@/app/(admin)/_components/account-link";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { t } from "@/content/strings";
 import { getContent } from "@/lib/settings";
 import { STATUS_LABEL, STATUS_VARIANT, PAY_STATUS_LABEL } from "@/lib/status-labels";
+import { deriveEventState } from "@/lib/event-state";
+import { publicPaymentLink } from "@/lib/payments/public-link";
 
 function Field({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div>
       <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{label}</p>
-      <p className="mt-0.5 text-sm">{value ?? "—"}</p>
+      <p className="mt-0.5 text-sm">{value ?? "-"}</p>
     </div>
   );
 }
@@ -41,7 +44,7 @@ export default async function DashboardPage() {
     orderBy: { createdAt: "desc" },
   });
   const content = await getContent();
-  const paymentsRequired = content.eventMode !== "INTRA_MUN" && content.paymentsEnabled;
+  const paymentsRequired = deriveEventState(content).paymentsRequired;
 
   const { payment, allotment } = delegate ?? {};
   const needsPayment =
@@ -49,6 +52,9 @@ export default async function DashboardPage() {
     payment &&
     (payment.status === "PENDING" || payment.status === "SENT") &&
     payment.paymentLink;
+  const payLink = delegate && payment?.paymentLink
+    ? publicPaymentLink(payment.paymentLink, delegate.publicToken)
+    : null;
   const isConfirmed = delegate?.status === "CONFIRMED";
 
   return (
@@ -56,11 +62,12 @@ export default async function DashboardPage() {
       {/* Top bar */}
       <header className="flex h-14 items-center justify-between border-b border-border/60 bg-background px-4 sm:px-6">
         <span className="text-sm font-medium text-muted-foreground">
-          {t("brand.name")} <span className="text-border">—</span>{" "}
+          {t("brand.name")} <span className="text-border">-</span>{" "}
           {t("dashboard.title")}
         </span>
         <div className="flex items-center gap-3">
           <span className="hidden text-xs text-muted-foreground sm:block">{email}</span>
+          <AccountLink />
           <SignOutButton />
         </div>
       </header>
@@ -85,7 +92,7 @@ export default async function DashboardPage() {
             <div className="flex items-start justify-between gap-4">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                  {t("brand.name")} — Application Status
+                  {t("brand.name")}. Application Status
                 </p>
                 <h1 className="mt-1 text-xl font-bold">{delegate.fullName}</h1>
                 <p className="text-sm text-muted-foreground">{delegate.email}</p>
@@ -165,10 +172,10 @@ export default async function DashboardPage() {
 
                   {needsPayment && (
                     <Link
-                      href={payment.paymentLink!}
+                      href={payLink!}
                       className={cn(buttonVariants({ size: "lg" }), "w-full")}
                     >
-                      Pay Now — ₹{payment.amountInr.toLocaleString("en-IN")}
+                      Pay Now · ₹{payment.amountInr.toLocaleString("en-IN")}
                     </Link>
                   )}
 

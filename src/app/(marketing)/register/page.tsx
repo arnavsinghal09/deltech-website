@@ -3,11 +3,12 @@ import { getContent } from "@/lib/settings"
 import { prisma } from "@/lib/prisma"
 import { t } from "@/content/strings"
 import { RegistrationForm } from "./_components/registration-form"
+import { deriveEventState } from "@/lib/event-state"
 
 export default async function RegisterPage() {
   const content = await getContent()
 
-  if (!content.registrationOpen) {
+  if (!deriveEventState(content).acceptsRegistrations) {
     redirect("/register/closed")
   }
 

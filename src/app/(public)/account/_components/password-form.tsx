@@ -1,0 +1,81 @@
+"use client"
+
+import { useActionState } from "react"
+import { t } from "@/content/strings"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { PASSWORD_MIN } from "@/lib/schemas/password"
+import { setOwnPassword } from "../actions"
+
+// Error codes the action can return, mapped to copy here so the server never
+// has to know how the client phrases them.
+const ERRORS: Record<string, string> = {
+  passwordTooShort: "auth.passwordTooShort",
+  passwordTooLong: "auth.passwordTooLong",
+  passwordMismatch: "auth.passwordMismatch",
+  currentPasswordRequired: "account.currentPasswordRequired",
+  currentPasswordWrong: "account.currentPasswordWrong",
+  notSignedIn: "account.notSignedIn",
+}
+
+export function PasswordForm({ hasPassword }: { hasPassword: boolean }) {
+  const [state, action, pending] = useActionState(setOwnPassword, null)
+
+  return (
+    <form action={action} className="flex flex-col gap-4">
+      {hasPassword && (
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="currentPassword">{t("account.currentPasswordLabel")}</Label>
+          <Input
+            id="currentPassword"
+            name="currentPassword"
+            type="password"
+            autoComplete="current-password"
+            required
+            disabled={pending}
+          />
+        </div>
+      )}
+
+      <div className="flex flex-col gap-2">
+        <Label htmlFor="password">{t("account.newPasswordLabel")}</Label>
+        <Input
+          id="password"
+          name="password"
+          type="password"
+          autoComplete="new-password"
+          minLength={PASSWORD_MIN}
+          required
+          disabled={pending}
+        />
+      </div>
+
+      <div className="flex flex-col gap-2">
+        <Label htmlFor="confirmPassword">{t("auth.confirmPasswordLabel")}</Label>
+        <Input
+          id="confirmPassword"
+          name="confirmPassword"
+          type="password"
+          autoComplete="new-password"
+          minLength={PASSWORD_MIN}
+          required
+          disabled={pending}
+        />
+      </div>
+
+      {state?.error && (
+        <p className="text-sm text-destructive">
+          {t((ERRORS[state.error] ?? "auth.errorDefault") as Parameters<typeof t>[0])}
+        </p>
+      )}
+      {state?.success && (
+        <p className="text-sm font-medium text-teal-800">{t("account.passwordSaved")}</p>
+      )}
+
+      <Button type="submit" disabled={pending}>
+        {pending ? t("common.loading") : t("account.savePasswordButton")}
+      </Button>
+    </form>
+  )
+}

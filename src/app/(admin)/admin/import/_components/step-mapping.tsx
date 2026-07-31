@@ -76,7 +76,7 @@ export function StepMapping({
     })
   }
 
-  // ── Preview — always normalises with AI ──────────────────────────────────
+  // ── Preview, always normalises with AI ──────────────────────────────────
   const handleNext = () => {
     startProceed(async () => {
       const prelimRows = rawRows.map((r) => applyMapping(r, mapping, defaultInstitution))
@@ -87,10 +87,10 @@ export function StepMapping({
 
       if (!cleanResult.success || !cleanResult.cleaned) {
         if (cleanResult.rateLimited) {
-          toast.error("AI quota exceeded — please retry in a few minutes.")
+          toast.error("AI quota exceeded, please retry in a few minutes.")
           return
         }
-        toast.warning(cleanResult.error ?? "AI normalisation failed — showing raw values.")
+        toast.warning(cleanResult.error ?? "AI normalisation failed, showing raw values.")
         validated = rawRows.map((r, i) => {
           const mapped = applyMapping(r, mapping, defaultInstitution)
           const parse  = mappedRowSchema.safeParse(mapped)
@@ -241,11 +241,11 @@ export function StepMapping({
                         onValueChange={(v) => { if (v !== null) setField(field.key, v) }}
                       >
                         <SelectTrigger className="h-8 w-48 text-xs">
-                          <SelectValue placeholder="— skip —" />
+                          <SelectValue placeholder=",  skip , " />
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value={NONE_SENTINEL} className="text-xs text-muted-foreground">
-                            — skip —
+                           , skip.
                           </SelectItem>
                           {headers.map((h) => (
                             <SelectItem key={h} value={h} className="text-xs">{h}</SelectItem>
@@ -259,7 +259,7 @@ export function StepMapping({
                           {previewVal || <span className="text-muted-foreground">(empty)</span>}
                         </span>
                       ) : (
-                        <span className="text-xs text-muted-foreground">—</span>
+                        <span className="text-xs text-muted-foreground">-</span>
                       )}
                     </td>
                   </tr>

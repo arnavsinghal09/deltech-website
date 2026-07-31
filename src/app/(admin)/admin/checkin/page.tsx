@@ -4,6 +4,9 @@ import { t } from "@/content/strings"
 import { PageHeader } from "@/app/(admin)/_components/page-header"
 import { CheckinClient, type CheckinDelegate } from "./_components/checkin-client"
 
+// Upper bound for the desk view. Search narrows; nobody scrolls past this.
+const ROW_CAP = 300
+
 const VALID_STATUSES = new Set(["REGISTERED", "ALLOTTED", "PAYMENT_SENT", "CONFIRMED", "CANCELLED", "WAITLISTED"])
 
 export default async function CheckinPage(props: {
@@ -17,7 +20,7 @@ export default async function CheckinPage(props: {
   }
 
   const q = get("q") ?? ""
-  // Defaults to CONFIRMED — the desk only expects confirmed delegates to arrive,
+  // Defaults to CONFIRMED, the desk only expects confirmed delegates to arrive,
   // but staff can broaden the filter for edge cases (walk-ins, corrections).
   const status = get("status") ?? "CONFIRMED"
 
@@ -39,8 +42,29 @@ export default async function CheckinPage(props: {
     prisma.delegate.findMany({
       where,
       orderBy: { fullName: "asc" },
-      include: {
-        allotment: { include: { portfolio: { include: { committee: true } } } },
+      // The "All statuses" option sends status="", which fails the validity
+      // test above, so `where.status` is never set and this query returned
+      // every delegate. Combined with `include: { committee: true }` that
+      // dragged each committee's agenda, ebMembers JSON and matrixBrief into
+      // the client payload, for a mapper that reads only `committee.name`.
+      take: ROW_CAP,
+      select: {
+        id: true,
+        fullName: true,
+        email: true,
+        institution: true,
+        status: true,
+        isDtu: true,
+        needsAccommodation: true,
+        checkedInAt: true,
+        checkedInBy: true,
+        allotment: {
+          select: {
+            portfolio: {
+              select: { name: true, committee: { select: { name: true } } },
+            },
+          },
+        },
         payment: { select: { status: true } },
       },
     }),
@@ -70,7 +94,7 @@ export default async function CheckinPage(props: {
         title={t("admin.nav.checkin")}
         description={t("checkin.summary", { checkedIn: checkedInCount, confirmed: confirmedCount })}
       />
-      <CheckinClient delegates={delegates} filters={{ q, status }} />
+      <CheckinClient delegates={delegates} filters={{ q, status }} capped={delegates.length === ROW_CAP} />
     </div>
   )
 }

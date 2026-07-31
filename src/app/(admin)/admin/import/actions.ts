@@ -112,7 +112,7 @@ export async function deleteImportPreset(id: string): Promise<{ success: boolean
 }
 
 // ---------------------------------------------------------------------------
-// Commit import — routed through the shared intake pipeline (lib/intake.ts).
+// Commit import, routed through the shared intake pipeline (lib/intake.ts).
 // Invalid rows are quarantined, never silently dropped:
 // created + allotted-in + duplicates + quarantined = total.
 // ---------------------------------------------------------------------------
@@ -159,7 +159,7 @@ export async function commitImport(params: {
         }
       } else if (result.reason === "duplicate") {
         skipped++
-        errors.push({ row: i, email: row.email, reason: "Email already registered — skipped." })
+        errors.push({ row: i, email: row.email, reason: "Email already registered, skipped." })
       } else {
         quarantined++
         errors.push({
@@ -185,7 +185,7 @@ export async function commitImport(params: {
 }
 
 // ---------------------------------------------------------------------------
-// Quarantine — rows that failed hard validation from any intake channel
+// Quarantine, rows that failed hard validation from any intake channel
 // ---------------------------------------------------------------------------
 
 export interface QuarantineRecord {

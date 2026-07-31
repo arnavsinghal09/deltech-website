@@ -4,9 +4,10 @@ import { prisma } from "@/lib/prisma"
 import { requireStaff, requireAdmin } from "@/lib/authz"
 import { audit } from "@/lib/audit"
 import { getActiveProvider } from "@/lib/payments"
-import { delegateInclude, serializeDelegate, type SerializedDelegate } from "./_lib/types"
-import { sendPaymentConfirmed, resendByLogId } from "@/lib/resend"
+import { delegateInclude, serializeDelegate, type SerializedDelegate, type EmailLogEntry } from "./_lib/types"
+import { sendAllotmentEmail, sendPaymentConfirmed, resendByLogId } from "@/lib/resend"
 import { syncSheetCell, syncSheetForDelegate } from "@/lib/sheet-sync"
+import { detailedChangeMeta } from "@/lib/audit-change"
 
 export interface DelegateEditData {
   fullName: string
@@ -37,24 +38,54 @@ export async function updateDelegate(
 ): Promise<{ success: boolean; error?: string }> {
   const session = await requireStaff()
   try {
-    await prisma.delegate.update({
-      where: { id },
-      data: {
-        fullName: data.fullName,
-        email: data.email,
-        whatsapp: data.whatsapp,
-        altPhone: data.altPhone || null,
-        institution: data.institution,
-        isDtu: data.isDtu,
-        munExperience: data.munExperience || null,
-        pref1Portfolio: data.pref1Portfolio || null,
-        pref2Portfolio: data.pref2Portfolio || null,
-        needsAccommodation: data.needsAccommodation,
-        outsideNcr: data.outsideNcr,
-        reference: data.reference || null,
-      },
+    const fields = {
+      fullName: true,
+      email: true,
+      whatsapp: true,
+      altPhone: true,
+      institution: true,
+      isDtu: true,
+      munExperience: true,
+      pref1Portfolio: true,
+      pref2Portfolio: true,
+      needsAccommodation: true,
+      outsideNcr: true,
+      reference: true,
+    } as const
+    const { before, after } = await prisma.$transaction(async (tx) => {
+      const before = await tx.delegate.findUniqueOrThrow({ where: { id }, select: fields })
+      const after = await tx.delegate.update({
+        where: { id },
+        data: {
+          fullName: data.fullName,
+          email: data.email,
+          whatsapp: data.whatsapp,
+          altPhone: data.altPhone || null,
+          institution: data.institution,
+          isDtu: data.isDtu,
+          munExperience: data.munExperience || null,
+          pref1Portfolio: data.pref1Portfolio || null,
+          pref2Portfolio: data.pref2Portfolio || null,
+          needsAccommodation: data.needsAccommodation,
+          outsideNcr: data.outsideNcr,
+          reference: data.reference || null,
+        },
+        select: fields,
+      })
+      return { before, after }
     })
-    await audit(session.user?.email ?? "unknown", "delegate.update", "Delegate", id)
+    await audit(
+      session.user?.email ?? "unknown",
+      "delegate.update",
+      "Delegate",
+      id,
+      detailedChangeMeta({
+        summary: `Updated ${after.fullName}'s registration details.`,
+        before,
+        after,
+      },
+      ),
+    )
     return { success: true }
   } catch (err) {
     if (typeof err === "object" && err !== null && "code" in err && (err as { code: unknown }).code === "P2002") {
@@ -70,14 +101,23 @@ export async function markPaidOffline(
   const session = await requireAdmin()
   try {
     await prisma.$transaction(async (tx) => {
-      await tx.payment.update({
+      const payment = await tx.payment.findUnique({
         where: { delegateId },
+        select: { status: true },
+      })
+      if (!payment || !["PENDING", "SENT", "FAILED"].includes(payment.status)) {
+        throw new Error("PAYMENT_NOT_PAYABLE")
+      }
+      const claimed = await tx.payment.updateMany({
+        where: { delegateId, status: { in: ["PENDING", "SENT", "FAILED"] } },
         data: { status: "OFFLINE", confirmedAt: new Date(), method: "upi_manual" },
       })
-      await tx.delegate.update({
-        where: { id: delegateId },
+      if (claimed.count !== 1) throw new Error("PAYMENT_RACE")
+      const confirmed = await tx.delegate.updateMany({
+        where: { id: delegateId, status: { in: ["ALLOTTED", "PAYMENT_SENT"] } },
         data: { status: "CONFIRMED" },
       })
+      if (confirmed.count !== 1) throw new Error("DELEGATE_NOT_CONFIRMABLE")
     })
     await audit(session.user?.email ?? "unknown", "delegate.markPaidOffline", "Delegate", delegateId)
     await syncSheetForDelegate(delegateId)
@@ -87,7 +127,10 @@ export async function markPaidOffline(
       // email failure must not surface to the admin
     }
     return { success: true, delegate: await reloadDelegate(delegateId) }
-  } catch {
+  } catch (error) {
+    if (error instanceof Error && /PAYMENT|DELEGATE/.test(error.message)) {
+      return { success: false, error: "This payment changed while you were viewing it. Refresh before confirming." }
+    }
     return { success: false, error: "Failed to mark as paid. Please try again." }
   }
 }
@@ -99,12 +142,44 @@ export async function compDelegate(
   const session = await requireAdmin()
   try {
     await prisma.$transaction(async (tx) => {
-      await tx.payment.upsert({
-        where: { delegateId },
-        create: { delegateId, provider: "comp", amountInr: 0, status: "COMPED", confirmedAt: new Date() },
-        update: { status: "COMPED", confirmedAt: new Date() },
+      const delegate = await tx.delegate.findUnique({
+        where: { id: delegateId },
+        select: {
+          status: true,
+          allotment: { select: { id: true } },
+          payment: { select: { status: true } },
+        },
       })
-      await tx.delegate.update({ where: { id: delegateId }, data: { status: "CONFIRMED" } })
+      if (!delegate?.allotment) throw new Error("ALLOTMENT_REQUIRED")
+      if (delegate.status === "CANCELLED" || delegate.status === "CONFIRMED") {
+        throw new Error("DELEGATE_NOT_CONFIRMABLE")
+      }
+      if (delegate.payment && ["PAID", "OFFLINE", "COMPED"].includes(delegate.payment.status)) {
+        throw new Error("PAYMENT_ALREADY_FINAL")
+      }
+      if (delegate.payment) {
+        const claimed = await tx.payment.updateMany({
+          where: { delegateId, status: { in: ["PENDING", "SENT", "FAILED"] } },
+          data: { status: "COMPED", confirmedAt: new Date(), method: "comp" },
+        })
+        if (claimed.count !== 1) throw new Error("PAYMENT_RACE")
+      } else {
+        await tx.payment.create({
+          data: {
+            delegateId,
+            provider: "comp",
+            amountInr: 0,
+            status: "COMPED",
+            confirmedAt: new Date(),
+            method: "comp",
+          },
+        })
+      }
+      const confirmed = await tx.delegate.updateMany({
+        where: { id: delegateId, status: { in: ["ALLOTTED", "PAYMENT_SENT"] } },
+        data: { status: "CONFIRMED" },
+      })
+      if (confirmed.count !== 1) throw new Error("DELEGATE_NOT_CONFIRMABLE")
     })
     await audit(session.user?.email ?? "unknown", "delegate.comp", "Delegate", delegateId)
     await syncSheetForDelegate(delegateId)
@@ -114,7 +189,13 @@ export async function compDelegate(
       // best-effort
     }
     return { success: true, delegate: await reloadDelegate(delegateId) }
-  } catch {
+  } catch (error) {
+    if (error instanceof Error && error.message === "ALLOTMENT_REQUIRED") {
+      return { success: false, error: "Allot a portfolio before marking this delegate as complimentary." }
+    }
+    if (error instanceof Error && /PAYMENT|DELEGATE/.test(error.message)) {
+      return { success: false, error: "This delegate or payment has already moved to another state. Refresh first." }
+    }
     return { success: false, error: "Failed to comp. Please try again." }
   }
 }
@@ -126,6 +207,20 @@ export async function cancelDelegate(
   const session = await requireAdmin()
   try {
     const freedCell = await prisma.$transaction(async (tx) => {
+      const delegate = await tx.delegate.findUnique({
+        where: { id: delegateId },
+        select: { status: true, payment: { select: { status: true } } },
+      })
+      if (!delegate) throw new Error("DELEGATE_NOT_FOUND")
+      if (
+        delegate.status === "CONFIRMED" ||
+        (delegate.payment && ["PAID", "OFFLINE", "COMPED"].includes(delegate.payment.status))
+      ) {
+        throw new Error("CONFIRMED_CANNOT_CANCEL")
+      }
+      if (delegate.payment?.status === "SENT") {
+        throw new Error("LIVE_PAYMENT_LINK")
+      }
       const allotment = await tx.allotment.findUnique({
         where: { delegateId },
         include: { portfolio: { include: { committee: { select: { name: true } } } } },
@@ -150,7 +245,13 @@ export async function cancelDelegate(
       await syncSheetCell({ ...freedCell, state: "available" })
     }
     return { success: true, delegate: await reloadDelegate(delegateId) }
-  } catch {
+  } catch (error) {
+    if (error instanceof Error && error.message === "CONFIRMED_CANNOT_CANCEL") {
+      return { success: false, error: "Confirmed delegates need a separate refund/removal process; they cannot be cancelled here." }
+    }
+    if (error instanceof Error && error.message === "LIVE_PAYMENT_LINK") {
+      return { success: false, error: "This delegate has a live payment link. Disable that link before cancelling the registration." }
+    }
     return { success: false, error: "Failed to cancel. Please try again." }
   }
 }
@@ -183,7 +284,7 @@ export async function waitlistDelegate(
 // Recovers delegates stuck in ALLOTTED (fee/provider misconfig at allotment time).
 export async function regeneratePaymentLink(
   delegateId: string,
-): Promise<{ success: boolean; error?: string; delegate?: SerializedDelegate }> {
+): Promise<{ success: boolean; error?: string; warning?: string; delegate?: SerializedDelegate }> {
   const session = await requireStaff()
   try {
     const delegate = await prisma.delegate.findUniqueOrThrow({
@@ -210,7 +311,7 @@ export async function regeneratePaymentLink(
           isDtu: delegate.isDtu,
         },
       })
-      if (!fee) return { success: false, error: "No matching fee configured — add one in Config → Fees." }
+      if (!fee) return { success: false, error: "No matching fee configured, add one in Config → Fees." }
       amountInr = fee.amountInr
     }
 
@@ -240,10 +341,32 @@ export async function regeneratePaymentLink(
     })
     await prisma.delegate.update({ where: { id: delegateId }, data: { status: "PAYMENT_SENT" } })
     await audit(session.user?.email ?? "unknown", "delegate.regeneratePaymentLink", "Delegate", delegateId)
-    return { success: true, delegate: await reloadDelegate(delegateId) }
+    const updated = await reloadDelegate(delegateId)
+    try {
+      await sendAllotmentEmail(delegateId)
+    } catch {
+      return {
+        success: true,
+        warning: "The new link was saved, but the email failed. Copy the link from this drawer.",
+        delegate: updated,
+      }
+    }
+    return { success: true, delegate: updated }
   } catch {
     return { success: false, error: "Failed to regenerate payment link." }
   }
+}
+
+// Fetched when the drawer opens rather than joined onto every table row.
+export async function getDelegateEmailLogs(delegateId: string): Promise<EmailLogEntry[]> {
+  await requireStaff()
+  const logs = await prisma.emailLog.findMany({
+    where: { delegateId },
+    orderBy: { sentAt: "desc" },
+    take: 50,
+    select: { id: true, template: true, status: true, error: true, sentAt: true },
+  })
+  return logs.map((l) => ({ ...l, sentAt: l.sentAt.toISOString() }))
 }
 
 export async function resendEmail(

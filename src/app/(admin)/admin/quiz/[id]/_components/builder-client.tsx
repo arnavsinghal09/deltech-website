@@ -183,7 +183,7 @@ export function BuilderClient({ presentation, initialSlides }: Props) {
       />
 
       <div className="hidden min-h-0 flex-1 lg:flex">
-        {/* Left — slide list */}
+        {/* Left, slide list */}
         <SlidePanel
           slides={slides}
           selectedId={selectedId}
@@ -195,7 +195,7 @@ export function BuilderClient({ presentation, initialSlides }: Props) {
           onMoveDown={handleMoveDown}
         />
 
-        {/* Center — live preview */}
+        {/* Center, live preview */}
         <div className="relative flex min-w-0 flex-1 flex-col items-center justify-center overflow-auto bg-[#d8d3c7] p-8">
           <div className="pointer-events-none absolute left-6 top-5 flex items-center gap-3 font-mono text-xs font-bold uppercase tracking-[0.18em] text-black/35">
             <span className="size-2 bg-primary" /> Live canvas
@@ -207,7 +207,7 @@ export function BuilderClient({ presentation, initialSlides }: Props) {
           )}
         </div>
 
-        {/* Right — config */}
+        {/* Right, config */}
         <ConfigPanel
           slide={selectedSlide}
           mode={mode}

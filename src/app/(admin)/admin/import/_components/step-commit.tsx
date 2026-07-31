@@ -12,7 +12,7 @@ interface Props {
   validated: ValidatedRow[]
   skipped:   Set<number>
   onBack:    () => void
-  onDone:    () => void
+  onDone:    (result: CommitResult) => void
 }
 
 export function StepCommit({ validated, skipped, onBack, onDone }: Props) {
@@ -70,7 +70,7 @@ export function StepCommit({ validated, skipped, onBack, onDone }: Props) {
                   <XCircle className="size-4 shrink-0 text-destructive mt-0.5" />
                   <div>
                     <span className="text-xs font-medium text-foreground">{e.email}</span>
-                    <span className="text-xs text-muted-foreground"> — {e.reason}</span>
+                    <span className="text-xs text-muted-foreground"> · {e.reason}</span>
                   </div>
                 </div>
               ))}
@@ -78,7 +78,7 @@ export function StepCommit({ validated, skipped, onBack, onDone }: Props) {
           </div>
         )}
 
-        <Button className="w-full" onClick={onDone}>Done</Button>
+        <Button className="w-full" onClick={() => result && onDone(result)}>Done</Button>
       </div>
     )
   }
@@ -109,7 +109,7 @@ export function StepCommit({ validated, skipped, onBack, onDone }: Props) {
             <p className="text-sm font-medium text-foreground">All delegates will be marked Confirmed</p>
           </div>
           <p className="mt-1 text-xs text-muted-foreground pl-6">
-            Cross-delegation imports are always confirmed immediately — no payment requests sent.
+            Cross-delegation imports are always confirmed immediately, no payment requests sent.
           </p>
         </div>
       </div>

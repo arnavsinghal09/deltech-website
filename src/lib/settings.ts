@@ -2,6 +2,7 @@ import { cache } from "react";
 import { prisma } from "@/lib/prisma";
 import { ContentSchema, DEFAULTS, type Content } from "@/content/contentSchema";
 import { STRINGS, type Strings, type StringKey } from "@/content/strings";
+import { deserializeSettingValue } from "@/lib/setting-value";
 
 // ---- Content (conference/marketing copy) ----
 
@@ -9,12 +10,11 @@ export const getContent = cache(async (): Promise<Content> => {
   const rows = await prisma.setting.findMany();
   const fromDb: Record<string, unknown> = {};
   for (const { key, value } of rows) {
-    // pg adapter may deserialize jsonb as a string; also guard against corrupt ""
-    if (typeof value === "string") {
-      try { fromDb[key] = JSON.parse(value); } catch { /* skip; use DEFAULTS fallback */ }
-    } else {
-      fromDb[key] = value;
-    }
+    // The driver can return either decoded JSON or serialized JSON. Plain JSON
+    // string scalars such as CONFERENCE are already decoded and must not be
+    // discarded merely because JSON.parse cannot parse them without quotes.
+    const decoded = deserializeSettingValue(value);
+    if (decoded !== undefined) fromDb[key] = decoded;
   }
   const merged = { ...DEFAULTS, ...fromDb };
   return ContentSchema.parse(merged);
@@ -26,14 +26,16 @@ export async function getSetting(key: string): Promise<unknown> {
 }
 
 export async function setContent(partial: Partial<Record<string, unknown>>): Promise<void> {
-  await Promise.all(
-    Object.entries(partial).map(([key, value]) =>
+  const entries = Object.entries(partial).sort(([a], [b]) => a.localeCompare(b));
+  await prisma.$transaction(
+    entries.map(([key, value]) =>
       prisma.setting.upsert({
         where: { key },
         update: { value: value as never },
         create: { key, value: value as never },
       }),
     ),
+    { isolationLevel: "Serializable" },
   );
 }
 

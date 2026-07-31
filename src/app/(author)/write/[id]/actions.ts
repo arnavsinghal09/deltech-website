@@ -65,7 +65,13 @@ export async function saveDraft(
         coverImage:  data.coverImage ?? null,
         readMin:     data.readMin,
         slug:        newSlug,
-        status:      "DRAFT",
+        // Autosave must not change the review state. This forced "DRAFT"
+        // unconditionally, and the editor autosaves 1.5s after any keystroke,
+        // so an author fixing a typo while awaiting review silently pulled
+        // their own post out of the admin queue. Nothing told either side, and
+        // the Submit button stayed hidden because canSubmit came from the
+        // initial server prop.
+        status:      post.status === "PENDING" ? "PENDING" : "DRAFT",
       },
     })
     return { success: true, slug: newSlug }
@@ -92,6 +98,20 @@ export async function submitPost(
   }
 }
 
+// Extension -> content type. The bucket is public via getPublicUrl, so an
+// SVG or an HTML file accepted here becomes stored XSS on the Supabase
+// origin. Deriving the content type from this table rather than from
+// file.type also stops a client mislabelling one thing as another.
+const ALLOWED_IMAGE_TYPES: Record<string, string> = {
+  jpg:  "image/jpeg",
+  jpeg: "image/jpeg",
+  png:  "image/png",
+  webp: "image/webp",
+  gif:  "image/gif",
+}
+
+const MAX_UPLOAD_BYTES = 5 * 1024 * 1024
+
 export async function uploadImage(
   postId: string,
   formData: FormData,
@@ -101,12 +121,24 @@ export async function uploadImage(
     const file = formData.get("file") as File | null
     if (!file) return { error: "No file provided." }
 
-    const ext  = file.name.split(".").pop()?.toLowerCase() ?? "jpg"
+    if (file.size > MAX_UPLOAD_BYTES) {
+      return { error: "Image is too large. The limit is 5 MB." }
+    }
+
+    // `ext` was taken straight from the filename, so "x.jpg/../../evil" gave
+    // an extension containing slashes and traversal inside the bucket. The
+    // allowlist lookup makes anything unexpected fail closed.
+    const ext = file.name.split(".").pop()?.toLowerCase() ?? ""
+    const contentType = ALLOWED_IMAGE_TYPES[ext]
+    if (!contentType) {
+      return { error: "Only JPG, PNG, WebP and GIF images are allowed." }
+    }
+
     const path = `${userId}/${postId}/${Date.now()}.${ext}`
 
     const { data, error } = await supabase.storage
       .from("blog-images")
-      .upload(path, file, { contentType: file.type, upsert: false })
+      .upload(path, file, { contentType, upsert: false })
 
     if (error) return { error: error.message }
 

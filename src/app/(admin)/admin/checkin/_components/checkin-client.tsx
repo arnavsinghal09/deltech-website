@@ -40,6 +40,7 @@ interface Filters {
 interface Props {
   delegates: CheckinDelegate[]
   filters: Filters
+  capped?: boolean
 }
 
 const STATUS_OPTIONS = ["REGISTERED", "ALLOTTED", "PAYMENT_SENT", "CONFIRMED", "CANCELLED", "WAITLISTED"]
@@ -71,7 +72,7 @@ function buildUrl(filters: Filters) {
   return `/admin/checkin${qs ? `?${qs}` : ""}`
 }
 
-export function CheckinClient({ delegates, filters }: Props) {
+export function CheckinClient({ delegates, filters, capped }: Props) {
   const router = useRouter()
   const [, startTransition] = useTransition()
   const [searchValue, setSearchValue] = useState(filters.q)
@@ -147,6 +148,13 @@ export function CheckinClient({ delegates, filters }: Props) {
         </Select>
       </div>
 
+      {capped && (
+        <p className="rounded-md border border-amber-500/40 bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:bg-amber-950/30 dark:text-amber-300">
+          Showing the first {delegates.length} matches. Search by name, email or institution to
+          narrow it down.
+        </p>
+      )}
+
       {/* Table */}
       <div className="editorial-card overflow-x-auto">
         <table className="w-full text-sm">
@@ -182,8 +190,8 @@ export function CheckinClient({ delegates, filters }: Props) {
                     <div className="font-medium text-card-foreground">{d.fullName}</div>
                     <div className="text-xs text-muted-foreground">{d.email}</div>
                   </td>
-                  <td className="px-4 py-3 text-muted-foreground">{d.committeeName ?? "—"}</td>
-                  <td className="px-4 py-3 text-muted-foreground">{d.portfolioName ?? "—"}</td>
+                  <td className="px-4 py-3 text-muted-foreground">{d.committeeName ?? "-"}</td>
+                  <td className="px-4 py-3 text-muted-foreground">{d.portfolioName ?? "-"}</td>
                   <td className="px-4 py-3">
                     <div className="flex flex-wrap items-center gap-1.5">
                       <Badge variant={STATUS_VARIANT[d.status] ?? "secondary"}>
@@ -195,13 +203,13 @@ export function CheckinClient({ delegates, filters }: Props) {
                     </div>
                   </td>
                   <td className="px-4 py-3 text-xs text-muted-foreground">
-                    {d.paymentStatus ? (PAY_STATUS_LABEL[d.paymentStatus] ?? d.paymentStatus) : "—"}
+                    {d.paymentStatus ? (PAY_STATUS_LABEL[d.paymentStatus] ?? d.paymentStatus) : "-"}
                   </td>
                   <td className="px-4 py-3">
                     {d.checkedInAt ? (
                       <div className="flex items-center gap-2">
                         <span className="text-xs text-muted-foreground">
-                          {t("checkin.checkedInAt", { time: formatTime(d.checkedInAt), by: d.checkedInBy ?? "—" })}
+                          {t("checkin.checkedInAt", { time: formatTime(d.checkedInAt), by: d.checkedInBy ?? "-" })}
                         </span>
                         <Button
                           size="sm"

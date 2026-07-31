@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma"
 import { STRINGS, t } from "@/content/strings"
 
 export const metadata: Metadata = {
-  title: `Blog — ${STRINGS.brand.name}`,
+  title: `Blog · ${STRINGS.brand.name}`,
   description: `Stories, insights, and updates from the ${STRINGS.brand.name} community.`,
 }
 

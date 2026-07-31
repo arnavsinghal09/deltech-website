@@ -14,7 +14,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { cn } from "@/lib/utils"
-import { holdPortfolio, allotPortfolio } from "../actions"
+import { holdPortfolio, releaseHold, allotPortfolio } from "../actions"
 import { preferenceRank } from "../_lib/balance"
 import type { SerializedPortfolio, SerializedCommittee, SerializedDelegate, Fee } from "./allotment-board"
 
@@ -25,7 +25,7 @@ interface Props {
   fees: Fee[]
   paymentsRequired: boolean
   onClose: () => void
-  onAllotted: () => void
+  onAllotted: (hadWarning?: boolean) => void
 }
 
 interface RankedDelegate extends SerializedDelegate {
@@ -45,14 +45,24 @@ export function AllotDialog({
   const [search, setSearch] = useState("")
   const [selected, setSelected] = useState<SerializedDelegate | null>(null)
   const [isPending, startTransition] = useTransition()
-  const [heldByUs, setHeldByUs] = useState(false)
+  const [holdToken, setHoldToken] = useState<string | null>(null)
+  const [holdFailed, setHoldFailed] = useState(false)
 
   // Soft-lock the portfolio when the dialog mounts
   useEffect(() => {
     holdPortfolio(portfolio.id)
-      .then((r) => setHeldByUs(r.success))
-      .catch(() => {})
+      .then((result) => {
+        setHoldToken(result.holdToken ?? null)
+        setHoldFailed(!result.success)
+      })
+      .catch(() => setHoldFailed(true))
   }, [portfolio.id])
+
+  useEffect(() => {
+    return () => {
+      if (holdToken) void releaseHold(portfolio.id, holdToken).catch(() => {})
+    }
+  }, [holdToken, portfolio.id])
 
   // Ranked candidate list: pref1 matches first, then pref2, then unmatched;
   // within each group, earlier registration wins.
@@ -87,19 +97,23 @@ export function AllotDialog({
   }, [selected, fees, committee.type, paymentsRequired])
 
   const handleConfirm = () => {
-    if (!selected) return
+    if (!selected || !holdToken) return
     startTransition(async () => {
       const result = await allotPortfolio({
         portfolioId: portfolio.id,
         committeeId: committee.id,
         delegateId: selected.id,
+        holdToken,
       })
       if (result.success) {
         setOpen(false)
-        onAllotted()
+        // Allotted, but something after the commit did not land. Surface it
+        // rather than letting the generic success toast paper over it.
+        if (result.warning) toast.warning(result.warning, { duration: 10000 })
+        onAllotted(!!result.warning)
       } else {
         toast.error(result.error ?? "Allotment failed.")
-        if (result.code === "ALREADY_ALLOTTED") {
+        if (result.code === "ALREADY_ALLOTTED" || result.code === "HOLD_LOST") {
           setOpen(false)
           onClose()
         }
@@ -110,11 +124,14 @@ export function AllotDialog({
   const handleOpenChange = (o: boolean) => {
     if (!o && !isPending) {
       setOpen(false)
+      // Only give back a hold we actually took, so closing this dialog can
+      // never free a portfolio another admin is holding.
+      if (holdToken) void releaseHold(portfolio.id, holdToken).catch(() => {})
       onClose()
     }
   }
 
-  const onHoldByOther = portfolio.status === "ON_HOLD" && !heldByUs
+  const onHoldByOther = holdFailed
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -123,7 +140,7 @@ export function AllotDialog({
           <DialogTitle>Allot portfolio</DialogTitle>
           <DialogDescription>
             <span className="font-medium text-foreground">{portfolio.name}</span>
-            {" — "}
+            {" · "}
             {committee.name}
             {onHoldByOther && (
               <span className="ml-2 text-amber-600 dark:text-amber-400">
@@ -231,10 +248,13 @@ export function AllotDialog({
         )}
 
         <DialogFooter>
-          <Button variant="outline" onClick={onClose} disabled={isPending}>
+          <Button variant="outline" onClick={() => handleOpenChange(false)} disabled={isPending}>
             Cancel
           </Button>
-          <Button onClick={handleConfirm} disabled={!selected || isPending}>
+          <Button
+            onClick={handleConfirm}
+            disabled={!selected || !holdToken || isPending || (paymentsRequired && !computedFee)}
+          >
             {isPending ? "Allotting…" : paymentsRequired ? "Confirm allotment" : "Confirm free allotment"}
           </Button>
         </DialogFooter>

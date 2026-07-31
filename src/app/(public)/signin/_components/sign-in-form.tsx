@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { t } from "@/content/strings";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,9 +17,13 @@ export function SignInForm({
 }) {
   const [mlState, mlAction, mlPending] = useActionState(requestMagicLink, null);
   const [pwState, pwAction, pwPending] = useActionState(signInWithPassword, null);
+  // Controlled so "Forgot password?" can hand the user to the magic-link tab.
+  // That link is the whole password-recovery flow: the magic link is already a
+  // single-use expiring token, so there is no separate reset token to mint.
+  const [tab, setTab] = useState<string>(defaultTab);
 
   return (
-    <Tabs defaultValue={defaultTab}>
+    <Tabs value={tab} onValueChange={(v) => setTab(String(v))}>
       <TabsList className="mb-7 grid h-13 w-full grid-cols-2 rounded-none bg-black/5 p-1">
         <TabsTrigger value="magic" className="h-11 rounded-none text-sm font-bold data-[state=active]:bg-foreground data-[state=active]:text-background">
           {t("auth.magicLinkTab")}
@@ -46,7 +50,11 @@ export function SignInForm({
             />
           </div>
           {mlState?.error && (
-            <p className="text-sm text-destructive">{t("auth.errorDefault")}</p>
+            <p className="text-sm text-destructive">
+              {mlState.error === "tooManyRequests"
+                ? t("auth.tooManyRequests")
+                : t("auth.errorDefault")}
+            </p>
           )}
           <Button type="submit" disabled={mlPending} className="h-14 w-full rounded-none text-base">
             {mlPending ? t("common.sending") : t("auth.sendLinkButton")}
@@ -87,12 +95,28 @@ export function SignInForm({
             <p className="text-sm text-destructive">
               {pwState.error === "invalidCredentials"
                 ? t("auth.invalidCredentials")
-                : t("auth.errorDefault")}
+                : pwState.error === "tooManyRequests"
+                  ? t("auth.tooManyRequests")
+                  : t("auth.errorDefault")}
             </p>
           )}
           <Button type="submit" disabled={pwPending} className="h-14 w-full rounded-none text-base">
             {pwPending ? t("common.loading") : t("auth.signInWithPasswordButton")}
           </Button>
+
+          <button
+            type="button"
+            onClick={() => setTab("magic")}
+            className="-mt-1 self-start text-sm font-bold text-teal-800 underline underline-offset-2"
+          >
+            {t("auth.forgotPassword")}
+          </button>
+
+          {/* Invited staff have no passwordHash at all, so the generic
+              "invalid email or password" is actively misleading for them.
+              Stated up front rather than as an error, which would leak
+              whether a given address has an account. */}
+          <p className="text-xs leading-relaxed text-black/50">{t("auth.noPasswordYetHint")}</p>
         </form>
       </TabsContent>
     </Tabs>

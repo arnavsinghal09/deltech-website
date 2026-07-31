@@ -24,7 +24,7 @@ export async function callAI<T>(prompt: string): Promise<T> {
       messages: [
         {
           role: "system",
-          content: "You are a data processing assistant. Respond with valid JSON only — no markdown fences, no explanation, just the raw JSON object.",
+          content: "You are a data processing assistant. Respond with valid JSON only, no markdown fences, no explanation, just the raw JSON object.",
         },
         { role: "user", content: prompt },
       ],

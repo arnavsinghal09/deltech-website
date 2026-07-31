@@ -53,7 +53,7 @@
   --radius-3xl: calc(var(--radius) * 2.2);
   --radius-4xl: calc(var(--radius) * 2.6);
 
-  /* Teal design tokens — direct Tailwind utilities */
+  /* Teal design tokens, direct Tailwind utilities */
   --color-teal-50: var(--teal-50);
   --color-teal-100: var(--teal-100);
   --color-teal-200: var(--teal-200);
@@ -65,7 +65,7 @@
   --color-teal-800: var(--teal-800);
   --color-teal-900: var(--teal-900);
 
-  /* Gold accents — editorial secondary hue */
+  /* Gold accents, editorial secondary hue */
   --color-gold-300: var(--gold-300);
   --color-gold-500: var(--gold-500);
   --color-gold-700: var(--gold-700);
@@ -84,7 +84,7 @@
   --teal-800: oklch(0.16 0.033 196);
   --teal-900: oklch(0.09 0.018 196);
 
-  /* Gold — editorial accent hue */
+  /* Gold, editorial accent hue */
   --gold-300: oklch(0.82 0.09 90);
   --gold-500: oklch(0.68 0.115 85);
   --gold-700: oklch(0.5 0.09 75);
@@ -94,7 +94,7 @@
   --signal-soft: oklch(0.92 0.035 70);
   --ink-soft: oklch(0.35 0.018 65);
 
-  /* Semantic tokens — light mode: paper & ink */
+  /* Semantic tokens, light mode: paper & ink */
   --background: oklch(0.975 0.008 84);
   --foreground: oklch(0.205 0.018 63);
   --card: oklch(0.988 0.005 90);
@@ -138,7 +138,7 @@
 }
 
 .dark {
-  /* Dark mode — study at night: warm near-black, lifted teal & gold */
+  /* Dark mode, study at night: warm near-black, lifted teal & gold */
   --background: oklch(0.16 0.01 70);
   --foreground: oklch(0.92 0.012 85);
   --card: oklch(0.2 0.012 75);
@@ -248,7 +248,7 @@
     height: 1px;
     background: color-mix(in oklch, var(--gold-500) 55%, transparent);
   }
-  /* 1px ink border card — no drop-shadow soup */
+  /* 1px ink border card, no drop-shadow soup */
   .editorial-card {
     background: var(--card);
     border: 1px solid color-mix(in oklch, var(--foreground) 14%, transparent);

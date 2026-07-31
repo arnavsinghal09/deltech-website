@@ -29,7 +29,7 @@ interface Props {
   presetNames: string[]
 }
 
-// Recurring partners' Google Sheets — synced daily by /api/cron/gform-sync.
+// Recurring partners' Google Sheets, synced daily by /api/cron/gform-sync.
 export function PartnerSheetsCard({ sources, presetNames }: Props) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
@@ -59,7 +59,7 @@ export function PartnerSheetsCard({ sources, presetNames }: Props) {
     }
     save([...sources.filter((s) => s.presetName !== preset), { presetName: preset, csvUrl, source: srcType }])
     setUrl("")
-    toast.success("Partner sheet added — syncs daily.")
+    toast.success("Partner sheet added, syncs daily.")
   }
 
   const remove = (presetName: string) => save(sources.filter((s) => s.presetName !== presetName))
@@ -71,7 +71,7 @@ export function PartnerSheetsCard({ sources, presetNames }: Props) {
         <h2 className="font-heading text-lg">Partner sheets</h2>
       </div>
       <p className="mt-1 text-sm text-muted-foreground">
-        Paste a partner&apos;s Google Sheet — it auto-imports every day, no wizard needed.
+        Paste a partner&apos;s Google Sheet, it auto-imports every day, no wizard needed.
         The sheet must be &quot;anyone with the link can view&quot;, or published to the web.
       </p>
       <div className="rule my-5" />

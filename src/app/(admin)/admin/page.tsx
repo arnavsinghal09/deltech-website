@@ -1,12 +1,25 @@
 import { Users, IndianRupee, BedDouble, CheckCircle2, Building2 } from "lucide-react"
 import { prisma } from "@/lib/prisma"
 import { getContent } from "@/lib/settings"
+import { deriveEventState } from "@/lib/event-state"
 import { requireStaff } from "@/lib/authz"
 import { t, type StringKey } from "@/content/strings"
 import { PageHeader } from "../_components/page-header"
 import { StatCard } from "./_components/stat-card"
-import { StatusBarChart } from "./_components/status-bar-chart"
-import { SourcePieChart } from "./_components/source-pie-chart"
+import dynamic from "next/dynamic"
+import { Skeleton } from "@/components/ui/skeleton"
+
+// recharts is ~100kB gzipped and this is the first screen every staff member
+// hits. Split so it streams in after the numbers, which are the point of the
+// page, rather than blocking them.
+const StatusBarChart = dynamic(
+  () => import("./_components/status-bar-chart").then((m) => m.StatusBarChart),
+  { loading: () => <Skeleton className="h-64 w-full" /> },
+)
+const SourcePieChart = dynamic(
+  () => import("./_components/source-pie-chart").then((m) => m.SourcePieChart),
+  { loading: () => <Skeleton className="h-64 w-full" /> },
+)
 import { CommitteeFillTable } from "./_components/committee-fill-table"
 import { SetupChecklist, type ChecklistItem } from "./_components/setup-checklist"
 import { MaintainerWelcome } from "./_components/maintainer-welcome"
@@ -23,6 +36,7 @@ export default async function AdminOverviewPage() {
     accommodationCount,
     revenueResult,
     committees,
+    portfolioCounts,
     portfolioCount,
     feeCount,
     memberCount,
@@ -46,8 +60,13 @@ export default async function AdminOverviewPage() {
         id: true,
         name: true,
         _count: { select: { portfolios: true } },
-        portfolios: { select: { status: true } },
       },
+    }),
+    // One grouped count instead of one row per seat. This page pulled every
+    // Portfolio in the conference purely to length-filter them in JS.
+    prisma.portfolio.groupBy({
+      by: ["committeeId", "status"],
+      _count: { _all: true },
     }),
     prisma.portfolio.count(),
     prisma.fee.count(),
@@ -64,7 +83,7 @@ export default async function AdminOverviewPage() {
   ])
 
   const eventActive = content.publicSections.activeEvent
-  const paymentsActive = content.eventMode !== "INTRA_MUN" && content.paymentsEnabled
+  const paymentsActive = deriveEventState(content).paymentsRequired
   const checklist: ChecklistItem[] = [
     { done: true, label: `Operating mode: ${content.eventMode.replace("_", " ")}`, href: "/admin/config" },
     ...(eventActive ? [{
@@ -98,12 +117,16 @@ export default async function AdminOverviewPage() {
     value: s._count._all,
   }))
 
+  const takenByCommittee = new Map<string, number>()
+  for (const g of portfolioCounts) {
+    if (g.status !== "ALLOTTED" && g.status !== "BLOCKED") continue
+    takenByCommittee.set(g.committeeId, (takenByCommittee.get(g.committeeId) ?? 0) + g._count._all)
+  }
+
   const committeeData = committees.map((c) => ({
     name: c.name,
     total: c._count.portfolios,
-    allotted: c.portfolios.filter(
-      (p) => p.status === "ALLOTTED" || p.status === "BLOCKED",
-    ).length,
+    allotted: takenByCommittee.get(c.id) ?? 0,
   }))
 
   return (
@@ -137,7 +160,7 @@ export default async function AdminOverviewPage() {
           value={confirmedCount}
           icon={CheckCircle2}
           description="of total"
-          trend={total > 0 ? `${Math.round((confirmedCount / total) * 100)}%` : "—"}
+          trend={total > 0 ? `${Math.round((confirmedCount / total) * 100)}%` : "-"}
         />
         <StatCard
           title={t("admin.overview.revenueCollected")}
@@ -168,7 +191,7 @@ export default async function AdminOverviewPage() {
 
       {/* Committee fill-rate table */}
       <div className="editorial-card p-5">
-        <h2 className="eyebrow mb-5">{t("admin.overview.byCommittee")} — fill rate</h2>
+        <h2 className="eyebrow mb-5">{t("admin.overview.byCommittee")}, fill rate</h2>
         <CommitteeFillTable data={committeeData} />
       </div>
     </div>

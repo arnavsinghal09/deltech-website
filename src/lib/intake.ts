@@ -1,9 +1,10 @@
+import { cache } from "react"
 import { prisma } from "@/lib/prisma"
 import { mappedRowSchema, type MappedRow } from "@/lib/schemas/import"
 import type { Source, Prisma } from "@/generated/prisma/client"
 
 // ---------------------------------------------------------------------------
-// Deterministic normalizers — run before (and independently of) any AI pass.
+// Deterministic normalizers, run before (and independently of) any AI pass.
 // One pipeline, three entrances: import wizard, gform webhook, cron re-sync.
 // ---------------------------------------------------------------------------
 
@@ -102,13 +103,15 @@ export function normalizeRow(input: MappedRow, committees: CommitteeRef[]): Norm
   }
 }
 
-export async function getCommitteeRefs(): Promise<CommitteeRef[]> {
-  const committees = await prisma.committee.findMany({
+// Deduped per request. createDelegateFromRow calls this as its first line, and
+// its callers loop: a 300-row import fired 300 identical committee queries, and
+// the nightly gform sync did the same for every row of every sheet.
+export const getCommitteeRefs = cache(async (): Promise<CommitteeRef[]> => {
+  return prisma.committee.findMany({
     where: { isActive: true },
     select: { id: true, name: true, slug: true, aliases: true },
   })
-  return committees
-}
+})
 
 // ---------------------------------------------------------------------------
 // Row → Delegate (single write path for every intake channel)
@@ -156,6 +159,21 @@ export type CreateRowResult =
 
 function isP2002(err: unknown): boolean {
   return typeof err === "object" && err !== null && "code" in err && (err as { code: unknown }).code === "P2002"
+}
+
+// Which unique index did we collide with? Two very different failures both
+// surface as P2002 here and used to be reported identically as "duplicate":
+//
+//   Delegate.email      this person really is already registered. Skipping is right.
+//   Allotment.portfolioId  another row took the same portfolio a moment earlier.
+//                          The whole transaction rolls back, so this delegate is
+//                          never created at all, and calling that a duplicate
+//                          means a real (often paid) registration is dropped with
+//                          no quarantine row and no error anyone ever sees.
+function conflictTarget(err: unknown): string {
+  const meta = (err as { meta?: { target?: unknown } })?.meta?.target
+  if (Array.isArray(meta)) return meta.join(",")
+  return typeof meta === "string" ? meta : ""
 }
 
 // Creates a Delegate from a normalized row. CROSS_DEL rows are CONFIRMED and
@@ -227,6 +245,26 @@ export async function createDelegateFromRow(
     return { ok: true, delegateId, allotted }
   } catch (err) {
     if (isP2002(err)) {
+      const target = conflictTarget(err)
+
+      // Portfolio contention, not a duplicate person. The transaction rolled
+      // back so this delegate does not exist; quarantine the row so a human
+      // can re-run it against a different portfolio instead of losing it.
+      if (target.includes("portfolioId")) {
+        const errors = [
+          `Portfolio already taken by another row in this batch; ${row.email} was not created`,
+        ]
+        const q = await prisma.quarantinedRow.create({
+          data: {
+            source,
+            presetName: opts.presetName,
+            raw: row as unknown as Prisma.InputJsonValue,
+            errors,
+          },
+        })
+        return { ok: false, reason: "invalid", errors, quarantinedId: q.id }
+      }
+
       return { ok: false, reason: "duplicate", errors: [`${row.email} already registered`] }
     }
     throw err

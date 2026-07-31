@@ -4,6 +4,8 @@ import { prisma } from "@/lib/prisma"
 import { getContent } from "@/lib/settings"
 import { registerSchema, type RegisterFormValues } from "@/lib/schemas/register"
 import { sendRegistrationEmails } from "@/lib/resend"
+import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit"
+import { deriveEventState } from "@/lib/event-state"
 
 type ActionResult =
   | { success: true; delegateId: string; publicToken: string }
@@ -12,8 +14,16 @@ type ActionResult =
 export async function registerDelegate(data: RegisterFormValues): Promise<ActionResult> {
   // Server-side registration guard
   const content = await getContent()
-  if (!content.registrationOpen) {
+  if (!deriveEventState(content).acceptsRegistrations) {
     return { success: false, error: "Registrations are currently closed." }
+  }
+
+  // Keyed on the submitted email so a flood cannot lock out other applicants.
+  if (data?.email) {
+    const limit = await rateLimit(RATE_LIMITS.register, data.email)
+    if (!limit.ok) {
+      return { success: false, error: "Too many attempts. Wait a few minutes and try again." }
+    }
   }
 
   // Validate with shared schema
@@ -52,40 +62,50 @@ export async function registerDelegate(data: RegisterFormValues): Promise<Action
 
   let delegate
   try {
-    delegate = await prisma.delegate.create({
-    data: {
-      fullName: vals.fullName,
-      email: vals.email,
-      whatsapp: vals.whatsapp,
-      altPhone: vals.altPhone ?? null,
-      institution: vals.institution,
-      isDtu: vals.isDtu,
-      munExperience: vals.munExperience || null,
-      source: "SELF",
-      pref1CommitteeId: vals.pref1CommitteeId,
-      pref1Portfolio: vals.pref1Portfolio,
-      // For double-delegation committees, clear pref2 — it is not applicable
-      pref2CommitteeId: isDoubleDelegation ? null : (vals.pref2CommitteeId ?? null),
-      pref2Portfolio: isDoubleDelegation ? null : (vals.pref2Portfolio ?? null),
-      needsAccommodation: vals.needsAccommodation,
-      outsideNcr: vals.outsideNcr,
-      reference: vals.reference || null,
-      status: "REGISTERED",
-      ...(isDoubleDelegation && vals.coDelegate
-        ? {
-            coDelegate: {
-              create: {
-                fullName: vals.coDelegate.fullName,
-                email: vals.coDelegate.email,
-                phone: vals.coDelegate.phone,
-                institution: vals.coDelegate.institution ?? null,
-                munExperience: vals.coDelegate.munExperience || null,
-              },
-            },
-          }
-        : {}),
-      },
-    })
+    delegate = await prisma.$transaction(async (tx) => {
+      const settings = await tx.setting.findMany({
+        where: { key: { in: ["eventMode", "registrationOpen"] } },
+      })
+      const current = Object.fromEntries(settings.map(({ key, value }) => [key, value]))
+      const mode = current.eventMode ?? content.eventMode
+      const registrationOpen = current.registrationOpen ?? content.registrationOpen
+      if (mode === "SOCIETY" || registrationOpen !== true) return null
+
+      return tx.delegate.create({
+        data: {
+          fullName: vals.fullName,
+          email: vals.email,
+          whatsapp: vals.whatsapp,
+          altPhone: vals.altPhone ?? null,
+          institution: vals.institution,
+          isDtu: vals.isDtu,
+          munExperience: vals.munExperience || null,
+          source: "SELF",
+          pref1CommitteeId: vals.pref1CommitteeId,
+          pref1Portfolio: vals.pref1Portfolio,
+          // For double-delegation committees, clear pref2, it is not applicable
+          pref2CommitteeId: isDoubleDelegation ? null : (vals.pref2CommitteeId ?? null),
+          pref2Portfolio: isDoubleDelegation ? null : (vals.pref2Portfolio ?? null),
+          needsAccommodation: vals.needsAccommodation,
+          outsideNcr: vals.outsideNcr,
+          reference: vals.reference || null,
+          status: "REGISTERED",
+          ...(isDoubleDelegation && vals.coDelegate
+            ? {
+                coDelegate: {
+                  create: {
+                    fullName: vals.coDelegate.fullName,
+                    email: vals.coDelegate.email,
+                    phone: vals.coDelegate.phone,
+                    institution: vals.coDelegate.institution ?? null,
+                    munExperience: vals.coDelegate.munExperience || null,
+                  },
+                },
+              }
+            : {}),
+        },
+      })
+    }, { isolationLevel: "Serializable" })
   } catch (err) {
     if (typeof err === "object" && err !== null && "code" in err && (err as { code: unknown }).code === "P2002") {
       return { success: false, error: "This email is already registered. Sign in to view your application status." }
@@ -93,10 +113,14 @@ export async function registerDelegate(data: RegisterFormValues): Promise<Action
     throw err
   }
 
+  if (!delegate) {
+    return { success: false, error: "Registrations closed while you were submitting. Your application was not created." }
+  }
+
   try {
     await sendRegistrationEmails(delegate.id)
   } catch (err) {
-    // Email must never fail the registration — the delegate row is already committed.
+    // Email must never fail the registration, the delegate row is already committed.
     // loggedSend has already written a FAILED EmailLog row (visible in the admin email
     // drawer, resendable from there); this line surfaces it in the server logs so a
     // broken Resend key or address is noticed without someone opening the admin UI.

@@ -100,7 +100,7 @@ export default async function AdminBlogPostPage(props: { params: Promise<{ id: s
           {/* Author */}
           <div className="rounded-xl border bg-card p-4 space-y-1">
             <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Author</p>
-            <p className="text-sm font-medium">{post.author.name ?? "—"}</p>
+            <p className="text-sm font-medium">{post.author.name ?? "-"}</p>
             <p className="text-xs text-muted-foreground">{post.author.email}</p>
           </div>
 

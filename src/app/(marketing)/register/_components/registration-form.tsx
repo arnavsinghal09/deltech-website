@@ -114,7 +114,7 @@ export function RegistrationForm({ committees }: Props) {
   }
 
   const onSubmit = async (data: RegisterFormValues) => {
-    if (submitLock.current) return // already in flight — ignore the repeat
+    if (submitLock.current) return // already in flight, ignore the repeat
     submitLock.current = true
     setIsSubmitting(true)
     try {
@@ -137,7 +137,7 @@ export function RegistrationForm({ committees }: Props) {
       <Stepper steps={STEPS} currentStep={step} />
 
       {/* Focus lands here on each step change, announcing the new step to
-          screen readers (visually hidden — the Stepper conveys progress). */}
+          screen readers (visually hidden, the Stepper conveys progress). */}
       <h2 ref={headingRef} tabIndex={-1} className="sr-only">
         {`Step ${step + 1} of ${STEPS.length}: ${STEPS[step]}`}
       </h2>

@@ -3,6 +3,7 @@ import { Resend } from "resend"
 import { prisma } from "@/lib/prisma"
 import { getContent } from "@/lib/settings"
 import { STRINGS } from "@/content/strings"
+import { APP_URL } from "@/lib/app-url"
 import { RegistrationReceivedEmail } from "@/emails/registration-received"
 import { AllotmentEmail } from "@/emails/allotment"
 import { CoDelegateNoticeEmail } from "@/emails/co-delegate-notice"
@@ -11,14 +12,20 @@ import { PaymentConfirmedEmail } from "@/emails/payment-confirmed"
 import { PaymentReminderEmail } from "@/emails/payment-reminder"
 import { BlogApprovedEmail } from "@/emails/blog-approved"
 import { BlogChangesRequestedEmail } from "@/emails/blog-changes-requested"
+import { BlogRejectedEmail } from "@/emails/blog-rejected"
 import { StaffInviteEmail } from "@/emails/staff-invite"
+import { MagicLinkEmail } from "@/emails/magic-link"
+import { MAGIC_LINK_MAX_AGE_MIN } from "@/lib/magic-link"
+import { deriveEventState } from "@/lib/event-state"
+import { publicPaymentLink } from "@/lib/payments/public-link"
 
 let resendClient: Resend | undefined
 function getResend(): Resend {
   return (resendClient ??= new Resend(process.env.AUTH_RESEND_KEY))
 }
 const FROM = process.env.EMAIL_FROM ?? "noreply@deltechmun.in"
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? ""
+const REDIRECT_TO = process.env.EMAIL_REDIRECT_TO?.trim()
+
 
 // ---------------------------------------------------------------------------
 // Core send + log helper
@@ -41,10 +48,12 @@ async function loggedSend({
   let error: string | undefined
 
   try {
+    const recipient = REDIRECT_TO || toEmail
+    const deliveredSubject = REDIRECT_TO ? `[STAGING → ${toEmail}] ${subject}` : subject
     const { error: apiError } = await getResend().emails.send({
       from: FROM,
-      to: toEmail,
-      subject,
+      to: recipient,
+      subject: deliveredSubject,
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       react: reactElement as any,
     })
@@ -76,7 +85,7 @@ export async function sendRegistrationReceived(delegateId: string): Promise<void
     select: { fullName: true, email: true, publicToken: true },
   })
   const content = await getContent()
-  const paymentsEnabled = content.eventMode !== "INTRA_MUN" && content.paymentsEnabled
+  const paymentsEnabled = deriveEventState(content).paymentsRequired
 
   await loggedSend({
     delegateId,
@@ -95,7 +104,7 @@ export async function sendRegistrationReceived(delegateId: string): Promise<void
 
 /**
  * Co-delegates are real participants but did not submit the form, so they get their
- * own template — and deliberately never the primary's `statusUrl`. That token is a
+ * own template, and deliberately never the primary's `statusUrl`. That token is a
  * bearer credential for /status/<token> AND /pay/<token>; the primary did not consent
  * to sharing a payment surface.
  */
@@ -121,7 +130,7 @@ export async function sendCoDelegateRegistered(delegateId: string): Promise<void
     : null
 
   const content = await getContent()
-  const paymentsEnabled = content.eventMode !== "INTRA_MUN" && content.paymentsEnabled
+  const paymentsEnabled = deriveEventState(content).paymentsRequired
 
   await loggedSend({
     delegateId,
@@ -187,8 +196,8 @@ export async function sendAllotmentEmail(delegateId: string): Promise<void> {
     .replace("{committee}", committee.name)
     .replace("{portfolio}", portfolio.name)
 
-  const paymentsEnabled = content.eventMode !== "INTRA_MUN" && content.paymentsEnabled
-  const payLink = delegate.payment?.paymentLink ?? `${APP_URL}/pay/${delegate.publicToken}`
+  const paymentsEnabled = deriveEventState(content).paymentsRequired
+  const payLink = publicPaymentLink(delegate.payment?.paymentLink, delegate.publicToken)
 
   await loggedSend({
     delegateId,
@@ -239,7 +248,7 @@ export async function sendCoDelegateNotice(delegateId: string): Promise<void> {
   const committee = delegate.allotment.portfolio.committee
   const portfolio = delegate.allotment.portfolio
   const content = await getContent()
-  const paymentsEnabled = content.eventMode !== "INTRA_MUN" && content.paymentsEnabled
+  const paymentsEnabled = deriveEventState(content).paymentsRequired
   const subject = STRINGS.email.subjects.coDelegateNotice.replace("{committee}", committee.name)
 
   await loggedSend({
@@ -297,7 +306,7 @@ export async function sendPaymentConfirmed(delegateId: string): Promise<void> {
 
 export async function sendPaymentReminder(delegateId: string): Promise<void> {
   const content = await getContent()
-  if (content.eventMode === "INTRA_MUN" || !content.paymentsEnabled) return
+  if (!deriveEventState(content).paymentsRequired) return
 
   const delegate = await prisma.delegate.findUniqueOrThrow({
     where: { id: delegateId },
@@ -316,7 +325,7 @@ export async function sendPaymentReminder(delegateId: string): Promise<void> {
 
   const committee = delegate.allotment.portfolio.committee
   const portfolio = delegate.allotment.portfolio
-  const payLink = delegate.payment.paymentLink ?? `${APP_URL}/pay/${delegate.publicToken}`
+  const payLink = publicPaymentLink(delegate.payment.paymentLink, delegate.publicToken)
 
   await loggedSend({
     delegateId,
@@ -380,12 +389,46 @@ export async function sendBlogChangesRequested(postId: string): Promise<void> {
   })
 }
 
+export async function sendBlogRejected(postId: string): Promise<void> {
+  const post = await prisma.post.findUniqueOrThrow({
+    where: { id: postId },
+    select: {
+      title: true,
+      reviewNote: true,
+      author: { select: { name: true, email: true } },
+    },
+  })
+
+  await loggedSend({
+    template: "blog-rejected",
+    toEmail: post.author.email!,
+    subject: STRINGS.email.subjects.blogRejected.replace("{title}", post.title),
+    reactElement: BlogRejectedEmail({
+      authorName: post.author.name ?? "Author",
+      postTitle: post.title,
+      reviewNote: post.reviewNote ?? "",
+    }),
+  })
+}
+
 export async function sendStaffInvite(email: string, role: string): Promise<void> {
   await loggedSend({
     template: "staff-invite",
     toEmail: email,
     subject: "You've been added to the DelTech MUN secretariat",
     reactElement: StaffInviteEmail({ role, signInUrl: `${APP_URL}/signin/staff` }),
+  })
+}
+
+// Auth.js would otherwise send its own unbranded default for this one, on a
+// raw fetch that never touches EmailLog. Routing it through loggedSend puts
+// magic links in the admin email log and the failed-email card like the rest.
+export async function sendMagicLink(email: string, url: string): Promise<void> {
+  await loggedSend({
+    template: "magic-link",
+    toEmail: email,
+    subject: STRINGS.email.subjects.magicLink,
+    reactElement: MagicLinkEmail({ url, expiryMinutes: MAGIC_LINK_MAX_AGE_MIN }),
   })
 }
 

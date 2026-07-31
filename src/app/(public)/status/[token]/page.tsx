@@ -10,14 +10,17 @@ import { STRINGS } from "@/content/strings"
 import { getContent } from "@/lib/settings"
 import { STATUS_LABEL, STATUS_VARIANT, PAY_STATUS_LABEL } from "@/lib/status-labels"
 import { CheckinQR } from "./_components/checkin-qr"
+import { APP_URL } from "@/lib/app-url"
+import { deriveEventState } from "@/lib/event-state"
+import { publicPaymentLink } from "@/lib/payments/public-link"
 
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? ""
+
 
 function Field({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div>
       <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{label}</p>
-      <p className="mt-0.5 text-sm">{value ?? "—"}</p>
+      <p className="mt-0.5 text-sm">{value ?? "-"}</p>
     </div>
   )
 }
@@ -27,7 +30,7 @@ export default async function StatusPage(props: {
 }) {
   const { token } = await props.params
 
-  // token = Delegate.publicToken (random, unguessable — never the row id)
+  // token = Delegate.publicToken (random, unguessable, never the row id)
   const delegate = await prisma.delegate.findUnique({
     where: { publicToken: token },
     include: {
@@ -46,7 +49,7 @@ export default async function StatusPage(props: {
 
   if (!delegate) notFound()
   const content = await getContent()
-  const paymentsRequired = content.eventMode !== "INTRA_MUN" && content.paymentsEnabled
+  const paymentsRequired = deriveEventState(content).paymentsRequired
 
   const session = await auth()
   const isOwner = session?.user?.email?.toLowerCase() === delegate.email.toLowerCase()
@@ -54,6 +57,9 @@ export default async function StatusPage(props: {
   const { payment, allotment } = delegate
   const needsPayment =
     paymentsRequired && payment && (payment.status === "PENDING" || payment.status === "SENT") && payment.paymentLink
+  const payLink = payment?.paymentLink
+    ? publicPaymentLink(payment.paymentLink, delegate.publicToken)
+    : null
   const isConfirmed = delegate.status === "CONFIRMED"
 
   return (
@@ -63,7 +69,7 @@ export default async function StatusPage(props: {
         <div className="flex items-start justify-between gap-4">
           <div>
             <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              {STRINGS.brand.name} — Application Status
+              {STRINGS.brand.name}. Application Status
             </p>
             <h1 className="mt-1 text-xl font-bold">{delegate.fullName}</h1>
             <p className="text-sm text-muted-foreground">{delegate.email}</p>
@@ -133,10 +139,10 @@ export default async function StatusPage(props: {
 
               {needsPayment && (
                 <Link
-                  href={payment.paymentLink!}
+                  href={payLink!}
                   className={cn(buttonVariants({ size: "lg" }), "w-full")}
                 >
-                  Pay Now — ₹{payment.amountInr.toLocaleString("en-IN")}
+                  Pay Now · ₹{payment.amountInr.toLocaleString("en-IN")}
                 </Link>
               )}
 
@@ -155,7 +161,7 @@ export default async function StatusPage(props: {
           )}
         </div>
 
-        {/* Check-in QR — only once the delegate is confirmed to attend */}
+        {/* Check-in QR, only once the delegate is confirmed to attend */}
         {isConfirmed && (
           <>
             <Separator />
@@ -168,7 +174,7 @@ export default async function StatusPage(props: {
           <>
             <Separator />
             <p className="text-center text-xs text-muted-foreground">
-              This link is unique to you — keep it safe.{" "}
+              This link is unique to you, keep it safe.{" "}
               <Link
                 href="/signin"
                 className="text-primary underline-offset-2 hover:underline"

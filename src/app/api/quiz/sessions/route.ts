@@ -1,16 +1,25 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { auth } from "@/lib/auth"
+import { createOrGetQuizSession } from "@/lib/quiz-session"
+import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit"
 
-function generateRoomCode(): string {
-  return Math.floor(100000 + Math.random() * 900000).toString()
-}
-
-// GET ?code=123456  — participant lookup (public)
+// GET ?code=123456 , participant lookup (public)
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
   const code = searchParams.get("code")
   if (!code) return NextResponse.json({ error: "code required" }, { status: 400 })
+
+  // Unauthenticated oracle over a 6-digit (900k) space: without a throttle,
+  // live sessions can be enumerated and then targeted.
+  const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown"
+  const limit = await rateLimit(RATE_LIMITS.quizLookup, ip)
+  if (!limit.ok) {
+    return NextResponse.json(
+      { error: "rate_limited" },
+      { status: 429, headers: { "Retry-After": String(limit.retryAfter) } },
+    )
+  }
 
   const session = await prisma.quizSession.findFirst({
     where: { roomCode: code },
@@ -31,7 +40,7 @@ export async function GET(request: Request) {
   return NextResponse.json({ session, presentationMode: presentation?.mode ?? "POLL" })
 }
 
-// POST  — admin creates a session
+// POST , admin creates a session
 export async function POST(request: Request) {
   const authSession = await auth()
   const role = (authSession?.user as { role?: string } | undefined)?.role
@@ -41,22 +50,6 @@ export async function POST(request: Request) {
 
   const { presentationId } = (await request.json()) as { presentationId: string }
 
-  // Reuse an existing lobby/active session
-  const existing = await prisma.quizSession.findFirst({
-    where: { presentationId, status: { in: ["lobby", "active"] } },
-  })
-  if (existing) return NextResponse.json(existing)
-
-  // Generate a unique room code
-  let roomCode = generateRoomCode()
-  for (let i = 0; i < 5; i++) {
-    const clash = await prisma.quizSession.findFirst({ where: { roomCode } })
-    if (!clash) break
-    roomCode = generateRoomCode()
-  }
-
-  const session = await prisma.quizSession.create({
-    data: { presentationId, roomCode, status: "lobby" },
-  })
+  const session = await createOrGetQuizSession(presentationId)
   return NextResponse.json(session, { status: 201 })
 }

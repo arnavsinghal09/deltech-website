@@ -390,7 +390,7 @@ export interface PaymentProvider {
 
 **10.1 Design system pass** — tokens (8px grid, radii, the teal-anchored palette from your brochure headers, light+dark), type scale, motion (springs for data, 150–300ms for UI, `prefers-reduced-motion`), empty/loading(skeleton)/error states everywhere, toasts via sonner.
 **10.2 QA** — mobile, accessibility (focus, ARIA, contrast), the double-allot race, webhook idempotency, RLS-equivalent checks in Server Actions (every mutation re-checks role + ownership server-side).
-**10.3 Deploy** — push to GitHub; import to Vercel; set env vars; point Supabase; verify Resend domain; add the Razorpay webhook URL; set the Vercel Cron job. Preview deployments per PR for free.
+**10.3 Deploy** — push to GitHub; import to Vercel; set env vars; point Supabase; verify Resend domain; add the Razorpay webhook URL; set the Vercel Cron job. PRs run CI only; merges deploy Test, and Production is a manual one-click workflow after Test is inspected.
 
 ---
 

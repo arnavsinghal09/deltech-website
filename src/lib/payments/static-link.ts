@@ -7,7 +7,7 @@ export class StaticLinkProvider implements PaymentProvider {
     const content = await getContent()
     if (!content.staticPaymentLink) {
       throw new Error(
-        "paymentProvider is static_link but staticPaymentLink is empty — set it in /admin/config",
+        "paymentProvider is static_link but staticPaymentLink is empty, set it in /admin/config",
       )
     }
     return { link: content.staticPaymentLink }

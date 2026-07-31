@@ -144,7 +144,7 @@ export function WriteEditor({ post }: { post: PostProps }) {
 
   return (
     <div className="min-h-screen bg-white">
-      {/* Hidden file inputs — pixel-invisible triggers for the upload UX */}
+      {/* Hidden file inputs, pixel-invisible triggers for the upload UX */}
       <input
         ref={imageFileRef}
         type="file"

@@ -7,6 +7,7 @@ import { PrismaClient, Role } from "../src/generated/prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { Pool } from "pg";
 import { hashPassword } from "../src/lib/password";
+import { validatePassword, PASSWORD_MIN, PASSWORD_MAX } from "../src/lib/schemas/password";
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 const adapter = new PrismaPg(pool);
@@ -19,8 +20,10 @@ async function main() {
   if (!email || !password) {
     throw new Error("Usage: npx tsx scripts/set-password.ts <email> <password> [role]");
   }
-  if (password.length < 8) {
-    throw new Error("Password must be at least 8 characters (matches signup rule).");
+  // Same rule as the web flows, imported rather than restated so the two
+  // cannot drift apart.
+  if (validatePassword(password)) {
+    throw new Error(`Password must be ${PASSWORD_MIN} to ${PASSWORD_MAX} characters.`);
   }
   if (roleArg && !(roleArg in Role)) {
     throw new Error(`Invalid role "${roleArg}". Expected one of: ${Object.keys(Role).join(", ")}`);

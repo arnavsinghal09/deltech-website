@@ -1,9 +1,9 @@
-// Role-aware post-auth landing. Pure string logic, no Prisma, no React —
+// Role-aware post-auth landing. Pure string logic, no Prisma, no React.
 // safe to import from the edge (auth.config.ts / proxy) and from route handlers.
 
 export type Role = "ADMIN" | "MAINTAINER" | "AUTHOR" | "REGISTERER"
 
-// The home surface for each role. Single source of truth — reused by the /go
+// The home surface for each role. Single source of truth, reused by the /go
 // dispatch route, the sign-in actions, and the route-group layouts/guards.
 export function roleHome(role: string | null | undefined): string {
   switch (role) {
@@ -25,13 +25,14 @@ function roleCanAccess(pathname: string, role: string | null | undefined): boole
   if (pathname.startsWith("/admin")) return role === "ADMIN" || role === "MAINTAINER"
   if (pathname.startsWith("/write")) return role === "AUTHOR" || role === "ADMIN" || role === "MAINTAINER"
   if (pathname.startsWith("/dashboard")) return role === "REGISTERER"
+  if (pathname.startsWith("/account")) return !!role // any signed-in role
   return true // public path
 }
 
 // Resolve a post-auth destination from an untrusted callbackUrl.
 //
 // Two shapes are honored: a path-absolute reference ("/admin?x=1"), and an
-// absolute URL whose origin matches this app's — NextAuth's `authorized`
+// absolute URL whose origin matches this app's · NextAuth's `authorized`
 // bounce emits the latter (?callbackUrl=https://host/admin), so rejecting it
 // outright would silently downgrade every intended destination to role home.
 // Anything else (foreign origin, protocol-relative //host, backslash tricks,
@@ -49,7 +50,7 @@ export function safeLanding(
 
   let candidate = raw
 
-  // Absolute URL — honor it only when the origin matches ours.
+  // Absolute URL, honor it only when the origin matches ours.
   if (/^https?:\/\//i.test(raw)) {
     if (!origin) return home
     try {

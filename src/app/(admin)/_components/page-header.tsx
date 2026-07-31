@@ -1,4 +1,4 @@
-// Shared admin page header — serif title, eyebrow kicker, action slot.
+// Shared admin page header, serif title, eyebrow kicker, action slot.
 export function PageHeader({
   eyebrow,
   title,

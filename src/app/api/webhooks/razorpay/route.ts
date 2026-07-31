@@ -61,7 +61,7 @@ export async function POST(req: NextRequest) {
 
   const { event, payload = {} } = body
 
-  // Respond 200 immediately for unhandled events — Razorpay won't retry
+  // Respond 200 immediately for unhandled events · Razorpay won't retry
   if (
     event !== "payment.captured" &&
     event !== "payment_link.paid" &&
@@ -73,7 +73,7 @@ export async function POST(req: NextRequest) {
 
   const delegateId = extractDelegateId(event, payload)
   if (!delegateId) {
-    // Can't identify the delegate — log and return 200 so Razorpay stops retrying
+    // Can't identify the delegate, log and return 200 so Razorpay stops retrying
     console.warn(`[razorpay webhook] no delegateId in notes for event=${event}`)
     return NextResponse.json({ received: true })
   }
@@ -99,27 +99,35 @@ export async function POST(req: NextRequest) {
   }
 
   // payment.captured | payment_link.paid | order.paid → confirm
-  // Idempotent: already confirmed, nothing to do
-  if (payment.status === "PAID" || payment.status === "OFFLINE" || payment.status === "COMPED") {
-    return NextResponse.json({ received: true })
-  }
-
+  //
+  // All three mean "paid", and Razorpay fires payment.captured AND
+  // payment_link.paid within milliseconds of each other for a single
+  // payment-link payment. Reading the status and then writing unconditionally
+  // let both deliveries through: two confirmation emails, two EmailLog rows,
+  // confirmedAt written twice. So the WRITE is the guard, not the read.
   const razorpayPaymentId = extractRazorpayPaymentId(payload)
 
-  await prisma.$transaction(async (tx) => {
-    await tx.payment.update({
-      where: { id: payment.id },
+  const confirmed = await prisma.$transaction(async (tx) => {
+    const { count } = await tx.payment.updateMany({
+      where: { id: payment.id, status: { notIn: ["PAID", "OFFLINE", "COMPED"] } },
       data: {
         status: "PAID",
         confirmedAt: new Date(),
         ...(razorpayPaymentId ? { razorpayPaymentId } : {}),
       },
     })
+    // Lost the race, or already settled by another route. Either way this
+    // delivery has nothing to do and must not send a second email.
+    if (count === 0) return false
+
     await tx.delegate.update({
       where: { id: delegateId },
       data: { status: "CONFIRMED" },
     })
+    return true
   })
+
+  if (!confirmed) return NextResponse.json({ received: true })
 
   await syncSheetForDelegate(delegateId)
 

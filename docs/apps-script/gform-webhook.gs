@@ -18,7 +18,11 @@
 // the last N sheet rows — usually unnecessary, the webhook rarely misses.
 
 var CONFIG = {
-  url: "https://YOURAPP.vercel.app/api/webhooks/gform",
+  // Fan out each submission to Production and Neon-backed staging.
+  urls: [
+    "https://deltechmun.in/api/webhooks/gform",
+    "https://test.deltechmun.in/api/webhooks/gform",
+  ],
   secret: "PASTE_GFORM_SHARED_SECRET", // must equal GFORM_SHARED_SECRET env var
   kind: "delegate",                    // "delegate" | "applicant"
   preset: "gform-delegate",            // ImportPreset name (delegate kind only)
@@ -29,24 +33,31 @@ function onFormSubmit(e) {
   var row = {};
   for (var k in e.namedValues) row[k] = (e.namedValues[k] || []).join(", ");
 
-  var res = UrlFetchApp.fetch(CONFIG.url, {
-    method: "post",
-    contentType: "application/json",
-    headers: { "x-gform-secret": CONFIG.secret },
-    payload: JSON.stringify({
-      preset: CONFIG.preset,
-      kind: CONFIG.kind,
-      source: CONFIG.source,
-      row: row,
-    }),
-    muteHttpExceptions: true,
-  });
+  var failures = [];
+  for (var i = 0; i < CONFIG.urls.length; i++) {
+    var url = CONFIG.urls[i];
+    var res = UrlFetchApp.fetch(url, {
+      method: "post",
+      contentType: "application/json",
+      headers: { "x-gform-secret": CONFIG.secret },
+      payload: JSON.stringify({
+        preset: CONFIG.preset,
+        kind: CONFIG.kind,
+        source: CONFIG.source,
+        row: row,
+      }),
+      muteHttpExceptions: true,
+    });
+    if (res.getResponseCode() >= 400) {
+      failures.push(url + " → " + res.getResponseCode() + "\n" + res.getContentText());
+    }
+  }
 
-  if (res.getResponseCode() >= 400) {
+  if (failures.length > 0) {
     MailApp.sendEmail(
       Session.getEffectiveUser().getEmail(),
-      "MUN platform: form webhook failed (" + res.getResponseCode() + ")",
-      res.getContentText() + "\n\nThe daily re-sync will pick this row up; no data is lost."
+      "MUN platform: form webhook failed",
+      failures.join("\n\n") + "\n\nThe daily re-sync will pick this row up; no data is lost."
     );
   }
 }

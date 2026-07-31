@@ -2,8 +2,7 @@ name: CI
 
 on:
   pull_request:
-  push:
-    branches: [main]
+  workflow_dispatch:
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -11,35 +10,29 @@ concurrency:
 
 jobs:
   check:
+    name: Validate
     runs-on: ubuntu-latest
     env:
       # Build needs these set but never connects to a real DB — dummy is fine.
       DATABASE_URL: postgresql://user:password@localhost:5432/db
       DIRECT_URL: postgresql://user:password@localhost:5432/db
+      # Lets check-env-isolation.ts query Vercel. Absent on fork and Dependabot
+      # PRs, where that check skips itself rather than failing.
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - uses: actions/setup-node@v7
         with:
           node-version: 20
           cache: npm
 
-      - name: Cache Next build
-        uses: actions/cache@v4
-        with:
-          path: .next/cache
-          key: next-${{ hashFiles('package-lock.json') }}-${{ hashFiles('src/**') }}
-          restore-keys: |
-            next-${{ hashFiles('package-lock.json') }}-
-
       - name: Install
         run: npm ci # postinstall runs `prisma generate`
-
-      - name: Typecheck
-        run: npx tsc --noEmit
 
       - name: Checks
         run: npm run check
 
       - name: Build
+        # Next's production build includes TypeScript validation.
         run: npm run build

@@ -15,7 +15,7 @@ interface Props {
 }
 
 // Rows any intake channel (wizard, Google Form webhook, cron sync) couldn't
-// turn into a Delegate. Fix inline, retry, or dismiss — nothing is ever
+// turn into a Delegate. Fix inline, retry, or dismiss, nothing is ever
 // silently dropped upstream.
 export function QuarantinePanel({ rows }: Props) {
   const router = useRouter()
@@ -53,7 +53,7 @@ export function QuarantinePanel({ rows }: Props) {
         <p className="text-sm font-semibold">Quarantine</p>
         <Badge variant="secondary" className="text-xs">{rows.length}</Badge>
         <p className="text-xs text-muted-foreground">
-          Rows that failed validation — fix and retry, or dismiss.
+          Rows that failed validation, fix and retry, or dismiss.
         </p>
       </div>
 

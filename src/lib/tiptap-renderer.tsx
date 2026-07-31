@@ -20,11 +20,22 @@ function safeSrc(src: unknown): string | null {
   return null
 }
 
+// Allowlist, not denylist. Blocking "javascript:" and "data:" covers the
+// obvious cases but loses to encoding and whitespace tricks by construction
+// ("java\tscript:" and friends), and the set of dangerous schemes is open
+// ended. The set of *useful* ones is not.
+const SAFE_SCHEMES = ["http://", "https://", "mailto:"]
+
 function safeHref(href: unknown): string {
   if (typeof href !== "string") return "#"
-  const s = href.trim().toLowerCase()
-  if (s.startsWith("javascript:") || s.startsWith("data:")) return "#"
-  return href.trim()
+  const trimmed = href.trim()
+  // Strip control characters and whitespace before testing the scheme.
+  const probe = trimmed.replace(/[\s\u0000-\u001f]/g, "").toLowerCase()
+  if (SAFE_SCHEMES.some((scheme) => probe.startsWith(scheme))) return trimmed
+  // Relative links stay usable, but only when unambiguously relative.
+  if (trimmed.startsWith("/") && !trimmed.startsWith("//")) return trimmed
+  if (trimmed.startsWith("#")) return trimmed
+  return "#"
 }
 
 function applyMarks(text: string, marks: Mark[] | undefined): ReactNode {

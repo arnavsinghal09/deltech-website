@@ -42,7 +42,7 @@ export const STRINGS = {
     orbitLabel: "Diplomatic network visualisation",
     orbitStatus: "Network online",
     orbitSignal: "Secretariat signal",
-    principles: "Diplomacy · Strategy · Negotiation · Leadership · Diplomacy · Strategy · Negotiation · Leadership",
+    principles: "Research · Speak · Negotiate · Draft · Chair · Publish · Research · Speak · Negotiate · Draft · Chair · Publish",
     processEyebrow: "The delegate journey",
     processTitle: "From application to the floor.",
     processBody:
@@ -54,21 +54,21 @@ export const STRINGS = {
     processThreeTitle: "Take the floor",
     processThreeBody: "Receive your allotment and payment brief, then prepare to enter committee.",
     committeesEyebrow: "Committee intelligence",
-    committeesTitle: "Five rooms. Five different kinds of pressure.",
+    committeesTitle: "Choose the room you want to understand.",
     committeesBody:
-      "Each committee is its own political system. The matrix shows what remains open while the secretariat keeps allotments deliberate.",
+      "Every committee asks a different question and rewards a different kind of preparation. Read the agendas, understand the format, and choose deliberately.",
     committeeBriefPending: "Agenda brief being prepared by the secretariat.",
     matrixEyebrow: "Live allocation signal",
-    matrixTitle: "The matrix moves when the conference moves.",
+    matrixTitle: "See what is actually available.",
     matrixBody:
-      "Availability updates as portfolios are allotted and confirmed. No rumours, stale spreadsheets, or conflicting lists.",
+      "The public matrix reflects the secretariat’s current allotments, so delegates can make informed preferences without relying on forwarded spreadsheets.",
     matrixCta: "Open the portfolio matrix",
     awardsTitle: "Recognition earned under pressure.",
     contactsTitle: "A direct line to the secretariat.",
     contactsBody:
       "Registration, accommodation, and committee questions deserve a human answer.",
     finalEyebrow: "Delhi Technological University",
-    finalTitle: "Enter with a position. Leave with perspective.",
+    finalTitle: "Your first committee can start here.",
     footerBrief: "Conference desk",
     footerExplore: "Explore",
     footerOperations: "Operations",
@@ -99,11 +99,11 @@ export const STRINGS = {
     linkedinLabel: "{name} on LinkedIn",
     dispatchEyebrow: "Field notes · opinion · conference intelligence",
     dispatchTitle: "The Dispatch.",
-    dispatchBody: "Ideas from inside the room and beyond it—written by the delegates, chairs, and organisers shaping the conference.",
+    dispatchBody: "Ideas from inside the room and beyond it, written by the delegates, chairs, and organisers shaping the conference.",
     dispatchMark: "DelTech MUN dispatch",
     latestDispatch: "Latest transmission",
     anonymousAuthor: "Anonymous",
-    dispatchEmpty: "The desk is quiet—for now.",
+    dispatchEmpty: "The desk is quiet, for now.",
     dispatchEmptyBody: "The first dispatch is being prepared for publication.",
     quizLive: "Live room signal",
     quizTitle: "Enter the room.",
@@ -190,11 +190,11 @@ export const STRINGS = {
       munExperiencePlaceholder: "List committees you have attended (if any)",
     },
     preferences: {
-      pref1CommitteeLabel: "First preference — committee",
-      pref1PortfolioLabel: "First preference — portfolio",
+      pref1CommitteeLabel: "First preference committee",
+      pref1PortfolioLabel: "First preference portfolio",
       pref1PortfolioPlaceholder: "Country / role you would like",
-      pref2CommitteeLabel: "Second preference — committee",
-      pref2PortfolioLabel: "Second preference — portfolio",
+      pref2CommitteeLabel: "Second preference committee",
+      pref2PortfolioLabel: "Second preference portfolio",
       pref2PortfolioPlaceholder: "Country / role you would like",
       unhrcOnlyNote:
         "UNHRC is a double-delegation committee. It will be your only preference.",
@@ -384,7 +384,7 @@ export const STRINGS = {
     deskEyebrow: "Registration desk",
     confirmButton: "Confirm check-in",
     alreadyCheckedIn: "Checked in at {time} by {by}",
-    notConfirmedWarning: "This delegate is not marked CONFIRMED yet — double-check before checking them in.",
+    notConfirmedWarning: "This delegate is not marked CONFIRMED yet. Double-check before checking them in.",
     dtuLabel: "DTU student",
     accommodationLabel: "Needs accommodation",
     qrCaption: "Show this at the registration desk.",
@@ -500,6 +500,7 @@ export const STRINGS = {
     invalidCode: "Room not found. Check the code and try again.",
     enterCodeFirst: "Enter a 6-digit room code above.",
     nicknameRequired: "Please enter a nickname.",
+    nicknameTaken: "That nickname is already in this room. Pick another.",
     avatarRequired: "Please pick an avatar.",
     sessionEnded: "This session has ended. Thanks for playing!",
     submitAnswer: "Submit",
@@ -568,7 +569,7 @@ export const STRINGS = {
     sendLinkButton: "Send magic link",
     checkEmailTitle: "Check your inbox",
     checkEmailMessage: "We sent a sign-in link to your email. Click it to continue.",
-    checkEmailExpiry: "The link expires in 10 minutes.",
+    checkEmailExpiry: "The link expires in 30 minutes.",
     errorDefault: "Something went wrong. Please try again.",
     delegateNote: "No account needed to register as a delegate.",
     magicLinkTab: "Magic link",
@@ -591,6 +592,30 @@ export const STRINGS = {
     passwordTooShort: "Password must be at least 8 characters.",
     accountExists: "An account with this email already exists. Sign in instead.",
     nonDelegateAccount: "This email is reserved for an admin or author account.",
+    passwordTooLong: "Password is too long.",
+    emailRequired: "Enter your email address.",
+    forgotPassword: "Forgot your password?",
+    noPasswordYetHint:
+      "Invited by an admin? You will not have a password yet. Use the magic link tab, then set one from your account page.",
+    tooManyRequests: "Too many attempts. Wait a few minutes and try again.",
+  },
+
+  account: {
+    title: "Your account",
+    setPasswordTitle: "Set a password",
+    changePasswordTitle: "Change your password",
+    setPasswordNote:
+      "You signed in with a magic link. Set a password and you can use it to sign in from now on.",
+    changePasswordNote: "You will need your current password to change it.",
+    currentPasswordLabel: "Current password",
+    newPasswordLabel: "New password",
+    savePasswordButton: "Save password",
+    passwordSaved: "Password saved. Use it next time you sign in.",
+    currentPasswordRequired: "Enter your current password.",
+    currentPasswordWrong: "That current password is not right.",
+    notSignedIn: "Your session expired. Sign in again.",
+    backLink: "Back to your dashboard",
+    navLabel: "Account",
   },
 
   dashboard: {
@@ -607,20 +632,22 @@ export const STRINGS = {
 
   email: {
     subjects: {
+      magicLink: "Your DelTech MUN sign-in link",
       registrationReceived: "Your DelTech MUN registration is received",
-      allotmentSent: "Your DelTech MUN allotment: {committee} — {portfolio}",
+      allotmentSent: "Your DelTech MUN allotment: {committee}, {portfolio}",
       coDelegateNotice: "You have been added as a co-delegate for {committee}",
-      coDelegateRegistered: "You have been added as a co-delegate — DelTech MUN",
-      paymentConfirmed: "Payment confirmed — DelTech MUN",
-      paymentReminder: "Complete your payment — DelTech MUN",
+      coDelegateRegistered: "You have been added as a co-delegate at DelTech MUN",
+      paymentConfirmed: "Payment confirmed at DelTech MUN",
+      paymentReminder: "Your DelTech MUN payment is still pending",
       blogApproved: 'Your article “{title}” has been published',
       blogChangesRequested: 'Changes requested on “{title}”',
+      blogRejected: 'Update on your article “{title}”',
     },
     preview: {
       registrationReceived: "We have your application. Allotments will be sent soon.",
       allotmentSent: "You have been allotted a portfolio. Your payment link is inside.",
       paymentConfirmed: "Your registration is now complete.",
-      paymentReminder: "Your allotment is waiting — complete payment to secure your spot.",
+      paymentReminder: "Your allotment is waiting. Complete payment to secure your spot.",
     },
   },
 } as const;
@@ -645,7 +672,7 @@ function getLeaf(obj: unknown, parts: string[]): string | undefined {
   return typeof cur === "string" ? cur : undefined;
 }
 
-// Sync helper — uses compiled STRINGS. Safe in client and server components.
+// Sync helper that uses compiled STRINGS. Safe in client and server components.
 // For DB overrides in server components, use getStrings() from @/lib/settings.
 export function t(key: StringKey, vars?: Record<string, string | number>): string {
   const value = getLeaf(STRINGS, key.split(".")) ?? key;

@@ -54,7 +54,7 @@ export function LeaderboardScreen({ entries, final, theme, onNext, onEnd }: Prop
                   className="text-xs tabular-nums"
                   style={{ color: entry.delta > 0 ? "#22c55e" : entry.delta < 0 ? "#ef4444" : undefined, opacity: 0.7 }}
                 >
-                  {entry.delta > 0 ? `▲${entry.delta}` : entry.delta < 0 ? `▼${Math.abs(entry.delta)}` : "—"}
+                  {entry.delta > 0 ? `▲${entry.delta}` : entry.delta < 0 ? `▼${Math.abs(entry.delta)}` : "-"}
                 </span>
               )}
             </motion.div>
