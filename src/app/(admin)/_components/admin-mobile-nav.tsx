@@ -14,8 +14,8 @@ import {
 } from "@/components/ui/drawer"
 import { cn } from "@/lib/utils"
 import { t } from "@/content/strings"
-import { SignOutButton } from "./sign-out-button"
-import { AccountLink } from "./account-link"
+import { SignOutButton } from "@/components/sign-out-button"
+import { AccountLink } from "@/components/account-link"
 import { NAV_GROUPS, isNavActive } from "./admin-nav"
 import type { SidebarUser } from "./admin-sidebar"
 

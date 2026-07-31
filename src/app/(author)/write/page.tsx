@@ -5,8 +5,8 @@ import { prisma } from "@/lib/prisma"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { PenLine, Clock } from "lucide-react"
-import { AccountLink } from "@/app/(admin)/_components/account-link"
-import { SignOutButton } from "@/app/(admin)/_components/sign-out-button"
+import { AccountLink } from "@/components/account-link"
+import { SignOutButton } from "@/components/sign-out-button"
 
 const STATUS_LABEL: Record<string, string> = {
   DRAFT:             "Draft",

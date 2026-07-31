@@ -6,19 +6,19 @@ const LABELS: Record<string, string> = {
   registrations: "Registrations",
   allotment: "Allotment",
   import: "Cross-dels",
-  recruitment: "Recruitment",
+  recruitment: "Recruitment control",
   blog: "Blog",
   quiz: "Quiz",
   team: "Team",
   logs: "Logs",
   config: "Settings",
-  users: "Users",
+  users: "Staff & roles",
+  participants: "Participants",
   guide: "Operator guide",
   conference: "Conference",
   committees: "Committees & Matrix",
   money: "Money",
   registration: "Registration",
-  slots: "Slots",
 }
 
 export function AdminBreadcrumb() {

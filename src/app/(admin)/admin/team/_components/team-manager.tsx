@@ -16,7 +16,9 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog"
-import { createMember, updateMember, deleteMember, uploadMemberImage } from "../actions"
+import { createMember, updateMember, deleteMember } from "../actions"
+import { uploadToS3 } from "@/lib/media/upload-client"
+import { t } from "@/content/strings"
 
 export interface MemberRow {
   id: string
@@ -68,17 +70,17 @@ export function TeamManager({ members, isAdmin }: { members: MemberRow[]; isAdmi
     setOpen(true)
   }
 
+  // Goes through the S3 pipeline (presigned PUT + server-side verification). Photos
+  // already stored on Supabase keep resolving from their existing URLs.
   const handleUpload = async (file: File) => {
     setUploading(true)
-    const fd = new FormData()
-    fd.append("file", file)
-    const result = await uploadMemberImage(fd)
+    const result = await uploadToS3(file, "MEMBER_IMAGE")
     setUploading(false)
     if (result.url) {
       setImageUrl(result.url)
-      toast.success("Photo uploaded.")
+      toast.success(t("admin.team.photoUploaded"))
     } else {
-      toast.error(result.error ?? "Upload failed.")
+      toast.error(result.error ?? t("admin.team.uploadFailed"))
     }
   }
 

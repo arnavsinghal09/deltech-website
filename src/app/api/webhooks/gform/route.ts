@@ -3,6 +3,8 @@ import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { createDelegateFromRow, normalizeEmail, normalizePhone, normalizeName } from "@/lib/intake"
 import { applyMapping, type ColumnMapping } from "@/lib/schemas/import"
+import { rowHash } from "@/lib/recruitment/import"
+import { parseCycleConfig } from "@/lib/schemas/recruitment"
 
 // Google Form → site intake. An Apps Script onFormSubmit trigger POSTs each
 // response here (docs/apps-script/gform-webhook.gs). Missed webhooks self-heal
@@ -33,6 +35,9 @@ function pickColumn(row: Record<string, string>, patterns: RegExp[]): string | u
   return undefined
 }
 
+// Live push from the recruitment form. Candidates are cycle-scoped now, so a
+// response that arrives with no cycle accepting intake is quarantined rather than
+// dropped: it can be replayed once a cycle opens.
 async function handleApplicant(row: Record<string, string>): Promise<NextResponse> {
   const fullName = pickColumn(row, [/full ?name/i, /^name$/i, /your name/i])
   const email = pickColumn(row, [/e-?mail/i])
@@ -42,23 +47,55 @@ async function handleApplicant(row: Record<string, string>): Promise<NextRespons
 
   if (!fullName || !email) {
     await prisma.quarantinedRow.create({
-      data: { source: "APPLICANT", raw: row, errors: ["Missing name or email column"] },
+      data: { source: "RECRUITMENT_CANDIDATE", raw: row, errors: ["Missing name or email column"] },
     })
     return NextResponse.json({ ok: true, quarantined: true })
   }
 
-  try {
-    await prisma.applicant.create({
+  // Only DRAFT and OPEN cycles take new form responses; a cycle already running
+  // its GDs should not have people appearing mid-round.
+  const cycle = await prisma.recruitmentCycle.findFirst({
+    where: { state: { in: ["DRAFT", "OPEN"] } },
+    orderBy: [{ openedAt: "desc" }, { createdAt: "desc" }],
+    select: { id: true, config: true },
+  })
+  if (!cycle) {
+    await prisma.quarantinedRow.create({
       data: {
+        source: "RECRUITMENT_CANDIDATE",
+        raw: row,
+        errors: ["No recruitment cycle is accepting responses right now."],
+      },
+    })
+    return NextResponse.json({ ok: true, quarantined: true })
+  }
+
+  const config = parseCycleConfig(cycle.config)
+  const normalizedEmail = normalizeEmail(email)
+
+  try {
+    await prisma.recruitmentCandidate.create({
+      data: {
+        cycleId: cycle.id,
         fullName: normalizeName(fullName),
-        email: normalizeEmail(email),
+        email: normalizedEmail,
         phone: normalizePhone(phone) ?? null,
         year: year ?? null,
         branch: branch ?? null,
-        answers: row,
+        formAnswers: row,
+        // Marks the webhook as the origin so a later sheet import can match this
+        // row by email and take ownership of it instead of duplicating it.
+        sourceSheetKey: "gform-webhook",
+        sourceRowKey: `email:${normalizedEmail}`,
+        sourceRowHash: rowHash(row),
+        importedAt: new Date(),
+        gdRequired: config.stages.gdRequiredByDefault,
+        piRequired: config.stages.piRequiredByDefault,
       },
     })
   } catch (err) {
+    // Already in this cycle: the form was submitted twice, or the sheet import
+    // got there first. Both are fine.
     if (typeof err === "object" && err !== null && "code" in err && (err as { code: unknown }).code === "P2002") {
       return NextResponse.json({ ok: true, dedup: true })
     }

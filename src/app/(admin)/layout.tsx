@@ -1,4 +1,8 @@
+import { cookies } from "next/headers"
 import { requireStaff } from "@/lib/authz"
+import { cn } from "@/lib/utils"
+import { THEME_COOKIES, parseTheme, themeClass } from "@/lib/theme"
+import { AreaThemeToggle } from "@/components/theme/area-theme-toggle"
 import { AdminSidebar, type SidebarUser } from "./_components/admin-sidebar"
 import { AdminMobileNav } from "./_components/admin-mobile-nav"
 import { AdminBreadcrumb } from "./_components/admin-breadcrumb"
@@ -12,8 +16,12 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   }
   const isPreview = !!process.env.VERCEL_ENV && process.env.VERCEL_ENV !== "production"
 
+  // The dashboard's own theme, read server-side so the first paint is correct and
+  // the homepage's choice cannot bleed in.
+  const theme = parseTheme((await cookies()).get(THEME_COOKIES.admin)?.value)
+
   return (
-    <div className="admin-shell flex">
+    <div className={cn("admin-shell flex", themeClass(theme))}>
       <AdminSidebar user={user} />
       
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
@@ -32,6 +40,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
             {user.email && (
               <span className="hidden text-sm text-muted-foreground sm:block">{user.email}</span>
             )}
+            <AreaThemeToggle area="admin" initial={theme} />
           </div>
         </header>
 

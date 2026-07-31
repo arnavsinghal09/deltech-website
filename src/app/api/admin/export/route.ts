@@ -33,27 +33,69 @@ function sheetResponse(
   })
 }
 
-async function exportApplicants(format: "csv" | "xlsx", status?: string | null) {
-  const applicants = await prisma.applicant.findMany({
-    where: status === "SELECTED" ? { status: "SELECTED" } : undefined,
+// Recruitment candidates for one cycle (or the most recent cycle when none is
+// given). Aggregated GD/PI scores are computed from the SUBMITTED evaluations
+// rather than read off the candidate row: there is no single score column any
+// more, because a panel can have several evaluators.
+async function exportCandidates(
+  format: "csv" | "xlsx",
+  status?: string | null,
+  cycleId?: string | null,
+) {
+  const cycle = cycleId
+    ? await prisma.recruitmentCycle.findUnique({ where: { id: cycleId }, select: { id: true, slug: true } })
+    : await prisma.recruitmentCycle.findFirst({
+        orderBy: [{ openedAt: "desc" }, { createdAt: "desc" }],
+        select: { id: true, slug: true },
+      })
+  if (!cycle) return sheetResponse([], format, "candidates")
+
+  const candidates = await prisma.recruitmentCandidate.findMany({
+    where: {
+      cycleId: cycle.id,
+      ...(status === "SELECTED" ? { result: "SELECTED" } : {}),
+    },
     orderBy: { createdAt: "asc" },
+    include: {
+      evaluations: {
+        where: { state: "SUBMITTED" },
+        select: { kind: true, overall: true, recommendation: true },
+      },
+      handoffs: { where: { bypass: true, reversedAt: null }, select: { reason: true }, take: 1 },
+    },
   })
 
-  const rows = applicants.map((a) => ({
-    "Full Name": a.fullName,
-    Email: a.email,
-    Phone: a.phone ?? "",
-    Year: a.year ?? "",
-    Branch: a.branch ?? "",
-    Status: a.status,
-    "GD Score": a.gdScore ?? "",
-    "GD Verdict": a.gdVerdict ?? "",
-    "PI Score": a.piScore ?? "",
-    "PI Verdict": a.piVerdict ?? "",
-    "Applied At": a.createdAt.toISOString(),
-  }))
+  const mean = (values: number[]) =>
+    values.length === 0 ? "" : Number((values.reduce((a, b) => a + b, 0) / values.length).toFixed(2))
 
-  return sheetResponse(rows, format, status === "SELECTED" ? "selected-applicants" : "applicants")
+  const rows = candidates.map((c) => {
+    const gd = c.evaluations.filter((e) => e.kind === "GD" && e.overall !== null).map((e) => e.overall!)
+    const pi = c.evaluations.filter((e) => e.kind === "PI" && e.overall !== null).map((e) => e.overall!)
+    return {
+      "Full Name": c.fullName,
+      Email: c.email,
+      Phone: c.phone ?? "",
+      Year: c.year ?? "",
+      Branch: c.branch ?? "",
+      Stage: c.stage,
+      Result: c.result,
+      "GD Score (avg)": mean(gd),
+      "GD Evaluators": gd.length,
+      "GD Bypassed": c.handoffs.length > 0 ? "Yes" : "No",
+      "GD Bypass Reason": c.handoffs[0]?.reason ?? "",
+      "PI Score (avg)": mean(pi),
+      "PI Evaluators": pi.length,
+      "Society Role": c.societyRole ?? "",
+      Recruited: c.recruitedAt ? c.recruitedAt.toISOString() : "",
+      "Applied At": c.createdAt.toISOString(),
+    }
+  })
+
+  return sheetResponse(
+    rows,
+    format,
+    status === "SELECTED" ? `selected-${cycle.slug}` : `candidates-${cycle.slug}`,
+  )
 }
 
 async function exportMatrix(format: "csv" | "xlsx", committeeId?: string | null) {
@@ -90,8 +132,10 @@ export async function GET(request: NextRequest) {
   const sp = request.nextUrl.searchParams
   const format = sp.get("format") === "csv" ? "csv" : "xlsx"
 
-  if (sp.get("entity") === "applicants") {
-    return exportApplicants(format, sp.get("status"))
+  // "applicants" is kept as an alias so existing bookmarks and the operator guide
+  // keep working after the recruitment refactor.
+  if (sp.get("entity") === "candidates" || sp.get("entity") === "applicants") {
+    return exportCandidates(format, sp.get("status"), sp.get("cycleId"))
   }
   if (sp.get("entity") === "matrix") {
     return exportMatrix(format, sp.get("committeeId"))

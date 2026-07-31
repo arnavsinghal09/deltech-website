@@ -25,9 +25,16 @@ import {
   QuizMode,
   SlideType,
   Role,
-  ApplicantStatus,
-  InterviewRound,
-  Verdict,
+  CycleState,
+  RecruitmentRole,
+  CandidateStage,
+  CandidateResult,
+  SessionKind,
+  SessionState,
+  GroupState,
+  Attendance,
+  EvaluationState,
+  Recommendation,
   Prisma,
 } from "../src/generated/prisma/client"
 import { PrismaPg } from "@prisma/adapter-pg"
@@ -108,8 +115,21 @@ async function main() {
   await prisma.coDelegate.deleteMany()
   await prisma.delegate.deleteMany()
   await prisma.quarantinedRow.deleteMany()
-  await prisma.applicant.deleteMany()
-  await prisma.interviewSlot.deleteMany()
+  // RecruitmentAuditEvent is append-only in production (a trigger rejects
+  // UPDATE and DELETE). Staging has to clear it, so drop the guard for exactly
+  // this statement and put it straight back.
+  await prisma.$executeRawUnsafe(
+    'ALTER TABLE "RecruitmentAuditEvent" DISABLE TRIGGER "RecruitmentAuditEvent_append_only"',
+  )
+  try {
+    await prisma.recruitmentAuditEvent.deleteMany()
+  } finally {
+    await prisma.$executeRawUnsafe(
+      'ALTER TABLE "RecruitmentAuditEvent" ENABLE TRIGGER "RecruitmentAuditEvent_append_only"',
+    )
+  }
+  // Everything else cascades from the cycle.
+  await prisma.recruitmentCycle.deleteMany()
   await prisma.post.deleteMany()
   await prisma.member.deleteMany()
   await prisma.rateLimit.deleteMany()
@@ -479,107 +499,336 @@ async function main() {
     ],
   })
 
-  console.log("Creating recruitment pipeline…")
-  const gdSlot = await prisma.interviewSlot.create({
+  console.log("Creating recruitment cycle…")
+  // Recruitment is cycle-scoped now. Seed one live cycle covering every stage
+  // and result, so /admin/recruitment and /recruitment both have something real
+  // to show: an unassigned intake, a running GD with two evaluators, a
+  // deliberately bypassed candidate, and decided outcomes.
+  const councilAdmin = await prisma.user.findUniqueOrThrow({ where: { email: OWNER_EMAIL } })
+  const councilSenior = await prisma.user.findUniqueOrThrow({
+    where: { email: "arnavsinghal0903@gmail.com" },
+  })
+  const councilJunior = await prisma.user.findUniqueOrThrow({
+    where: { email: "nikunjgarcade@gmail.com" },
+  })
+
+  const cycle = await prisma.recruitmentCycle.create({
     data: {
-      round: InterviewRound.GD,
-      startsAt: new Date("2026-08-05T10:00:00+05:30"),
-      venue: "SPS 10",
-      capacity: 8,
-      panel: ["Arnav Singhal", "Test Panelist"],
+      name: "Test Recruitment 2026",
+      slug: "test-recruitment-2026",
+      state: CycleState.IN_PROGRESS,
+      openedAt: new Date("2026-08-01T09:00:00+05:30"),
+      createdById: councilAdmin.id,
+      config: {
+        stages: {
+          gdRequiredByDefault: true,
+          piRequiredByDefault: true,
+          minGdEvaluations: 1,
+          minPiEvaluations: 1,
+          gdPlannedSeconds: 900,
+          piPlannedSeconds: 600,
+          allowGdBypass: true,
+        },
+        gdCriteria: [
+          { key: "content", label: "Content & research", max: 10, weight: 1 },
+          { key: "communication", label: "Communication", max: 10, weight: 1 },
+          { key: "collaboration", label: "Collaboration", max: 10, weight: 1 },
+        ],
+        piCriteria: [
+          { key: "motivation", label: "Motivation & fit", max: 10, weight: 1 },
+          { key: "reasoning", label: "Reasoning", max: 10, weight: 1 },
+          { key: "ownership", label: "Ownership", max: 10, weight: 1 },
+        ],
+        societyRoles: ["AUTHOR", "SUB_MAINTAINER"],
+      },
     },
   })
-  const piSlot = await prisma.interviewSlot.create({
-    data: {
-      round: InterviewRound.PI,
-      startsAt: new Date("2026-08-06T10:00:00+05:30"),
-      venue: "SPS 11",
-      capacity: 6,
-      panel: ["Nikunj Sharma", "Test Panelist"],
-    },
-  })
-  const applicantFixtures: Array<Prisma.ApplicantCreateManyInput> = [
+
+  // The council. Recruitment authority comes from these rows, not from the
+  // dashboard role, so a Senior Council member here is still only a MAINTAINER
+  // in the admin console.
+  const [memberAdmin, memberSenior, memberJunior] = await Promise.all([
+    prisma.recruitmentMember.create({
+      data: { cycleId: cycle.id, userId: councilAdmin.id, role: RecruitmentRole.ADMIN, assignedById: councilAdmin.id },
+    }),
+    prisma.recruitmentMember.create({
+      data: { cycleId: cycle.id, userId: councilSenior.id, role: RecruitmentRole.MAINTAINER, assignedById: councilAdmin.id },
+    }),
+    prisma.recruitmentMember.create({
+      data: { cycleId: cycle.id, userId: councilJunior.id, role: RecruitmentRole.JC, assignedById: councilAdmin.id },
+    }),
+  ])
+
+  const candidateFixtures: Array<Prisma.RecruitmentCandidateCreateManyInput> = [
     {
-      fullName: "Test Applicant Applied",
-      email: addr("applicant-applied"),
+      cycleId: cycle.id,
+      fullName: "Test Candidate Intake",
+      email: addr("candidate-intake"),
       phone: "919100000001",
       year: "First",
       branch: "Software Engineering",
-      answers: { why: "Fixture awaiting group discussion." },
-      status: ApplicantStatus.APPLIED,
+      formAnswers: { why: "Fixture not yet assigned to a group." },
+      stage: CandidateStage.INTAKE,
     },
     {
-      fullName: "Test Applicant GD Scheduled",
-      email: addr("applicant-gd-scheduled"),
+      cycleId: cycle.id,
+      fullName: "Test Candidate Awaiting GD",
+      email: addr("candidate-gd-pending"),
       phone: "919100000002",
       year: "Second",
       branch: "Mechanical Engineering",
-      answers: { why: "Fixture with a GD slot." },
-      status: ApplicantStatus.GD_SCHEDULED,
-      gdSlotId: gdSlot.id,
+      formAnswers: { why: "Fixture seated in a GD group." },
+      stage: CandidateStage.GD_PENDING,
     },
     {
-      fullName: "Test Applicant GD Done",
-      email: addr("applicant-gd-done"),
+      cycleId: cycle.id,
+      fullName: "Test Candidate In GD",
+      email: addr("candidate-gd-active"),
       phone: "919100000003",
       year: "First",
       branch: "Electrical Engineering",
-      answers: { why: "Fixture ready for PI scoring." },
-      status: ApplicantStatus.GD_DONE,
-      gdScore: 8,
-      gdVerdict: Verdict.SHORTLIST,
+      formAnswers: { why: "Fixture in the running GD." },
+      stage: CandidateStage.GD_ACTIVE,
     },
     {
-      fullName: "Test Applicant PI Scheduled",
-      email: addr("applicant-pi-scheduled"),
+      cycleId: cycle.id,
+      // The case the dossier has to render as a decision rather than as
+      // missing data.
+      fullName: "Test Candidate GD Bypassed",
+      email: addr("candidate-bypassed"),
       phone: "919100000004",
       year: "Third",
       branch: "Civil Engineering",
-      answers: { why: "Fixture with a PI slot." },
-      status: ApplicantStatus.PI_SCHEDULED,
-      gdScore: 9,
-      gdVerdict: Verdict.SHORTLIST,
-      piSlotId: piSlot.id,
+      formAnswers: { why: "Fixture sent straight to interview." },
+      stage: CandidateStage.GD_BYPASSED,
+      gdRequired: false,
     },
     {
-      fullName: "Test Applicant PI Done",
-      email: addr("applicant-pi-done"),
+      cycleId: cycle.id,
+      fullName: "Test Candidate Awaiting Interview",
+      email: addr("candidate-pi-pending"),
       phone: "919100000005",
       year: "Second",
       branch: "Engineering Physics",
-      answers: { why: "Fixture awaiting final outcome." },
-      status: ApplicantStatus.PI_DONE,
-      gdScore: 8,
-      gdVerdict: Verdict.SHORTLIST,
-      piScore: 9,
-      piVerdict: Verdict.SELECT,
+      formAnswers: { why: "Fixture through GD, waiting on PI." },
+      stage: CandidateStage.PI_PENDING,
     },
     {
-      fullName: "Test Applicant Selected",
-      email: addr("applicant-selected"),
+      cycleId: cycle.id,
+      fullName: "Test Candidate On Hold",
+      email: addr("candidate-on-hold"),
       phone: "919100000006",
       year: "First",
       branch: "Mathematics and Computing",
-      answers: { why: "Fixture selected for the society." },
-      status: ApplicantStatus.SELECTED,
-      gdScore: 9,
-      gdVerdict: Verdict.SHORTLIST,
-      piScore: 9,
-      piVerdict: Verdict.SELECT,
+      formAnswers: { why: "Fixture parked for review." },
+      stage: CandidateStage.DECISION,
+      result: CandidateResult.ON_HOLD,
     },
     {
-      fullName: "Test Applicant Rejected",
-      email: addr("applicant-rejected"),
+      cycleId: cycle.id,
+      fullName: "Test Candidate Selected",
+      email: addr("candidate-selected"),
       phone: "919100000007",
-      year: "Second",
+      year: "First",
       branch: "Biotechnology",
-      answers: { why: "Fixture rejected after assessment." },
-      status: ApplicantStatus.REJECTED,
-      gdScore: 4,
-      gdVerdict: Verdict.REJECT,
+      formAnswers: { why: "Fixture selected, not yet in the society." },
+      stage: CandidateStage.CLOSED,
+      result: CandidateResult.SELECTED,
+      decidedById: councilAdmin.id,
+      decidedAt: new Date("2026-08-08T18:00:00+05:30"),
+    },
+    {
+      cycleId: cycle.id,
+      fullName: "Test Candidate Rejected",
+      email: addr("candidate-rejected"),
+      phone: "919100000008",
+      year: "Second",
+      branch: "Environmental Engineering",
+      formAnswers: { why: "Fixture rejected after assessment." },
+      stage: CandidateStage.CLOSED,
+      result: CandidateResult.REJECTED,
+      decidedById: councilAdmin.id,
+      decidedAt: new Date("2026-08-08T18:05:00+05:30"),
+    },
+    {
+      cycleId: cycle.id,
+      fullName: "Test Candidate Withdrawn",
+      email: addr("candidate-withdrawn"),
+      phone: "919100000009",
+      year: "Third",
+      branch: "Production Engineering",
+      formAnswers: { why: "Fixture who withdrew." },
+      stage: CandidateStage.CLOSED,
+      result: CandidateResult.WITHDRAWN,
     },
   ]
-  await prisma.applicant.createMany({ data: applicantFixtures })
+  await prisma.recruitmentCandidate.createMany({ data: candidateFixtures })
+
+  const candidates = await prisma.recruitmentCandidate.findMany({
+    where: { cycleId: cycle.id },
+    select: { id: true, email: true },
+  })
+  const candidateByEmail = new Map(candidates.map((c) => [c.email, c.id]))
+  const candidateId = (slug: string) => candidateByEmail.get(addr(slug))!
+
+  // A GD group that is mid-session, so the timer, roster and evaluation panel
+  // all have something to render.
+  const gdGroup = await prisma.recruitmentGroup.create({
+    data: {
+      cycleId: cycle.id,
+      kind: SessionKind.GD,
+      title: "Morning batch A",
+      state: GroupState.RUNNING,
+      scheduledAt: new Date("2026-08-05T10:00:00+05:30"),
+      createdById: councilSenior.id,
+      members: {
+        create: [
+          {
+            candidateId: candidateId("candidate-gd-active"),
+            kind: SessionKind.GD,
+            attendance: Attendance.PRESENT,
+            joinedAt: new Date("2026-08-05T10:01:00+05:30"),
+            addedById: councilSenior.id,
+          },
+          {
+            candidateId: candidateId("candidate-gd-pending"),
+            kind: SessionKind.GD,
+            attendance: Attendance.LATE,
+            joinedAt: new Date("2026-08-05T10:06:00+05:30"),
+            addedById: councilSenior.id,
+          },
+        ],
+      },
+      staff: {
+        create: [
+          { memberId: memberSenior.id, role: RecruitmentRole.MAINTAINER, canEvaluate: true, assignedById: councilAdmin.id },
+          // A JC only scores where a Senior Council member allowed it.
+          { memberId: memberJunior.id, role: RecruitmentRole.JC, canEvaluate: true, assignedById: councilAdmin.id },
+        ],
+      },
+    },
+  })
+
+  const gdStartedAt = new Date(Date.now() - 4 * 60 * 1000)
+  const gdSession = await prisma.recruitmentSession.create({
+    data: {
+      cycleId: cycle.id,
+      groupId: gdGroup.id,
+      kind: SessionKind.GD,
+      attempt: 1,
+      state: SessionState.ACTIVE,
+      // Relative to now, so the seeded session reads as genuinely live rather
+      // than as a stale one from a fixed date in the past.
+      startedAt: gdStartedAt,
+      lastActivityAt: new Date(),
+      controllerId: councilSenior.id,
+      controlExpiresAt: new Date(Date.now() + 2 * 60 * 1000),
+      startedById: councilSenior.id,
+      plannedSeconds: 900,
+    },
+  })
+
+  await prisma.recruitmentCandidateLock.create({
+    data: {
+      candidateId: candidateId("candidate-gd-active"),
+      sessionId: gdSession.id,
+      cycleId: cycle.id,
+    },
+  })
+
+  // Two evaluators on one candidate, so the aggregate and the per-evaluator
+  // attribution are both exercised.
+  await prisma.recruitmentEvaluation.createMany({
+    data: [
+      {
+        cycleId: cycle.id,
+        candidateId: candidateId("candidate-gd-active"),
+        kind: SessionKind.GD,
+        groupId: gdGroup.id,
+        sessionId: gdSession.id,
+        evaluatorId: councilSenior.id,
+        evaluatorRole: RecruitmentRole.MAINTAINER,
+        scores: { content: 8, communication: 7, collaboration: 9 },
+        overall: 8,
+        remarks: "Structured, brought the group back on topic twice.",
+        recommendation: Recommendation.ADVANCE,
+        state: EvaluationState.SUBMITTED,
+        submittedAt: new Date(),
+      },
+      {
+        cycleId: cycle.id,
+        candidateId: candidateId("candidate-gd-active"),
+        kind: SessionKind.GD,
+        groupId: gdGroup.id,
+        sessionId: gdSession.id,
+        evaluatorId: councilJunior.id,
+        evaluatorRole: RecruitmentRole.JC,
+        scores: { content: 7, communication: 8, collaboration: 8 },
+        overall: 7.67,
+        remarks: "Clear, a little quiet in the opening.",
+        recommendation: Recommendation.ADVANCE,
+        state: EvaluationState.SUBMITTED,
+        submittedAt: new Date(),
+      },
+      // A draft, so the console shows unsubmitted panel work too.
+      {
+        cycleId: cycle.id,
+        candidateId: candidateId("candidate-gd-pending"),
+        kind: SessionKind.GD,
+        groupId: gdGroup.id,
+        sessionId: gdSession.id,
+        evaluatorId: councilSenior.id,
+        evaluatorRole: RecruitmentRole.MAINTAINER,
+        scores: { content: 6 },
+        remarks: "Part-way through.",
+        state: EvaluationState.DRAFT,
+      },
+    ],
+  })
+
+  // The permanent bypass record the PI dossier reads.
+  await prisma.recruitmentHandoff.create({
+    data: {
+      cycleId: cycle.id,
+      candidateId: candidateId("candidate-bypassed"),
+      fromStage: CandidateStage.GD_PENDING,
+      toStage: CandidateStage.GD_BYPASSED,
+      bypass: true,
+      reason: "Chaired two conferences already; the panel agreed GD would tell us nothing new.",
+      actorId: councilSenior.id,
+      actorRole: RecruitmentRole.MAINTAINER,
+      previousState: { stage: "GD_PENDING", gdRequired: true },
+      newState: { stage: "GD_BYPASSED", gdRequired: false },
+    },
+  })
+
+  // One successful and one refused event, so the audit viewer's outcome filter
+  // has both to show.
+  await prisma.recruitmentAuditEvent.createMany({
+    data: [
+      {
+        cycleId: cycle.id,
+        eventType: "cycle.transition",
+        actorId: councilAdmin.id,
+        actorEmail: councilAdmin.email,
+        actorRole: RecruitmentRole.ADMIN,
+        previousState: { state: "OPEN" },
+        newState: { state: "IN_PROGRESS" },
+        outcome: "SUCCESS",
+      },
+      {
+        cycleId: cycle.id,
+        eventType: "action.denied",
+        candidateId: candidateId("candidate-bypassed"),
+        actorId: councilJunior.id,
+        actorEmail: councilJunior.email,
+        actorRole: RecruitmentRole.JC,
+        reason: "Role JC may not candidate.bypassGd.",
+        meta: { action: "candidate.bypassGd", role: "JC" },
+        outcome: "REJECTED",
+      },
+    ],
+  })
 
   console.log("Creating team members…")
   await prisma.member.createMany({
@@ -757,8 +1006,10 @@ async function main() {
     allotments: await prisma.allotment.count(),
     payments: await prisma.payment.count(),
     emailLogs: await prisma.emailLog.count(),
-    applicants: await prisma.applicant.count(),
-    interviewSlots: await prisma.interviewSlot.count(),
+    recruitmentCycles: await prisma.recruitmentCycle.count(),
+    recruitmentCandidates: await prisma.recruitmentCandidate.count(),
+    recruitmentGroups: await prisma.recruitmentGroup.count(),
+    recruitmentEvaluations: await prisma.recruitmentEvaluation.count(),
     members: await prisma.member.count(),
     auditLogs: await prisma.auditLog.count(),
     posts: await prisma.post.count(),

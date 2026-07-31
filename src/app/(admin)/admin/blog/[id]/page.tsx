@@ -11,7 +11,7 @@ const STATUS_BADGE: Record<string, string> = {
   CHANGES_REQUESTED: "bg-blue-100 text-blue-700 border-blue-200",
   PUBLISHED:         "bg-teal-100 text-teal-700 border-teal-200",
   REJECTED:          "bg-red-100 text-red-700 border-red-200",
-  DRAFT:             "bg-gray-100 text-gray-600 border-gray-200",
+  DRAFT:             "bg-muted text-muted-foreground border-border",
 }
 
 export default async function AdminBlogPostPage(props: { params: Promise<{ id: string }> }) {
@@ -58,7 +58,7 @@ export default async function AdminBlogPostPage(props: { params: Promise<{ id: s
 
       <div className="flex gap-8">
         {/* Article preview */}
-        <article className="min-w-0 flex-1 rounded-xl border bg-white">
+        <article className="min-w-0 flex-1 rounded-xl border bg-card">
           {post.coverImage && (
             // eslint-disable-next-line @next/next/no-img-element
             <img
@@ -69,22 +69,22 @@ export default async function AdminBlogPostPage(props: { params: Promise<{ id: s
           )}
 
           <div className="px-10 py-10">
-            <h1 className="font-serif text-3xl font-bold leading-tight text-gray-900">
-              {post.title || <span className="italic text-gray-400">Untitled</span>}
+            <h1 className="font-serif text-3xl font-bold leading-tight text-card-foreground">
+              {post.title || <span className="italic text-muted-foreground">Untitled</span>}
             </h1>
 
             {post.subtitle && (
-              <p className="mt-3 font-serif text-xl leading-relaxed text-gray-500">
+              <p className="mt-3 font-serif text-xl leading-relaxed text-muted-foreground">
                 {post.subtitle}
               </p>
             )}
 
-            <div className="mt-6 mb-8 border-t border-gray-100" />
+            <div className="mt-6 mb-8 border-t border-border/70" />
 
             <TiptapContent json={post.contentJson} className="blog-prose" />
 
             {post.tags.length > 0 && (
-              <div className="mt-12 flex flex-wrap gap-2 border-t border-gray-100 pt-6">
+              <div className="mt-12 flex flex-wrap gap-2 border-t border-border/70 pt-6">
                 {post.tags.map((tag) => (
                   <Badge key={tag} variant="secondary" className="text-xs">
                     {tag}

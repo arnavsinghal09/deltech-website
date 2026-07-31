@@ -4,7 +4,7 @@ import { getContent } from "@/lib/settings"
 export type SheetCellState = "available" | "allotted" | "paid"
 
 // Mirrors one matrix cell to the public Google Sheet via the Apps Script web
-// app (docs/apps-script/sheet-mirror.gs). Fire-and-best-effort: never throws,
+// app (docs/apps-script/sheet-mirror.gs). Fire-and-best-effort, never throws,
 // no-ops when sheetSyncUrl is unset. A missed sync self-corrects on the next
 // state change for that cell.
 export async function syncSheetCell(d: {

@@ -4,7 +4,6 @@ import { redirect } from "next/navigation"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import type { Prisma } from "@/generated/prisma/client"
-import { supabase } from "@/lib/supabase"
 
 async function requireAuthor(postId: string) {
   const session = await auth()
@@ -95,59 +94,5 @@ export async function submitPost(
     return { success: true }
   } catch (err) {
     return { success: false, error: err instanceof Error ? err.message : "Submit failed." }
-  }
-}
-
-// Extension -> content type. The bucket is public via getPublicUrl, so an
-// SVG or an HTML file accepted here becomes stored XSS on the Supabase
-// origin. Deriving the content type from this table rather than from
-// file.type also stops a client mislabelling one thing as another.
-const ALLOWED_IMAGE_TYPES: Record<string, string> = {
-  jpg:  "image/jpeg",
-  jpeg: "image/jpeg",
-  png:  "image/png",
-  webp: "image/webp",
-  gif:  "image/gif",
-}
-
-const MAX_UPLOAD_BYTES = 5 * 1024 * 1024
-
-export async function uploadImage(
-  postId: string,
-  formData: FormData,
-): Promise<{ url?: string; error?: string }> {
-  try {
-    const { userId } = await requireAuthor(postId)
-    const file = formData.get("file") as File | null
-    if (!file) return { error: "No file provided." }
-
-    if (file.size > MAX_UPLOAD_BYTES) {
-      return { error: "Image is too large. The limit is 5 MB." }
-    }
-
-    // `ext` was taken straight from the filename, so "x.jpg/../../evil" gave
-    // an extension containing slashes and traversal inside the bucket. The
-    // allowlist lookup makes anything unexpected fail closed.
-    const ext = file.name.split(".").pop()?.toLowerCase() ?? ""
-    const contentType = ALLOWED_IMAGE_TYPES[ext]
-    if (!contentType) {
-      return { error: "Only JPG, PNG, WebP and GIF images are allowed." }
-    }
-
-    const path = `${userId}/${postId}/${Date.now()}.${ext}`
-
-    const { data, error } = await supabase.storage
-      .from("blog-images")
-      .upload(path, file, { contentType, upsert: false })
-
-    if (error) return { error: error.message }
-
-    const { data: { publicUrl } } = supabase.storage
-      .from("blog-images")
-      .getPublicUrl(data.path)
-
-    return { url: publicUrl }
-  } catch (err) {
-    return { error: err instanceof Error ? err.message : "Upload failed." }
   }
 }

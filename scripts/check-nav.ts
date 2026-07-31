@@ -65,4 +65,38 @@ assert.equal(safeLanding("https://app.example.com/account", "REGISTERER", ORIGIN
 // ...but an unauthenticated caller still gets the public home, not /account.
 assert.equal(safeLanding("/account", undefined, ORIGIN), "/")
 
+// ── Recruitment area / SUB_MAINTAINER (Junior Council) ───────────────────────
+// A JC account's only surface is /recruitment.
+assert.equal(roleHome("SUB_MAINTAINER"), "/recruitment")
+assert.equal(safeLanding(null, "SUB_MAINTAINER"), "/recruitment")
+assert.equal(safeLanding("/recruitment/gd", "SUB_MAINTAINER"), "/recruitment/gd")
+
+// The structural rule: a JC can never be landed on the admin dashboard, however
+// the callbackUrl is dressed up.
+assert.equal(safeLanding("/admin", "SUB_MAINTAINER"), "/recruitment")
+assert.equal(safeLanding("/admin/users", "SUB_MAINTAINER"), "/recruitment")
+assert.equal(safeLanding("/admin/config/money", "SUB_MAINTAINER"), "/recruitment")
+assert.equal(safeLanding("https://app.example.com/admin", "SUB_MAINTAINER", ORIGIN), "/recruitment")
+// ...nor on the other privileged surfaces.
+assert.equal(safeLanding("/write", "SUB_MAINTAINER"), "/recruitment")
+assert.equal(safeLanding("/dashboard", "SUB_MAINTAINER"), "/recruitment")
+// Open-redirect protection still applies to the new role.
+assert.equal(safeLanding("//evil.com", "SUB_MAINTAINER"), "/recruitment")
+assert.equal(safeLanding("https://evil.com/recruitment", "SUB_MAINTAINER", ORIGIN), "/recruitment")
+
+// Any authenticated role may be assigned to a cycle, so /recruitment is reachable
+// by all of them. The authoritative gate is requireRecruitmentAccess() in the
+// (recruitment) layout, which checks RecruitmentMember in the database — the edge
+// cannot, so it must not pre-emptively refuse.
+for (const role of ["ADMIN", "MAINTAINER", "AUTHOR", "REGISTERER", "SUB_MAINTAINER"]) {
+  assert.equal(
+    safeLanding("/recruitment", role),
+    "/recruitment",
+    `${role} must be able to land on /recruitment`,
+  )
+}
+// Unauthenticated callers are never landed there.
+assert.equal(safeLanding("/recruitment", null), "/")
+assert.equal(safeLanding("/recruitment", undefined), "/")
+
 console.log("nav checks passed")
