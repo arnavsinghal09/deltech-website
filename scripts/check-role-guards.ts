@@ -3,14 +3,17 @@
 //
 // Statically parses every "use server" file under src/app/(admin) and maps each
 // exported action to the FIRST require*() guard in its body. Asserts:
-//   1. no exported admin action is completely unguarded, and
-//   2. every money / destructive / role-management action is ADMIN-only.
+//   1. no exported admin action is completely unguarded,
+//   2. every money / destructive / role-management action is ADMIN-only, and
+//   3. every recruitment control-plane action resolves, through the capability
+//      matrix, to a recruitment role of ADMIN.
 //
 // Findings from the PR8 sweep: the matrix is already consistent — this test
 // pins it. Add a new sensitive action → add it to ADMIN_REQUIRED below.
 import assert from "node:assert"
 import { readdirSync, readFileSync, statSync } from "node:fs"
 import { join } from "node:path"
+import { CAPABILITIES, type RecruitmentAction } from "../src/lib/recruitment/permissions"
 
 const ADMIN_DIR = "src/app/(admin)"
 
@@ -20,9 +23,22 @@ const ADMIN_REQUIRED = new Set([
   "savePaymentConfig", "createFee", "updateFee", "deleteFee", "markPaidOffline", "compDelegate",
   // destructive
   "deleteCommittee", "deletePortfolio", "deleteImportPreset", "deleteMember",
-  "cancelDelegate", "revokeAllotment", "deleteApplicant",
+  "cancelDelegate", "revokeAllotment",
   // role / user management
   "setUserRole", "inviteStaff", "setUserDisabled", "deleteUser",
+  // recruitment cycle creation is the one control-plane action gated by the
+  // ordinary admin guard rather than the recruitment capability matrix, because
+  // there is no cycle yet to resolve a recruitment role against.
+  "createRecruitmentCycle",
+])
+
+// Recruitment control-plane actions guarded by requireRecruitmentAction(cycleId,
+// action). These live in the admin dashboard, so every one of them must require
+// the ADMIN recruitment role: a MAINTAINER must not be able to configure a cycle
+// or convert a candidate into a member from here.
+const RECRUITMENT_ADMIN_REQUIRED = new Set([
+  "updateCycleConfig", "transitionCycle", "assignRecruitmentMember",
+  "revokeRecruitmentMember", "recruitCandidate",
 ])
 
 function walk(dir: string): string[] {
@@ -35,7 +51,7 @@ function walk(dir: string): string[] {
   return out
 }
 
-// fn name -> "STAFF" | "ADMIN" | "AUTHOR"
+// fn name -> "STAFF" | "ADMIN" | "AUTHOR" | `RECRUITMENT:<action>`
 function guardsInFile(src: string): Map<string, string> {
   const map = new Map<string, string>()
   const lines = src.split("\n")
@@ -50,6 +66,12 @@ function guardsInFile(src: string): Map<string, string> {
     if (/requireAdmin\(/.test(line)) { map.set(current, "ADMIN"); current = null }
     else if (/requireStaff\(/.test(line)) { map.set(current, "STAFF"); current = null }
     else if (/requireAuthor\(/.test(line)) { map.set(current, "AUTHOR"); current = null }
+    else {
+      // requireRecruitmentAction(cycleId, "cycle.configure") — capture the action
+      // so we can resolve it through the capability matrix below.
+      const recruitment = line.match(/require(?:RecruitmentAction|CycleRole)\([^,]+,\s*["']([\w.]+)["']/)
+      if (recruitment) { map.set(current, `RECRUITMENT:${recruitment[1]}`); current = null }
+    }
   }
   return map
 }
@@ -75,4 +97,26 @@ for (const fn of ADMIN_REQUIRED) {
   assert.equal(all.get(fn), "ADMIN", `"${fn}" must be ADMIN-only, found ${all.get(fn)}`)
 }
 
-console.log(`role-guard checks passed (${all.size} admin actions, ${ADMIN_REQUIRED.size} pinned ADMIN)`)
+// 3. every recruitment control-plane action resolves to the ADMIN recruitment role
+for (const fn of RECRUITMENT_ADMIN_REQUIRED) {
+  const guard = all.get(fn)
+  assert.ok(guard, `expected recruitment action "${fn}" to exist (renamed? update RECRUITMENT_ADMIN_REQUIRED)`)
+  assert.ok(
+    guard.startsWith("RECRUITMENT:"),
+    `"${fn}" must be guarded by requireRecruitmentAction, found ${guard}`,
+  )
+  const action = guard.slice("RECRUITMENT:".length) as RecruitmentAction
+  const roles = CAPABILITIES[action]
+  assert.ok(roles, `"${fn}" guards on unknown recruitment action "${action}"`)
+  assert.deepEqual(
+    [...roles],
+    ["ADMIN"],
+    `"${fn}" guards on "${action}", which the capability matrix grants to ${roles.join("/")} — it must be ADMIN-only`,
+  )
+}
+
+const recruitmentGuarded = [...all.values()].filter((g) => g.startsWith("RECRUITMENT:")).length
+console.log(
+  `role-guard checks passed (${all.size} admin actions, ${ADMIN_REQUIRED.size} pinned ADMIN, ` +
+    `${recruitmentGuarded} recruitment-guarded, ${RECRUITMENT_ADMIN_REQUIRED.size} pinned recruitment-ADMIN)`,
+)

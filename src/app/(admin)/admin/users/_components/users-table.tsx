@@ -122,7 +122,7 @@ export function UsersTable({ users, selfEmail }: { users: UserRow[]; selfEmail: 
                           <SelectItem value="ADMIN">Admin</SelectItem>
                           <SelectItem value="MAINTAINER">Maintainer</SelectItem>
                           <SelectItem value="AUTHOR">Author</SelectItem>
-                          <SelectItem value="REGISTERER">Registerer</SelectItem>
+                          <SelectItem value="SUB_MAINTAINER">Junior Council</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>

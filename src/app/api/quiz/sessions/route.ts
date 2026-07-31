@@ -10,7 +10,7 @@ export async function GET(request: Request) {
   const code = searchParams.get("code")
   if (!code) return NextResponse.json({ error: "code required" }, { status: 400 })
 
-  // Unauthenticated oracle over a 6-digit (900k) space: without a throttle,
+  // Unauthenticated oracle over a 6-digit (900k) space, without a throttle,
   // live sessions can be enumerated and then targeted.
   const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown"
   const limit = await rateLimit(RATE_LIMITS.quizLookup, ip)

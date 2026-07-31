@@ -25,7 +25,7 @@ import {
 import { t } from "@/content/strings"
 import { inviteStaff } from "../actions"
 
-type Role = "ADMIN" | "MAINTAINER" | "AUTHOR" | "REGISTERER"
+type Role = "ADMIN" | "MAINTAINER" | "AUTHOR" | "SUB_MAINTAINER"
 
 export function InviteDialog() {
   const router = useRouter()
@@ -84,6 +84,7 @@ export function InviteDialog() {
                   <SelectItem value="MAINTAINER">Maintainer</SelectItem>
                   <SelectItem value="ADMIN">Admin</SelectItem>
                   <SelectItem value="AUTHOR">Author (blog only)</SelectItem>
+                  <SelectItem value="SUB_MAINTAINER">Junior Council (recruitment only)</SelectItem>
                 </SelectContent>
               </Select>
             </div>

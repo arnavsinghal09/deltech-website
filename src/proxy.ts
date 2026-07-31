@@ -3,8 +3,10 @@ import { authConfig } from "@/lib/auth.config";
 
 // Next.js 16: proxy.ts replaces middleware.ts. Named export `proxy` (or default).
 // Uses auth.config.ts (no Prisma import) so this runs safely on the Edge runtime.
-// The `authorized` callback in authConfig handles /admin/*, /write/*, and /dashboard/* protection.
+// The `authorized` callback in authConfig handles /admin/*, /write/*, /recruitment/*
+// and /dashboard/* protection.
 const { auth } = NextAuth(authConfig);
+
 export const proxy = auth;
 
 export const config = {
@@ -13,5 +15,6 @@ export const config = {
     "/write/:path*",
     "/dashboard/:path*",
     "/account/:path*",
+    "/recruitment/:path*",
   ],
 };

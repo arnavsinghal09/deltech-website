@@ -101,3 +101,38 @@ adding approval environments or release bureaucracy.
 
 `NEXT_PUBLIC_APP_URL` must be `https://test.deltechmun.in` for Preview and
 `https://deltechmun.in` for Production.
+
+## Recruitment checks
+
+The recruitment module keeps its decision logic in pure functions
+(`src/lib/recruitment/*`) precisely so it can be asserted without a database:
+
+| Script | Asserts |
+| --- | --- |
+| `check-recruitment-permissions` | capability matrix and the cycle-state gate |
+| `check-recruitment-transitions` | candidate stage and result machines |
+| `check-recruitment-session` | timers, idempotency, control leases, staleness |
+| `check-recruitment-import` | row identity, idempotency, duplicates, manual-edit protection |
+| `check-recruitment-guards` | static analysis: no unguarded action, and the JC withholdings hold |
+| `check-media-keys` | S3 object-key construction and upload validation |
+
+`check-recruitment-concurrency.ts` is the exception. It asserts the races the
+*database* must refuse (partial unique indexes, the candidate lock, the
+append-only audit trigger), so it needs a real writable Postgres. It exits 0
+immediately unless `RECRUITMENT_DB_CHECKS=1` is set, which keeps CI green against
+a database it must not write to. Run it against a scratch database before
+touching the recruitment schema:
+
+```bash
+RECRUITMENT_DB_CHECKS=1 DIRECT_URL=postgresql://.../scratch npx tsx scripts/check-recruitment-concurrency.ts
+```
+
+## S3 media uploads
+
+Author images, team photos and recruitment documents go to S3 through a
+presigned PUT (`src/lib/media/`). Set `S3_BUCKET`, `S3_REGION`,
+`S3_ACCESS_KEY_ID` and `S3_SECRET_ACCESS_KEY`; see `.env.example`. They are read
+lazily, so a build without them succeeds and only uploading is disabled. Never
+expose them with a `NEXT_PUBLIC_` prefix: the browser receives a short-lived
+signature, never a credential. `/api/cron/media-sweep` deletes abandoned uploads
+and is gated by `CRON_SECRET` like the other cron routes.

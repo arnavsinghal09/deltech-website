@@ -1,0 +1,169 @@
+"use client"
+
+import { useState, useTransition } from "react"
+import { useRouter } from "next/navigation"
+import { toast } from "sonner"
+import { Button } from "@/components/ui/button"
+import { Card } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { Badge } from "@/components/ui/badge"
+import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select"
+import { t } from "@/content/strings"
+import { recruitCandidate } from "../actions"
+
+type SocietyRole = "AUTHOR" | "SUB_MAINTAINER" | "REGISTERER"
+
+// The second half of finalisation: turning a SELECTED candidate into a society
+// member. Kept visibly separate from the selection decision itself, because they are
+// separate actions with separate consequences.
+//
+// Safe to retry: the server returns the existing membership if one already exists,
+// so a double-click reports "already added" rather than creating a second user.
+export function FinalisationPanel({
+  awaiting,
+  recruited,
+  societyRoles,
+  disabled,
+}: {
+  awaiting: { id: string; fullName: string; email: string; stage: string }[]
+  recruited: {
+    id: string
+    fullName: string
+    email: string
+    societyRole: string | null
+    recruitedAt: string | null
+  }[]
+  societyRoles: string[]
+  disabled: boolean
+}) {
+  const router = useRouter()
+  const [role, setRole] = useState<Record<string, SocietyRole>>({})
+  const [designation, setDesignation] = useState<Record<string, string>>({})
+  const [busy, setBusy] = useState<string | null>(null)
+  const [pending, startTransition] = useTransition()
+
+  const options = (societyRoles.length > 0 ? societyRoles : ["AUTHOR"]) as SocietyRole[]
+
+  function recruit(candidateId: string) {
+    setBusy(candidateId)
+    startTransition(async () => {
+      const result = await recruitCandidate({
+        candidateId,
+        societyRole: role[candidateId] ?? options[0],
+        designation: designation[candidateId]?.trim() || undefined,
+      })
+      setBusy(null)
+      if (!result.ok) {
+        toast.error(result.error)
+        return
+      }
+      toast.success(
+        result.idempotent
+          ? t("recruitment.control.alreadyRecruited")
+          : t("recruitment.control.recruited"),
+      )
+      router.refresh()
+    })
+  }
+
+  return (
+    <Card className="space-y-4 p-4">
+      <div>
+        <h2 className="data-label text-xs uppercase tracking-[0.12em] text-muted-foreground">
+          {t("recruitment.control.finaliseTitle")}
+        </h2>
+        <p className="mt-1 text-xs text-muted-foreground">
+          {t("recruitment.control.finaliseDescription")}
+        </p>
+      </div>
+
+      <section className="space-y-2">
+        <p className="text-sm font-medium">
+          {t("recruitment.control.awaitingRecruitment")} · {awaiting.length}
+        </p>
+        {awaiting.length === 0 ? (
+          <p className="text-sm text-muted-foreground">{t("recruitment.overview.allDone")}</p>
+        ) : (
+          <ul className="space-y-2">
+            {awaiting.map((c) => (
+              <li
+                key={c.id}
+                className="grid gap-2 rounded-md border border-border/70 p-3 sm:grid-cols-[1fr_9rem_10rem_auto] sm:items-end"
+              >
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-medium">{c.fullName}</p>
+                  <p className="truncate text-xs text-muted-foreground">{c.email}</p>
+                </div>
+
+                <Select
+                  value={role[c.id] ?? options[0]}
+                  onValueChange={(v) =>
+                    setRole((prev) => ({ ...prev, [c.id]: (v ?? options[0]) as SocietyRole }))
+                  }
+                  disabled={disabled || pending}
+                >
+                  <SelectTrigger className="h-9" />
+                  <SelectContent>
+                    {options.map((r) => (
+                      <SelectItem key={r} value={r}>
+                        {r}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                <Input
+                  className="h-9"
+                  value={designation[c.id] ?? ""}
+                  disabled={disabled || pending}
+                  onChange={(e) =>
+                    setDesignation((prev) => ({ ...prev, [c.id]: e.target.value }))
+                  }
+                  placeholder={t("recruitment.control.recruitDesignationPlaceholder")}
+                />
+
+                <Button
+                  size="sm"
+                  disabled={disabled || pending}
+                  onClick={() => recruit(c.id)}
+                >
+                  {busy === c.id
+                    ? t("recruitment.control.recruiting")
+                    : t("recruitment.control.recruit")}
+                </Button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
+      {recruited.length > 0 && (
+        <section className="space-y-2 border-t border-border/70 pt-3">
+          <p className="text-sm font-medium">{t("recruitment.control.recruited")}</p>
+          <ul className="divide-y divide-border/70">
+            {recruited.map((r) => (
+              <li key={r.id} className="flex items-center justify-between gap-2 py-2 text-sm">
+                <div className="min-w-0">
+                  <p className="truncate">{r.fullName}</p>
+                  <p className="truncate text-xs text-muted-foreground">{r.email}</p>
+                </div>
+                <div className="flex shrink-0 items-center gap-2">
+                  {r.societyRole && (
+                    <Badge className="bg-secondary font-normal text-secondary-foreground">
+                      {r.societyRole}
+                    </Badge>
+                  )}
+                  {r.recruitedAt && (
+                    <time className="text-xs text-muted-foreground" dateTime={r.recruitedAt}>
+                      {r.recruitedAt.slice(0, 10)}
+                    </time>
+                  )}
+                </div>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+    </Card>
+  )
+}

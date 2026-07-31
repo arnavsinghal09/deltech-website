@@ -2,7 +2,21 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
-@custom-variant dark (&:is(.dark *));
+/* Dark variant, scoped so each app area can own its own theme.
+ *
+ * Two changes from the plain `&:is(.dark *)`:
+ *   1. `.dark` now matches the element carrying the class as well as its
+ *      descendants, so a themed wrapper (not just <html>) styles itself.
+ *   2. an inner `.theme-light` scope OPTS BACK OUT of an outer `.dark`.
+ *
+ * (2) is what stops the homepage theme leaking into /admin and /recruitment. Those
+ * shells render `dark` or `theme-light` from their own cookie on the server, so an
+ * inherited `.dark` on <html>, left behind by the marketing toggle, cannot win,
+ * without a hydration-time script, and therefore without a flash.
+ *
+ * `:where()` keeps all of this at zero specificity, so utility ordering is
+ * unchanged. */
+@custom-variant dark (&:where(.dark, .dark *):not(:where(.theme-light, .theme-light *)));
 
 @theme inline {
   --color-background: var(--background);
@@ -71,7 +85,12 @@
   --color-gold-700: var(--gold-700);
 }
 
-:root {
+/* `.theme-light` is listed alongside `:root` so an explicitly-light app area
+ * re-declares the light tokens it would otherwise inherit from an ancestor
+ * `.dark`. Pair with the scoped dark variant above: together they let /admin and
+ * /recruitment be light while the homepage is dark, in the same document. */
+:root,
+.theme-light {
   /* Teal palette (brochure anchor colour) */
   --teal-50:  oklch(0.97 0.013 196);
   --teal-100: oklch(0.94 0.030 196);

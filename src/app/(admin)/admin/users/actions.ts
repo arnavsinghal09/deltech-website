@@ -8,7 +8,7 @@ import { deleteBlockReason } from "@/lib/user-admin"
 import type { Prisma, Role } from "@/generated/prisma/client"
 import { detailedChangeMeta } from "@/lib/audit-change"
 
-const ASSIGNABLE: Role[] = ["ADMIN", "MAINTAINER", "AUTHOR", "REGISTERER"]
+const ASSIGNABLE: Role[] = ["ADMIN", "MAINTAINER", "AUTHOR", "REGISTERER", "SUB_MAINTAINER"]
 
 // `warning` is for "the thing you asked for happened, but something after it
 // did not". The caller should still treat it as success and refresh.

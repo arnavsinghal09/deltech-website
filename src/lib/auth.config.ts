@@ -37,6 +37,13 @@ export const authConfig = {
       // Any signed-in role may manage their own account.
       if (pathname.startsWith("/account")) return !!role
 
+      // Coarse gate only: any authenticated role may hold a per-cycle recruitment
+      // assignment, and the edge cannot query RecruitmentMember. The authoritative
+      // check is requireRecruitmentAccess() in the (recruitment) layout.
+      if (pathname.startsWith("/recruitment")) {
+        return !!role;
+      }
+
       if (pathname.startsWith("/dashboard")) {
         if (role === "REGISTERER") return true;
         // Any other authenticated role (staff, author) belongs elsewhere.
