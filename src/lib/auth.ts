@@ -8,7 +8,9 @@ import { verifyPassword } from "@/lib/password";
 import { sessionNeedsRefresh } from "@/lib/user-admin";
 import { MAGIC_LINK_MAX_AGE_S } from "@/lib/magic-link";
 
-type AppRole = "ADMIN" | "MAINTAINER" | "AUTHOR" | "REGISTERER";
+// SUB_MAINTAINER is the Junior Council tier: it reaches /recruitment only and
+// is structurally locked out of /admin (see roleCanAccess in src/lib/nav.ts).
+type AppRole = "ADMIN" | "MAINTAINER" | "AUTHOR" | "REGISTERER" | "SUB_MAINTAINER";
 
 declare module "next-auth" {
   interface Session {

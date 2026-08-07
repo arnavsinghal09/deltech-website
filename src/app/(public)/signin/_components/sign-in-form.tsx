@@ -21,6 +21,11 @@ export function SignInForm({
   // That link is the whole password-recovery flow: the magic link is already a
   // single-use expiring token, so there is no separate reset token to mint.
   const [tab, setTab] = useState<string>(defaultTab);
+  // ...but landing them on their role home would leave them exactly where they
+  // started, still without a password. When recovery is what brought them here,
+  // send them to /account, which is where the password form lives.
+  const [recovering, setRecovering] = useState(false);
+  const magicCallbackUrl = recovering ? "/account" : callbackUrl;
 
   return (
     <Tabs value={tab} onValueChange={(v) => setTab(String(v))}>
@@ -35,7 +40,7 @@ export function SignInForm({
 
       <TabsContent value="magic">
         <form action={mlAction} className="flex flex-col gap-5">
-          <input type="hidden" name="callbackUrl" value={callbackUrl} />
+          <input type="hidden" name="callbackUrl" value={magicCallbackUrl} />
           <div className="flex flex-col gap-2">
             <Label htmlFor="ml-email">{t("auth.emailLabel")}</Label>
             <Input
@@ -54,6 +59,11 @@ export function SignInForm({
               {mlState.error === "tooManyRequests"
                 ? t("auth.tooManyRequests")
                 : t("auth.errorDefault")}
+            </p>
+          )}
+          {recovering && (
+            <p className="text-xs leading-relaxed text-foreground/60">
+              {t("auth.recoveryHint")}
             </p>
           )}
           <Button type="submit" disabled={mlPending} className="h-14 w-full rounded-none text-base">
@@ -106,7 +116,10 @@ export function SignInForm({
 
           <button
             type="button"
-            onClick={() => setTab("magic")}
+            onClick={() => {
+              setRecovering(true);
+              setTab("magic");
+            }}
             className="-mt-1 self-start text-sm font-bold text-teal-800 underline underline-offset-2"
           >
             {t("auth.forgotPassword")}

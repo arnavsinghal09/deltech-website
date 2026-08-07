@@ -1,7 +1,7 @@
 // Role-aware post-auth landing. Pure string logic, no Prisma, no React.
 // safe to import from the edge (auth.config.ts / proxy) and from route handlers.
 
-export type Role = "ADMIN" | "MAINTAINER" | "AUTHOR" | "REGISTERER"
+export type Role = "ADMIN" | "MAINTAINER" | "AUTHOR" | "REGISTERER" | "SUB_MAINTAINER"
 
 // The home surface for each role. Single source of truth, reused by the /go
 // dispatch route, the sign-in actions, and the route-group layouts/guards.
@@ -14,6 +14,9 @@ export function roleHome(role: string | null | undefined): string {
       return "/write"
     case "REGISTERER":
       return "/dashboard"
+    // Junior Council: recruitment is the only surface this account has.
+    case "SUB_MAINTAINER":
+      return "/recruitment"
     default:
       return "/"
   }
@@ -26,6 +29,11 @@ function roleCanAccess(pathname: string, role: string | null | undefined): boole
   if (pathname.startsWith("/write")) return role === "AUTHOR" || role === "ADMIN" || role === "MAINTAINER"
   if (pathname.startsWith("/dashboard")) return role === "REGISTERER"
   if (pathname.startsWith("/account")) return !!role // any signed-in role
+  // /recruitment is coarse-gated here (any signed-in role may be assigned to a
+  // cycle regardless of app role) and authoritatively gated by the route-group
+  // layout, which checks RecruitmentMember against the database. The edge cannot
+  // reach Prisma, so this is the widest correct answer rather than a guess.
+  if (pathname.startsWith("/recruitment")) return !!role
   return true // public path
 }
 

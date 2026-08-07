@@ -13,7 +13,6 @@ Maintainers run normal conference operations. They can:
 - allot available portfolios;
 - open or close registration;
 - parse and commit cross-delegation imports;
-- score recruitment rounds;
 - moderate blog posts and operate quizzes;
 - create and update team members;
 - edit non-payment conference content.
@@ -24,11 +23,36 @@ Maintainers cannot perform the highest-risk actions. An admin is required to:
 - revoke an allotment;
 - mark a delegate paid offline, comp a fee, or cancel a delegate;
 - change payment routing;
-- change staff roles or users.
+- change staff roles or users;
+- create or configure a recruitment cycle, or add a candidate to the society.
 
 ### Admin
 
 Admins can perform all maintainer work plus the guarded actions above. Admin access should be limited to people responsible for financial and destructive changes.
+
+### Recruitment roles (separate from the above)
+
+Recruitment permissions are **not** derived from the dashboard roles above. They come
+from a per-cycle assignment made in **Recruitment control → Council**, so someone can
+be a dashboard Maintainer and a recruitment Junior Council member at the same time, or
+hold recruitment authority with no dashboard access at all.
+
+| Recruitment role | Can |
+|---|---|
+| **Junior Council** (`JC`) | See the groups they are assigned to, assist a live session, mark attendance, and submit an evaluation **only where a Senior Council member ticked "may score"**. Cannot start or stop sessions, skip GD, move candidates, import responses, or read other evaluators' scores. |
+| **Senior Council** (`MAINTAINER`) | Create groups, assign candidates and JCs, run sessions (start/pause/resume/finish/abort), evaluate and revise, move candidates between stages, and skip GD with a recorded reason. |
+| **Administrative Council** (`ADMIN`) | Everything above, plus configure the cycle, assign the council, drive the cycle state machine, override invalid states, reopen sessions, void evaluations, finalise results, and add selected candidates to the society. |
+
+A **global admin is implicitly a recruitment admin on every cycle**, so a cycle can
+always be repaired. Everyone else needs an explicit assignment.
+
+Accounts whose only surface is recruitment use the `SUB_MAINTAINER` app role: they land
+on `/recruitment` and are structurally locked out of `/admin`.
+
+**Finalising a candidate and adding them to the society are separate actions.**
+Selecting someone records a decision; "Add to society" then creates or links their user
+account. That step can only assign non-privileged roles, so recruitment can never grant
+dashboard access — dashboard permissions remain a separate, deliberate change in Users.
 
 ## Conference launch order
 

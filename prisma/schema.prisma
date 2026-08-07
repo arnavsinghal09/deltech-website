@@ -24,13 +24,23 @@ model User {
   accounts      Account[]
   sessions      Session[]
   posts         Post[]
+
+  // Recruitment. `role` above governs which app AREA you may enter; recruitment
+  // authority is per-cycle and lives on RecruitmentMember — the two are resolved
+  // independently (see src/lib/recruitment/authz.ts).
+  recruitmentMemberships RecruitmentMember[]
+  recruitedFrom          RecruitmentCandidate? @relation("recruitedUser")
+  mediaAssets            MediaAsset[]
 }
 
+// SUB_MAINTAINER is the Junior Council account tier: it reaches /recruitment only
+// and is structurally locked out of /admin (see roleCanAccess in src/lib/nav.ts).
 enum Role {
   ADMIN
   MAINTAINER
   AUTHOR
   REGISTERER
+  SUB_MAINTAINER
 }
 
 model Account {
@@ -266,61 +276,569 @@ enum PayStatus {
 }
 
 // ---- Society recruitment (GD/PI) ----
+//
+// Everything is cycle-scoped: closing one cycle cannot touch another's data.
+// Candidate stage and result are stored EXPLICITLY rather than inferred from
+// missing records, so off-happy-path states (hold, bypass, withdraw, reopen)
+// have a home. Sessions are server-authoritative with `version` for optimistic
+// concurrency; evaluations are append-only versions, never overwritten.
+//
+// Partial unique indexes and the audit-immutability trigger cannot be expressed
+// in Prisma schema — they live in the migration SQL. See
+// prisma/migrations/*_recruitment_module/migration.sql.
 
-model Applicant {
-  id        String          @id @default(cuid())
-  fullName  String
-  email     String          @unique
-  phone     String?
-  year      String?
-  branch    String?
-  answers   Json?
-  status    ApplicantStatus @default(APPLIED)
-  gdSlotId  String?
-  gdSlot    InterviewSlot?  @relation("gd", fields: [gdSlotId], references: [id])
-  gdScore   Int?
-  gdVerdict Verdict?
-  piSlotId  String?
-  piSlot    InterviewSlot?  @relation("pi", fields: [piSlotId], references: [id])
-  piScore   Int?
-  piVerdict Verdict?
-  createdAt DateTime        @default(now())
+model RecruitmentCycle {
+  id          String     @id @default(cuid())
+  name        String
+  slug        String     @unique
+  state       CycleState @default(DRAFT)
+  // Stage rules + evaluation rubric. Shape validated by RecruitmentCycleConfigSchema
+  // in src/lib/schemas/recruitment.ts.
+  config      Json       @default("{}")
+  // Optimistic lock for concurrent config edits / state transitions.
+  version     Int        @default(0)
+  openedAt    DateTime?
+  closedAt    DateTime?
+  finalisedAt DateTime?
+  createdById String
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  members     RecruitmentMember[]
+  candidates  RecruitmentCandidate[]
+  groups      RecruitmentGroup[]
+  sessions    RecruitmentSession[]
+  evaluations RecruitmentEvaluation[]
+  sources     RecruitmentSheetSource[]
+  imports     RecruitmentImport[]
+  handoffs    RecruitmentHandoff[]
+  auditEvents RecruitmentAuditEvent[]
+
+  @@index([state])
 }
 
-// ponytail: recruitment is now offline single-page scoring — InterviewSlot,
-// the gd/piSlot columns on Applicant, and the *_SCHEDULED ApplicantStatus
-// values are unused by the app. Left in place to avoid a destructive migration
-// for no gain; drop them together in the next real migration.
-model InterviewSlot {
-  id           String         @id @default(cuid())
-  round        InterviewRound
-  startsAt     DateTime
-  venue        String?
-  capacity     Int            @default(8)
-  panel        Json?
-  gdApplicants Applicant[]    @relation("gd")
-  piApplicants Applicant[]    @relation("pi")
+enum CycleState {
+  DRAFT
+  OPEN
+  IN_PROGRESS
+  PAUSED
+  FINALISATION
+  COMPLETED
+  ARCHIVED
+  CANCELLED
 }
 
-enum InterviewRound {
+// Per-cycle recruitment authority. Deliberately separate from User.role so a
+// dashboard MAINTAINER can be a recruitment JC (and vice versa) at the same time.
+model RecruitmentMember {
+  id           String           @id @default(cuid())
+  cycleId      String
+  cycle        RecruitmentCycle @relation(fields: [cycleId], references: [id], onDelete: Cascade)
+  userId       String
+  user         User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role         RecruitmentRole
+  isActive     Boolean          @default(true)
+  assignedById String
+  assignedAt   DateTime         @default(now())
+  revokedAt    DateTime?
+  revokedById  String?
+
+  staffAssignments RecruitmentStaffAssignment[]
+
+  @@unique([cycleId, userId])
+  @@index([userId, isActive])
+}
+
+enum RecruitmentRole {
+  JC
+  MAINTAINER
+  ADMIN
+}
+
+// ---- Candidates ----
+
+model RecruitmentCandidate {
+  id      String           @id @default(cuid())
+  cycleId String
+  cycle   RecruitmentCycle @relation(fields: [cycleId], references: [id], onDelete: Cascade)
+
+  fullName String
+  email    String
+  phone    String?
+  year     String?
+  branch   String?
+
+  // Raw imported form row, kept verbatim for the PI dossier.
+  formAnswers Json?
+  // Fields a human has edited by hand. Imports never overwrite these.
+  manualEditedFields String[] @default([])
+  // Import provenance — makes re-import idempotent and traceable.
+  sourceSheetKey String?
+  sourceRowKey   String?
+  sourceRowHash  String?
+  importedById   String?
+  importedAt     DateTime?
+
+  // Explicit pipeline state. `stage` is where they are, `result` is the outcome —
+  // two different questions, never conflated.
+  stage  CandidateStage  @default(INTAKE)
+  result CandidateResult @default(PENDING)
+  // Which stages this candidate actually needs. Direct-to-PI is `gdRequired: false`,
+  // a configured shape rather than a missing GD record.
+  gdRequired Boolean @default(true)
+  piRequired Boolean @default(true)
+  // Optimistic lock — stale UI cannot overwrite newer state.
+  version    Int     @default(0)
+
+  // Finalisation → society. Separate actions: `result` is the decision,
+  // recruitedUserId is the membership.
+  recruitedUserId String?  @unique
+  recruitedUser   User?    @relation("recruitedUser", fields: [recruitedUserId], references: [id])
+  recruitedById   String?
+  recruitedAt     DateTime?
+  memberId        String?
+  societyRole     Role?
+
+  decidedById String?
+  decidedAt   DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  groupMemberships RecruitmentGroupMember[]
+  evaluations      RecruitmentEvaluation[]
+  handoffs         RecruitmentHandoff[]
+  lock             RecruitmentCandidateLock?
+
+  @@unique([cycleId, email])
+  @@unique([cycleId, sourceSheetKey, sourceRowKey])
+  @@index([cycleId, stage])
+  @@index([cycleId, result])
+}
+
+enum CandidateStage {
+  INTAKE
+  GD_PENDING
+  GD_ACTIVE
+  GD_COMPLETE
+  GD_BYPASSED
+  PI_PENDING
+  PI_ACTIVE
+  PI_COMPLETE
+  DECISION
+  CLOSED
+}
+
+enum CandidateResult {
+  PENDING
+  ON_HOLD
+  SELECTED
+  REJECTED
+  WITHDRAWN
+  DISQUALIFIED
+}
+
+// ---- Groups & sessions (one shape serves GD and PI) ----
+
+enum SessionKind {
   GD
   PI
 }
 
-enum Verdict {
-  SHORTLIST
-  REJECT
-  SELECT
+model RecruitmentGroup {
+  id          String           @id @default(cuid())
+  cycleId     String
+  cycle       RecruitmentCycle @relation(fields: [cycleId], references: [id], onDelete: Cascade)
+  kind        SessionKind
+  title       String
+  state       GroupState       @default(DRAFT)
+  scheduledAt DateTime?
+  notes       String?
+  version     Int              @default(0)
+  createdById String
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  members  RecruitmentGroupMember[]
+  staff    RecruitmentStaffAssignment[]
+  sessions RecruitmentSession[]
+
+  @@index([cycleId, kind, state])
 }
 
-enum ApplicantStatus {
-  APPLIED
-  GD_SCHEDULED
-  GD_DONE
-  PI_SCHEDULED
-  PI_DONE
-  SELECTED
+enum GroupState {
+  DRAFT
+  READY
+  RUNNING
+  DONE
+  ARCHIVED
+}
+
+model RecruitmentGroupMember {
+  id          String               @id @default(cuid())
+  groupId     String
+  group       RecruitmentGroup     @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  candidateId String
+  candidate   RecruitmentCandidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  // Denormalised from the group so the partial unique index in the migration can
+  // enforce "one active group per candidate per kind" at the database level.
+  kind        SessionKind
+  attendance  Attendance           @default(EXPECTED)
+  joinedAt    DateTime?
+  seat        Int?
+  addedById   String
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
+
+  @@unique([groupId, candidateId])
+  @@index([candidateId])
+}
+
+enum Attendance {
+  EXPECTED
+  PRESENT
+  LATE
+  ABSENT
+  REASSIGNED
+}
+
+model RecruitmentStaffAssignment {
+  id        String            @id @default(cuid())
+  groupId   String
+  group     RecruitmentGroup  @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  memberId  String
+  member    RecruitmentMember @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  // Denormalised from RecruitmentMember at assign time so an evaluation can be
+  // attributed to the role the person actually held for this group.
+  role      RecruitmentRole
+  canEvaluate Boolean         @default(false)
+  assignedById String
+  createdAt DateTime          @default(now())
+
+  @@unique([groupId, memberId])
+  @@index([memberId])
+}
+
+// Server-authoritative session. Elapsed time is always derived from these
+// timestamps (see elapsedMs in src/lib/recruitment/session.ts) — never from a
+// browser clock. A reopen creates a NEW row with attempt + 1; the partial unique
+// index in the migration guarantees at most one non-terminal session per group.
+model RecruitmentSession {
+  id      String           @id @default(cuid())
+  cycleId String
+  cycle   RecruitmentCycle @relation(fields: [cycleId], references: [id], onDelete: Cascade)
+  groupId String
+  group   RecruitmentGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  kind    SessionKind
+  attempt Int              @default(1)
+
+  state   SessionState @default(NOT_STARTED)
+  // Optimistic lock. Every transition is a conditional update on { id, state, version }.
+  version Int          @default(0)
+
+  // Whoever holds operational control. The lease expiry is what lets a second
+  // maintainer take over a session whose owner disconnected.
+  controllerId     String?
+  controlExpiresAt DateTime?
+
+  scheduledAt    DateTime?
+  startedAt      DateTime?
+  pausedAt       DateTime?
+  resumedAt      DateTime?
+  endedAt        DateTime?
+  // Accumulated paused milliseconds, so elapsed = (endedAt ?? now) - startedAt - pausedMs.
+  pausedMs       Int       @default(0)
+  lastActivityAt DateTime?
+  plannedSeconds Int?
+
+  startedById  String?
+  endedById    String?
+  abortedById  String?
+  abortReason  String?
+  reopenedFromId String?
+  reopenReason String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  evaluations RecruitmentEvaluation[]
+  locks       RecruitmentCandidateLock[]
+
+  @@unique([groupId, attempt])
+  @@index([cycleId, state])
+  @@index([cycleId, lastActivityAt])
+}
+
+enum SessionState {
+  NOT_STARTED
+  ACTIVE
+  PAUSED
+  COMPLETED
+  ABORTED
+}
+
+// The primary key IS the guarantee: a candidate cannot be live in two sessions.
+// Rows are inserted inside the same transaction that starts a session, so a
+// conflicting start rolls back rather than producing a double-booked candidate.
+model RecruitmentCandidateLock {
+  candidateId String               @id
+  candidate   RecruitmentCandidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  sessionId   String
+  session     RecruitmentSession   @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  cycleId     String
+  acquiredAt  DateTime             @default(now())
+
+  @@index([sessionId])
+}
+
+// ---- Evaluations (append-only versions) ----
+
+model RecruitmentEvaluation {
+  id          String               @id @default(cuid())
+  cycleId     String
+  cycle       RecruitmentCycle     @relation(fields: [cycleId], references: [id], onDelete: Cascade)
+  candidateId String
+  candidate   RecruitmentCandidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  kind        SessionKind
+  groupId     String?
+  sessionId   String?
+  session     RecruitmentSession?  @relation(fields: [sessionId], references: [id])
+
+  evaluatorId   String
+  // The recruitment role the evaluator held when they submitted. Denormalised on
+  // purpose: revoking their role later must not rewrite history.
+  evaluatorRole RecruitmentRole
+
+  // { criterionKey: number } — criteria come from cycle.config.
+  scores         Json    @default("{}")
+  overall        Float?
+  remarks        String?
+  recommendation Recommendation?
+
+  state   EvaluationState @default(DRAFT)
+  version Int             @default(1)
+  // Set on the NEW row when it replaces an earlier one; the old row is marked
+  // SUPERSEDED in the same transaction. Nothing is ever overwritten.
+  supersedesId   String?
+  overrideById   String?
+  overrideReason String?
+  // Client-generated. The @unique turns a network retry into a no-op.
+  idempotencyKey String? @unique
+
+  submittedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([candidateId, kind, state])
+  @@index([cycleId, state])
+  @@index([sessionId, evaluatorId])
+}
+
+enum EvaluationState {
+  DRAFT
+  SUBMITTED
+  SUPERSEDED
+  VOIDED
+}
+
+enum Recommendation {
+  ADVANCE
+  HOLD
+  REJECT
+  SELECT
+  RECONSIDER
+}
+
+// ---- Stage transitions / handoff / bypass ----
+
+// Every stage move is recorded here, including the GD bypass. This is what makes
+// a direct-to-PI handoff render as "intentionally bypassed" rather than as
+// missing GD data.
+model RecruitmentHandoff {
+  id          String               @id @default(cuid())
+  cycleId     String
+  cycle       RecruitmentCycle     @relation(fields: [cycleId], references: [id], onDelete: Cascade)
+  candidateId String
+  candidate   RecruitmentCandidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+
+  fromStage CandidateStage
+  toStage   CandidateStage
+  bypass    Boolean        @default(false)
+  reason    String?
+
+  actorId   String
+  actorRole RecruitmentRole
+
+  sessionId     String?
+  evaluationIds String[] @default([])
+  previousState Json?
+  newState      Json?
+
+  reversedById String?
+  reversedAt   DateTime?
+  reverseReason String?
+
+  createdAt DateTime @default(now())
+
+  @@index([candidateId, createdAt])
+  @@index([cycleId, createdAt])
+}
+
+// ---- Audit (append-only; UPDATE/DELETE blocked by trigger) ----
+
+model RecruitmentAuditEvent {
+  id           String            @id @default(cuid())
+  cycleId      String?
+  cycle        RecruitmentCycle? @relation(fields: [cycleId], references: [id])
+  eventType    String
+  candidateId  String?
+  sessionId    String?
+  evaluationId String?
+  groupId      String?
+
+  actorId    String?
+  actorEmail String
+  actorRole  String?
+
+  previousState Json?
+  newState      Json?
+  reason        String?
+  meta          Json?
+  // Correlation id, so a retry storm or a partial failure can be reconstructed.
+  requestId     String?
+  // REJECTED records a permission or state-machine refusal — the spec asks for
+  // failed transitions to be auditable, not silently dropped.
+  outcome       AuditOutcome @default(SUCCESS)
+
+  at DateTime @default(now())
+
+  @@index([cycleId, at])
+  @@index([candidateId, at])
+  @@index([eventType, at])
+  @@index([outcome, at])
+}
+
+enum AuditOutcome {
+  SUCCESS
   REJECTED
+  FAILED
+}
+
+// ---- Google Sheets response import ----
+
+model RecruitmentSheetSource {
+  id       String           @id @default(cuid())
+  cycleId  String
+  cycle    RecruitmentCycle @relation(fields: [cycleId], references: [id], onDelete: Cascade)
+  label    String
+  sheetUrl String
+  csvUrl   String
+  // "<spreadsheetId>:<gid>" — stable identity of the source tab, stored on every
+  // candidate row it produced.
+  sheetKey String
+  // { candidateField: sheetColumnHeader }
+  mapping  Json             @default("{}")
+  isActive Boolean          @default(true)
+
+  createdById String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  imports RecruitmentImport[]
+
+  @@unique([cycleId, sheetKey])
+}
+
+model RecruitmentImport {
+  id       String                 @id @default(cuid())
+  cycleId  String
+  cycle    RecruitmentCycle       @relation(fields: [cycleId], references: [id], onDelete: Cascade)
+  sourceId String
+  source   RecruitmentSheetSource @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+
+  // hash(cycleId, sourceId, mapping, contentHash). Applying the same sheet twice
+  // is a no-op that returns the original result.
+  idempotencyKey String      @unique
+  state          ImportState @default(PENDING)
+
+  rowsTotal   Int @default(0)
+  rowsCreated Int @default(0)
+  rowsUpdated Int @default(0)
+  rowsSkipped Int @default(0)
+  rowsInvalid Int @default(0)
+
+  // [{ rowIndex, reason, raw }] — invalid rows are shown, never dropped.
+  errors Json?
+
+  importedById String
+  startedAt    DateTime  @default(now())
+  finishedAt   DateTime?
+
+  @@index([cycleId, startedAt])
+}
+
+enum ImportState {
+  PENDING
+  APPLIED
+  FAILED
+}
+
+// ---- S3 media ----
+//
+// Two-phase upload: createUploadIntent writes a PENDING row and hands back a
+// presigned PUT; finalizeUpload verifies the object with HeadObject and flips it
+// to READY. Rows left PENDING are swept by /api/cron/media-sweep. AWS credentials
+// never leave the server.
+
+model MediaAsset {
+  id         String @id @default(cuid())
+  uploaderId String
+  uploader   User   @relation(fields: [uploaderId], references: [id], onDelete: Cascade)
+
+  kind      MediaKind
+  bucket    String
+  objectKey String    @unique
+  mimeType  String
+  sizeBytes Int
+  checksum  String?
+
+  status     MediaStatus     @default(PENDING)
+  visibility MediaVisibility @default(PUBLIC)
+  publicUrl  String?
+  error      String?
+
+  // Free-form owner pointer (postId, memberId, candidateId, ...). Not a FK —
+  // media outlives the thing it was attached to.
+  ownerType String?
+  ownerId   String?
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  finalizedAt DateTime?
+  deletedAt   DateTime?
+
+  @@index([status, createdAt])
+  @@index([uploaderId, createdAt])
+  @@index([ownerType, ownerId])
+}
+
+enum MediaKind {
+  POST_IMAGE
+  POST_COVER
+  MEMBER_IMAGE
+  CANDIDATE_DOC
+}
+
+enum MediaStatus {
+  PENDING
+  READY
+  FAILED
+  DELETED
+}
+
+enum MediaVisibility {
+  PUBLIC
+  SIGNED
 }
 
 // ---- Team ----

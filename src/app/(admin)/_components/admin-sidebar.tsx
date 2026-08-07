@@ -5,8 +5,8 @@ import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { t } from "@/content/strings"
 import { Badge } from "@/components/ui/badge"
-import { SignOutButton } from "./sign-out-button"
-import { AccountLink } from "./account-link"
+import { SignOutButton } from "@/components/sign-out-button"
+import { AccountLink } from "@/components/account-link"
 import { NAV_GROUPS, isNavActive } from "./admin-nav"
 
 export interface SidebarUser {

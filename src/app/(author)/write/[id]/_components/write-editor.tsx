@@ -12,10 +12,12 @@ import CharacterCount from "@tiptap/extension-character-count"
 import { toast } from "sonner"
 import { ImageIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { t } from "@/content/strings"
 import { EditorHeader } from "./editor-header"
 import { BubbleToolbar } from "./bubble-menu"
 import { FloatingInsert } from "./floating-insert"
-import { saveDraft, submitPost, uploadImage } from "../actions"
+import { saveDraft, submitPost } from "../actions"
+import { uploadToS3 } from "@/lib/media/upload-client"
 
 interface PostProps {
   id:          string
@@ -104,30 +106,29 @@ export function WriteEditor({ post }: { post: PostProps }) {
     }
   }
 
+  // Both handlers now go through the S3 pipeline: the file is PUT straight to the
+  // bucket with a presigned URL, so it never travels through a server action body.
+  // Images already stored on Supabase keep working: their URLs are untouched.
   const handleImageUpload = async (file: File) => {
     setUploading(true)
-    const fd = new FormData()
-    fd.append("file", file)
-    const result = await uploadImage(post.id, fd)
+    const result = await uploadToS3(file, "POST_IMAGE", { ownerType: "Post", ownerId: post.id })
     setUploading(false)
     if (result.url) {
       editor?.chain().focus().setImage({ src: result.url }).run()
     } else {
-      toast.error(result.error ?? "Image upload failed.")
+      toast.error(result.error ?? t("blog.imageUploadFailed"))
     }
   }
 
   const handleCoverUpload = async (file: File) => {
     setUploading(true)
-    const fd = new FormData()
-    fd.append("file", file)
-    const result = await uploadImage(post.id, fd)
+    const result = await uploadToS3(file, "POST_COVER", { ownerType: "Post", ownerId: post.id })
     setUploading(false)
     if (result.url) {
       setCoverImage(result.url)
       setSaveStatus("dirty")
     } else {
-      toast.error("Cover upload failed.")
+      toast.error(result.error ?? t("blog.coverUploadFailed"))
     }
   }
 

@@ -44,7 +44,10 @@ export const NAV_GROUPS: NavGroup[] = [
   {
     label: "Society",
     items: [
-      { href: "/admin/recruitment", icon: UserPlus, label: "Recruitment" },
+      // Control plane only: creating cycles, staffing, monitoring, finalising. The
+      // operational GD/PI screens live in the separate /recruitment area so
+      // recruitment participants never need dashboard access.
+      { href: "/admin/recruitment", icon: UserPlus, label: "Recruitment control" },
       { href: "/admin/blog", icon: FileText, label: "Dispatch" },
       { href: "/admin/quiz", icon: Presentation, label: "Quiz" },
       { href: "/admin/team", icon: Contact, label: "Team" },
@@ -55,7 +58,8 @@ export const NAV_GROUPS: NavGroup[] = [
     items: [
       { href: "/admin/guide", icon: BookOpenText, label: "Operator guide" },
       { href: "/admin/logs", icon: ScrollText, label: "Logs" },
-      { href: "/admin/users", icon: ShieldCheck, label: "Users", adminOnly: true },
+      { href: "/admin/participants", icon: Users, label: "Participants" },
+      { href: "/admin/users", icon: ShieldCheck, label: "Staff & roles", adminOnly: true },
     ],
   },
 ]

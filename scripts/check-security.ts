@@ -69,21 +69,44 @@ const read = (p: string) => readFileSync(p, "utf8")
 
 // --- uploads are allowlisted ----------------------------------------------
 //
-// The bucket is public, so an SVG or HTML file accepted here is stored XSS on
-// the Supabase origin. `ext` also came straight from the filename, so
-// "x.jpg/../../evil" gave traversal inside the bucket.
+// An SVG or HTML file accepted here would be stored XSS on whatever origin
+// serves the bucket, and an extension taken from the filename gave traversal
+// ("x.jpg/../../evil"). Uploads now go through the S3 pipeline, so the
+// invariant lives in src/lib/media/keys.ts: the extension is derived from a
+// validated MIME type and the object key is built from ids, never from the
+// filename. scripts/check-media-keys.ts exercises the behaviour; this pins the
+// shape so it cannot be quietly loosened.
 {
-  const src = read("src/app/(author)/write/[id]/actions.ts")
-  assert.match(src, /ALLOWED_IMAGE_TYPES/, "uploads need an extension allowlist")
-  assert.match(src, /MAX_UPLOAD_BYTES/, "uploads need a size cap")
-  assert.doesNotMatch(
-    src,
-    /contentType: file\.type/,
-    "the content type must be derived from the allowlist, not taken from the client",
+  const keys = read("src/lib/media/keys.ts")
+  assert.match(keys, /MEDIA_POLICY/, "uploads need a per-kind policy")
+  assert.match(keys, /maxBytes/, "uploads need a size cap")
+  assert.match(keys, /mimeTypes/, "uploads need a MIME allowlist")
+
+  // The allowlist is the map of permitted MIME types. Anything scriptable must
+  // be absent from it entirely.
+  const table = keys.slice(keys.indexOf("const IMAGE_TYPES"), keys.indexOf("export interface KindPolicy"))
+  for (const bad of ["svg", "html", "javascript", "xml"]) {
+    assert.doesNotMatch(table, new RegExp(bad, "i"), `${bad} must not be uploadable`)
+  }
+
+  // The key is assembled from a validated extension plus sanitised ids.
+  assert.match(keys, /function buildObjectKey/, "object keys must be constructed, not interpolated")
+  assert.match(keys, /function safeSegment/, "key segments must be sanitised")
+
+  // The server must never trust the client's declared type or size: the object
+  // is re-checked with HeadObject before it is marked usable.
+  const actions = read("src/lib/media/actions.ts")
+  assert.match(actions, /headObject/, "the finalize step must verify the real object")
+  assert.match(
+    actions,
+    /validateUpload\(asset\.kind, realType/,
+    "finalize must re-validate against the object's actual content type",
   )
-  for (const bad of ["svg", "html", "js"]) {
-    const table = src.slice(src.indexOf("ALLOWED_IMAGE_TYPES"), src.indexOf("MAX_UPLOAD_BYTES"))
-    assert.doesNotMatch(table, new RegExp(`\\b${bad}\\b`), `${bad} must not be uploadable`)
+
+  // And the old Supabase upload paths must stay gone, or they would reintroduce
+  // an unverified public-bucket write alongside the hardened one.
+  for (const f of ["src/app/(author)/write/[id]/actions.ts", "src/app/(admin)/admin/team/actions.ts"]) {
+    assert.doesNotMatch(read(f), /supabase\.storage/, `${f} must not upload to Supabase Storage directly`)
   }
 }
 
